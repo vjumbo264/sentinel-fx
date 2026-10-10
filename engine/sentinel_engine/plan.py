@@ -149,12 +149,14 @@ def evaluate(bundle, df, ctx=None, latency_ms: int = 600) -> dict:
                         break
                 values[nid] = float(mapped)
             elif t == "decision":
-                pwin = next((values[i] for i in reversed(order)
+                pcal = next((values[i] for i in reversed(order)
                              if isinstance(values.get(i), float)), None)
-                if pwin is None:
+                if pcal is None:
                     raise PlanError("decision: no calibrated probability")
                 dec = bundle.decision
-                side = "CALL" if pwin >= 0.5 else "PUT"
+                # calibrator maps P(up); p_win is for the CHOSEN side
+                side = "CALL" if pcal >= 0.5 else "PUT"
+                pwin = pcal if side == "CALL" else 1.0 - pcal
                 mult = 1.0
                 for lo, hi, m in dec.get("stake_map", []):
                     if lo <= pwin < hi:

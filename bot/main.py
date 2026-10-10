@@ -246,7 +246,59 @@ def chain_next_run(note="handoff"):
         log("warn", None, f"self-chain failed: {e}")
 
 
+class V2Adapter:
+    """Expose a v2 .sfxmodel.zip bundle through the v1 pack.decide() API so the
+    rest of the bot loop is unchanged. Guardrails stay in the bot; a model
+    can never override them."""
+
+    def __init__(self, bundle):
+        self.b = bundle
+
+    def decide(self, df, ctx):
+        from sentinel_engine.plan import evaluate
+        dec = evaluate(self.b, df, ctx or {})
+        if dec["action"] != "trade":
+            return {"allow": False, "side": None,
+                    "prob": dec.get("p_win") or 0.0, "edge": 0.0,
+                    "margin": 0.0, "reasons": [dec["reason"]]}
+        be = 1.0 / (1.0 + float(self.b.decision.get("payout_assumed", 0.85)))
+        min_p = float(self.b.decision.get("min_p", be))
+        pwin = dec["p_win"] or 0.0
+        votes = " | ".join(
+            f"{o['id']}: {o.get('direction', '-')}" for o in dec["opinions"]
+            if not o.get("skipped"))
+        return {"allow": pwin >= min_p, "side": dec["side"], "prob": pwin,
+                "edge": pwin, "margin": max(0.0, min_p - be),
+                "reasons": [f"{dec['reason']}; analysts: {votes}"]}
+
+
 def load_pack_for(symbol):
+    """v2 first: the ACTIVE bundle of the pair from the shared models release
+    (public URL, sha256-verified, data-only). Falls back to the v1 pack."""
+    try:
+        idx_path = os.path.join("models", "index.json")
+        if os.path.exists(idx_path):
+            ent = json.load(open(idx_path)).get(symbol)
+            if ent and ent.get("active_version") is not None:
+                v = next(x for x in ent["versions"]
+                         if x["N"] == ent["active_version"])
+                url = (f"https://github.com/{REPO}/releases/download/"
+                       f"{v['release_tag']}/{v['asset']}")
+                cache = os.path.join("/tmp", v["asset"])
+                if not os.path.exists(cache):
+                    with urllib.request.urlopen(url, timeout=180) as r, \
+                            open(cache, "wb") as f:
+                        f.write(r.read())
+                import hashlib
+                digest = hashlib.sha256(open(cache, "rb").read()).hexdigest()
+                if digest != v["sha256"]:
+                    raise RuntimeError("bundle sha256 mismatch")
+                from sentinel_engine.bundle import load_bundle
+                log("info", symbol,
+                    f"v2 bundle v{v['N']} loaded from {v['release_tag']}")
+                return V2Adapter(load_bundle(cache))
+    except Exception as e:
+        log("warn", symbol, f"v2 bundle load failed, falling back to v1: {e}")
     path = os.path.join("pairs", symbol, "pack.json")
     if not os.path.exists(path):
         return None
@@ -565,7 +617,8 @@ async def main():
             pk = load_pack_for(p["symbol"])
             if pk is not None:
                 packs[p["symbol"]] = (pk, p)
-                log("info", p["symbol"], f"pack v{p['pack_version']} loaded")
+                kind = "v2-bundle" if isinstance(pk, V2Adapter) else "v1-pack"
+                log("info", p["symbol"], f"{kind} v{p['pack_version']} loaded")
             else:
                 log("warn", p["symbol"], "no pack.json found; skipping")
 

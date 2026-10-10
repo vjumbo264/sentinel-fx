@@ -8,6 +8,10 @@ on:
       version:
         description: "integer model version"
         required: true
+      min_trades:
+        description: "min hold-out trades (0 = plumbing test only)"
+        required: false
+        default: "300"
 permissions:
   contents: write
 concurrency:
@@ -43,10 +47,12 @@ jobs:
             -D . --clobber
           ls -la "$ASSET"
       - name: VALIDATOR (full mode)
+        env:
+          MIN_HOLDOUT_TRADES: ${{ github.event.inputs.min_trades || '300' }}
         run: |
           ASSET="${SYMBOL}_v${VERSION}.sfxmodel.zip"
-          echo "VALIDATOR: running full mode on $ASSET"
-          python3 -m sentinel_engine.validate "$ASSET" --mode full | tee validator.report.txt
+          echo "VALIDATOR: running full mode on $ASSET (min_trades=$MIN_HOLDOUT_TRADES)"
+          python3 -m sentinel_engine.validate_bundle "$ASSET" --mode full | tee validator.report.txt
       - name: Publish into shared models release
         if: success()
         run: |

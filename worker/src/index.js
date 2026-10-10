@@ -232,6 +232,15 @@ export default {
           return json({ reactions: r.results });
         }
 
+        if (path === "/api/bot/forward" && method === "POST") {
+          // FWD: forward-eval workflow stores rolling out-of-sample metrics
+          await env.DB.prepare(
+            "INSERT INTO forward_metrics (symbol, version, computed_utc, metrics) VALUES (?,?,?,?) " +
+            "ON CONFLICT(symbol, version) DO UPDATE SET computed_utc=excluded.computed_utc, metrics=excluded.metrics"
+          ).bind(body.symbol, body.version, nowUTC(), JSON.stringify(body.metrics || {})).run();
+          return json({ ok: true });
+        }
+
         if (path === "/api/bot/trades/open" && method === "GET") {
           const r = await env.DB.prepare("SELECT * FROM trades WHERE close_utc IS NULL").all();
           return json({ open: r.results });
@@ -289,7 +298,9 @@ export default {
         const packs = await env.DB.prepare(
           "SELECT symbol, version, status, verdict, has_custom_code, metrics, installed_utc FROM pair_packs ORDER BY version DESC"
         ).all();
-        return json({ pairs: pairs.results, packs: packs.results });
+        const models = await env.DB.prepare("SELECT * FROM models ORDER BY version DESC").all().catch(() => ({ results: [] }));
+        const fwd = await env.DB.prepare("SELECT * FROM forward_metrics").all().catch(() => ({ results: [] }));
+        return json({ pairs: pairs.results, packs: packs.results, models: models.results, forward: fwd.results });
       }
 
       if (path === "/api/packs/register" && method === "POST") {
