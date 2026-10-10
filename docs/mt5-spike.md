@@ -1,9 +1,9 @@
 # MT5 Linux Stack Spike Report
 
-**Date / Timestamp:** 2026-10-10 23:36:45 UTC  
+**Date / Timestamp:** 2026-10-10 23:40:22 UTC  
 **Status:** **BLOCKED**  
 **Terminal Build:** None (None)  
-**Bridge Mode:** None  
+**Bridge Mode:** rpyc-classic  
 
 ---
 
