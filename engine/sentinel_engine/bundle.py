@@ -83,7 +83,7 @@ def verify_bundle(path: str) -> tuple[bool, list[str]]:
         problems.append(f"schema_version != {SCHEMA_VERSION}")
     listed = {f["path"]: f for f in manifest.get("files", [])}
     for n in names:
-        if n.endswith("/"):
+        if n.endswith("/") or n == "manifest.json":
             continue
         if n not in listed:
             problems.append(f"file not declared in manifest: {n}")
