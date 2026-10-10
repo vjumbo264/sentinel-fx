@@ -1,4 +1,14 @@
 {
+ "R_10": {
+  "asset": "R_10_60s.csv.gz",
+  "first_epoch": 1760103064,
+  "last_checked_utc": "2026-10-10T13:31:15Z",
+  "last_epoch": 1791639060,
+  "release_tag": "data-01",
+  "rows": 525600,
+  "sha256": "919b032b5562e8afe95ab64628772b178438e3381dac3a233109f701788533c2",
+  "source": "auth-otp"
+ },
  "R_100": {
   "asset": "R_100_60s.csv.gz",
   "first_epoch": 1760101593,
