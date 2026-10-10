@@ -211,3 +211,83 @@ def news_state(signal_side: str, reaction: float | None) -> str:
     if signal_side == "CALL":
         return "for" if reaction > 0 else "against"
     return "for" if reaction < 0 else "against"
+
+
+# ---------------- archive helpers (NEWS task) --------------------------------
+
+def _ev_ts(ev: dict) -> datetime:
+    return datetime.strptime(ev["utc_time"], "%Y-%m-%dT%H:%M:%SZ").replace(
+        tzinfo=timezone.utc)
+
+
+def news_as_known_at(events: list[dict], t: datetime) -> list[dict]:
+    """Point-in-time view: only events first seen at/before t, with forecast
+    revisions after t stripped (no hindsight bias in simulation)."""
+    out = []
+    for ev in events:
+        fs = ev.get("first_seen_utc")
+        if fs and fs > t.strftime("%Y-%m-%dT%H:%M:%SZ"):
+            continue
+        hist = [h for h in ev.get("forecast_history", [])
+                if h.get("utc", "") <= t.strftime("%Y-%m-%dT%H:%M:%SZ")]
+        e = dict(ev)
+        if hist:
+            e["forecast"] = hist[-1].get("forecast")
+            e["previous"] = hist[-1].get("previous")
+        e.pop("forecast_history", None)
+        out.append(e)
+    return out
+
+
+def upcoming(events: list[dict], t: datetime, currencies: set[str],
+             impacts=("high", "medium")) -> list[dict]:
+    """Future events for the given currencies, soonest first."""
+    out = [ev for ev in events
+           if ev.get("currency") in currencies
+           and ev.get("impact", "") in impacts
+           and _ev_ts(ev) >= t]
+    return sorted(out, key=_ev_ts)
+
+
+def recent(events: list[dict], t: datetime, currencies: set[str],
+           window_min: int = 120, impacts=("high", "medium")) -> list[dict]:
+    """Events within window_min BEFORE t (most recent last)."""
+    lo = t.timestamp() - window_min * 60
+    out = [ev for ev in events
+           if ev.get("currency") in currencies
+           and ev.get("impact", "") in impacts
+           and lo <= _ev_ts(ev).timestamp() <= t.timestamp()]
+    return sorted(out, key=_ev_ts)
+
+
+def reaction_stats(candles: list[dict], events: list[dict], symbol: str,
+                   horizons=(5, 15, 30)) -> dict:
+    """Price move (in pips of price, x1e4) at +h minutes after each event that
+    affects `symbol`, grouped by (title, impact, currency). candles: sorted
+    list of {epoch, open, high, low, close}."""
+    epochs = [int(c["epoch"]) for c in candles]
+    import bisect
+    groups: dict[tuple, dict] = {}
+    for ev in events:
+        if not event_affects(ev, symbol):
+            continue
+        t0 = int(_ev_ts(ev).timestamp())
+        i = bisect.bisect_left(epochs, t0)
+        if i >= len(epochs):
+            continue
+        base = float(candles[i]["close"])
+        if base == 0:
+            continue
+        moves = {}
+        for h in horizons:
+            j = bisect.bisect_left(epochs, t0 + h * 60)
+            if j < len(epochs):
+                moves[h] = (float(candles[j]["close"]) - base) / base * 1e4
+        if not moves:
+            continue
+        key = (ev.get("title", ""), ev.get("impact", ""), ev.get("currency", ""))
+        g = groups.setdefault(key, {"n": 0, **{f"move_{h}m": [] for h in horizons}})
+        g["n"] += 1
+        for h, m in moves.items():
+            g[f"move_{h}m"].append(round(m, 1))
+    return {"|".join(k): v for k, v in groups.items()}

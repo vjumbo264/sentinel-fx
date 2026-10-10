@@ -1,0 +1,173 @@
+name: fetch-candles
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "comma list (frxXXXYYY) or 'all'"
+        required: false
+        default: "all"
+      granularity:
+        description: "seconds per candle"
+        required: false
+        default: "60"
+      mode:
+        description: "incremental|full"
+        required: false
+        default: "incremental"
+  schedule:
+    - cron: "30 0 * * *"    # daily 00:30 UTC (01:30 Lagos): update tracked pairs
+    - cron: "0 3 1 * *"     # monthly keepalive (public-repo scheduled-workflow guard)
+permissions:
+  contents: write
+concurrency:
+  group: candles
+  cancel-in-progress: false
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pair matrix (inputs validated, passed via env only)
+        id: m
+        env:
+          SYMBOLS_IN: ${{ github.event.inputs.symbols || 'all' }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, re
+          tracked = json.load(open("data/tracked_pairs.json"))["pairs"]
+          req = (os.environ.get("SYMBOLS_IN") or "all").strip()
+          if req and req != "all":
+              syms = [s.strip() for s in req.split(",") if s.strip()]
+              for s in syms:
+                  if not re.match(r"^frx[A-Z]{6}$", s):
+                      raise SystemExit(f"invalid symbol {s!r}")
+          else:
+              syms = tracked
+          mat = json.dumps({"symbol": syms})
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("matrix=" + mat + "\n")
+          print("matrix:", mat)
+          EOF
+
+  keepalive:
+    # Runs only on the monthly schedule; the daily index commits already count
+    # as repo activity, this is belt-and-braces against Actions auto-pause.
+    if: github.event_name == 'schedule' && github.event.schedule == '0 3 1 * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git config user.name "sentinel-keepalive"
+          git config user.email "keepalive@sentinel-fx.local"
+          date -u +%Y-%m-%dT%H:%M:%SZ > data/.keepalive
+          git add data/.keepalive
+          git commit -m "keepalive: monthly activity commit [skip ci]" || true
+          git push || true
+
+  fetch:
+    if: github.event_name != 'schedule' || github.event.schedule == '30 0 * * *'
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      max-parallel: 3
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      SYMBOL: ${{ matrix.symbol }}
+      GRANULARITY: ${{ github.event.inputs.granularity || '60' }}
+      MODE: ${{ github.event.inputs.mode || 'incremental' }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install
+        run: pip install --quiet websockets
+      - name: Download existing asset for incremental merge
+        run: |
+          mkdir -p out prev
+          ASSET="${SYMBOL}_${GRANULARITY}s.csv.gz"
+          gh release download data-01 -p "$ASSET" -D prev --clobber 2>/dev/null || \
+            echo "no existing asset; first run is a full pull"
+      - name: Fetch candles from Deriv public WS
+        run: |
+          EXIST="prev/${SYMBOL}_${GRANULARITY}s.csv.gz"
+          [ -f "$EXIST" ] || EXIST=""
+          python3 tools/fetch_candles.py --symbol "$SYMBOL" \
+            --granularity "$GRANULARITY" --mode "$MODE" \
+            ${EXIST:+--existing "$EXIST"} --out out | tee fetch.log
+      - name: Swap asset into shared release (never leave a half-written asset)
+        run: |
+          ASSET="${SYMBOL}_${GRANULARITY}s.csv.gz"
+          gh release view data-01 >/dev/null 2>&1 || \
+            gh release create data-01 --title "data-01" \
+              --notes "SENTINEL-FX candle data hub (shared release 01). One asset per pair+granularity."
+          # 1) upload the verified local file under a temporary name
+          gh release upload data-01 "out/${ASSET}#${ASSET}.next" --clobber
+          # 2) only now delete the old asset and publish under the final name
+          OLD_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/data-01" \
+                   --jq ".assets[] | select(.name==\"$ASSET\") | .id" || true)
+          [ -n "$OLD_ID" ] && gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$OLD_ID" || true
+          gh release upload data-01 "out/$ASSET" --clobber
+          NEXT_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/data-01" \
+                    --jq ".assets[] | select(.name==\"$ASSET.next\") | .id" || true)
+          [ -n "$NEXT_ID" ] && gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$NEXT_ID" || true
+      - name: Write index fragment + job summary
+        run: |
+          python3 tools/update_index.py --stats-file fetch.log --release data-01
+          python3 - <<'EOF'
+          import json, os
+          stats = None
+          for line in open("fetch.log"):
+              if line.startswith("STATS "):
+                  stats = json.loads(line[6:])
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(f"| {stats['symbol']} | {stats['rows']} | "
+                      f"{stats['first_utc']} -> {stats['last_utc']} | "
+                      f"{stats['years_back']}y | {stats['source']} | "
+                      f"{len(stats['gaps_flagged'])} gaps |\n")
+          EOF
+      - name: Upload index fragment
+        uses: actions/upload-artifact@v4
+        with:
+          name: frag-${{ matrix.symbol }}
+          path: data/fragments/
+          retention-days: 1
+
+  finalize:
+    if: github.event_name != 'schedule' || github.event.schedule == '30 0 * * *'
+    needs: fetch
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: frag-*
+          path: data/fragments
+          merge-multiple: true
+      - name: Merge fragments into data/index.json and commit
+        run: |
+          python3 - <<'EOF'
+          import glob, json, os
+          idx = {}
+          if os.path.exists("data/index.json"):
+              idx = json.load(open("data/index.json"))
+          for f in glob.glob("data/fragments/*.json"):
+              idx.update(json.load(open(f)))
+          json.dump(idx, open("data/index.json", "w"), indent=1, sort_keys=True)
+          print("index entries:", len(idx))
+          EOF
+          git config user.name "sentinel-data"
+          git config user.email "data@sentinel-fx.local"
+          git add data/index.json
+          git commit -m "data: index update [skip ci]" || true
+          git push || true
+      - name: Publish index.json as release asset
+        run: |
+          gh release view data-01 >/dev/null 2>&1 || exit 0
+          gh release upload data-01 "data/index.json#index.json" --clobber

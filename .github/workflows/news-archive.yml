@@ -1,0 +1,61 @@
+name: news-archive
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "17 */6 * * *"   # every 6 hours
+permissions:
+  contents: write
+concurrency:
+  group: news-archive
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install
+        run: |
+          pip install --quiet ./engine
+      - name: Download existing archive
+        run: |
+          mkdir -p out prev
+          gh release download news-archive -p "news_archive.jsonl.gz" \
+            -D prev --clobber 2>/dev/null || echo "first run; starting fresh"
+      - name: Fetch this+next week and upsert
+        run: |
+          EXIST="prev/news_archive.jsonl.gz"
+          [ -f "$EXIST" ] || EXIST=""
+          python3 tools/news_archive.py --archive out/news_archive.jsonl.gz \
+            ${EXIST:+--existing "$EXIST"} | tee news.log
+      - name: Swap archive asset (never leave a half-written asset)
+        run: |
+          gh release view news-archive >/dev/null 2>&1 || \
+            gh release create news-archive --title "news-archive" \
+              --notes "SENTINEL-FX economic-calendar archive. Old events are never deleted."
+          gh release upload news-archive \
+            "out/news_archive.jsonl.gz#news_archive.jsonl.gz.next" --clobber
+          OLD_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/news-archive" \
+                   --jq '.assets[] | select(.name=="news_archive.jsonl.gz") | .id' || true)
+          [ -n "$OLD_ID" ] && gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$OLD_ID" || true
+          gh release upload news-archive "out/news_archive.jsonl.gz" --clobber
+          NEXT_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/news-archive" \
+                    --jq '.assets[] | select(.name=="news_archive.jsonl.gz.next") | .id' || true)
+          [ -n "$NEXT_ID" ] && gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$NEXT_ID" || true
+      - name: Job summary
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          stats = None
+          for line in open("news.log"):
+              if line.startswith("STATS "):
+                  stats = json.loads(line[6:])
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(f"news archive: **{stats['events_total']}** events total "
+                      f"(new {stats['new']}, revised {stats['revised']}, "
+                      f"kept {stats['kept']})\n")
+          EOF

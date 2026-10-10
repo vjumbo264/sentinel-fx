@@ -1,0 +1,9 @@
+{
+ "pairs": [
+  "frxEURUSD", "frxGBPUSD", "frxUSDJPY", "frxAUDUSD", "frxUSDCAD",
+  "frxUSDCHF", "frxNZDUSD", "frxEURGBP", "frxEURJPY", "frxGBPJPY",
+  "frxEURAUD", "frxAUDJPY", "frxEURCAD", "frxEURCHF"
+ ],
+ "note": "Cached tracked set (Deriv frx* pairs offering 15-minute rise/fall, per active_symbols/contracts_for; static fallback list from TRAINUI spec). Editable from the Train page.",
+ "updated_utc": "2026-10-10T00:00:00Z"
+}
