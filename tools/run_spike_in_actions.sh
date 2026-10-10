@@ -6,11 +6,11 @@ echo "SENTINEL-FX: MT5 Spike Actions Runner"
 echo "=========================================="
 
 python3 -m pip install --upgrade pip
-python3 -m pip install mt5linux rpyc requests
+python3 -m pip install "rpyc>=5.0.0,<6.0.0" requests
 
 STACK_STARTED=0
 
-# Attempt Option A: Docker mode with lprett/mt5linux
+# Option A: Try Docker container mode
 echo "[1/3] Trying Docker mode with lprett/mt5linux..."
 if docker pull lprett/mt5linux:latest 2>/dev/null; then
   echo "Docker pull succeeded. Launching container..."
@@ -20,15 +20,19 @@ if docker pull lprett/mt5linux:latest 2>/dev/null; then
     -e MT5_SERVER="${MT5_DEMO_SERVER:-Deriv-Demo}" \
     lprett/mt5linux:latest || true
   
-  # Allow container to boot RPyC
-  sleep 8
-  if nc -z localhost 18812 2>/dev/null || curl -s localhost:18812 2>/dev/null || python3 -c "import socket; s=socket.socket(); s.connect(('localhost', 18812))" 2>/dev/null; then
+  sleep 10
+  # Check if port 18812 accepts connection
+  if python3 -c "import rpyc; c=rpyc.classic.connect('localhost', 18812); print('Bridge connected'); c.close()" 2>/dev/null; then
     echo "[OK] Docker mt5linux responding on port 18812."
     STACK_STARTED=1
+  else
+    echo "[WARN] Docker container running but bridge handshake failed. Falling back to Wine..."
+    docker stop mt5-spike-primary 2>/dev/null || true
+    docker rm mt5-spike-primary 2>/dev/null || true
   fi
 fi
 
-# Attempt Option B: Wine + mt5server.exe + Deriv MT5 terminal if Docker not ready
+# Option B: Wine + Deriv MT5 + mt5server.exe fallback
 if [ "$STACK_STARTED" -eq 0 ]; then
   echo "[2/3] Setting up Wine + Deriv MT5 + mt5server.exe fallback..."
   sudo dpkg --add-architecture i386 || true
@@ -64,4 +68,4 @@ python3 tools/mt5_spike.py \
   --out-md docs/mt5-spike.md \
   --out-json mt5_spike_result.json
 
-echo "MT5 Spike finished successfully."
+echo "MT5 Spike completed successfully."

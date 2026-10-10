@@ -23,20 +23,27 @@ from typing import Any, Dict, List, Optional
 def now_utc_str() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-def get_mt5_connection(host: str = "localhost", port: int = 18812):
-    """Connect to MT5 Python API via mt5linux or direct RPyC."""
-    try:
-        from mt5linux import MetaTrader5
-        mt5 = MetaTrader5(host=host, port=port)
-        return mt5, "mt5linux"
-    except Exception as e_mt5l:
+def get_mt5_connection(host: str = "localhost", port: int = 18812, timeout: int = 120):
+    """Connect to MT5 Python API via RPyC classic bridge."""
+    import rpyc
+    # Connect with timeout and retry
+    start_t = time.time()
+    last_err = None
+    while time.time() - start_t < 45:
         try:
-            import rpyc
             conn = rpyc.classic.connect(host, port)
+            conn._config["sync_request_timeout"] = timeout
+            try:
+                conn.modules.sys.path.append("C:\\mt5libs")
+                conn.modules.sys.path.append("C:\\Program Files\\Deriv - MetaTrader 5")
+            except Exception:
+                pass
             mt5 = conn.modules.MetaTrader5
-            return mt5, "rpyc"
-        except Exception as e_rpyc:
-            raise RuntimeError(f"Failed to connect to MT5 bridge on {host}:{port}. mt5linux error: {e_mt5l}; rpyc error: {e_rpyc}")
+            return mt5, "rpyc-classic"
+        except Exception as e:
+            last_err = e
+            time.sleep(2)
+    raise RuntimeError(f"Failed to connect to MT5 bridge on {host}:{port}: {last_err}")
 
 def parse_args():
     parser = argparse.ArgumentParser(description="SENTINEL-FX MT5 Spike Test")
@@ -53,7 +60,7 @@ def parse_args():
 def categorize_symbol(name: str, path: str = "") -> str:
     n = name.upper()
     p = path.upper() if path else ""
-    if any(k in n for k in ["VOLATILITY", "HZ", "BOOM", "CRASH", "STEP", "JUMP", "DEX", "DRIFT"]) or "SYNTHETIC" in p:
+    if any(k in n for k in ["VOLATILITY", "HZ", "BOOM", "CRASH", "STEP", "JUMP", "DEX", "DRIFT", "R_"]) or "SYNTHETIC" in p:
         return "synthetic"
     if any(k in n for k in ["EUR", "USD", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "FRX"]) or "FOREX" in p:
         return "forex"
@@ -76,7 +83,6 @@ def run_spike(args) -> Dict[str, Any]:
         "errors": []
     }
 
-    # Step 1: Connect to Primary MT5 bridge
     t_start = time.time()
     try:
         mt5, bridge_mode = get_mt5_connection(args.host, args.port)
@@ -144,15 +150,15 @@ def run_spike(args) -> Dict[str, Any]:
     results["account"] = {
         "login": getattr(acct_info, "login", login_int),
         "server": getattr(acct_info, "server", chosen_server),
-        "balance": getattr(acct_info, "balance", 0.0),
-        "equity": getattr(acct_info, "equity", 0.0),
+        "balance": float(getattr(acct_info, "balance", 0.0)),
+        "equity": float(getattr(acct_info, "equity", 0.0)),
         "currency": getattr(acct_info, "currency", "USD"),
-        "leverage": getattr(acct_info, "leverage", 100),
+        "leverage": int(getattr(acct_info, "leverage", 100)),
         "margin_mode": margin_mode_str,
-        "margin_mode_raw": margin_mode_val,
-        "trade_allowed": getattr(acct_info, "trade_allowed", False),
-        "trade_expert": getattr(acct_info, "trade_expert", False),
-        "margin_free": getattr(acct_info, "margin_free", 0.0)
+        "margin_mode_raw": int(margin_mode_val),
+        "trade_allowed": bool(getattr(acct_info, "trade_allowed", False)),
+        "trade_expert": bool(getattr(acct_info, "trade_expert", False)),
+        "margin_free": float(getattr(acct_info, "margin_free", 0.0))
     }
 
     print(f"Terminal build: {results['terminal_build']}")
@@ -160,11 +166,9 @@ def run_spike(args) -> Dict[str, Any]:
     print(f"Margin Mode: {margin_mode_str} (Hedging={margin_mode_val==2})")
 
     # Time and Offset
-    server_time = None
     all_syms = mt5.symbols_get() or []
     print(f"Discovered {len(all_syms)} total symbols on broker")
 
-    # Group symbols
     forex_symbols = []
     synthetic_symbols = []
     other_symbols = []
@@ -172,19 +176,19 @@ def run_spike(args) -> Dict[str, Any]:
     for s in all_syms:
         cat = categorize_symbol(s.name, getattr(s, "path", ""))
         info_dict = {
-            "name": s.name,
-            "path": getattr(s, "path", ""),
-            "digits": s.digits,
-            "contract_size": s.trade_contract_size,
-            "volume_min": s.volume_min,
-            "volume_max": s.volume_max,
-            "volume_step": s.volume_step,
-            "stops_level": s.trade_stops_level,
-            "spread": s.spread,
-            "swap_long": s.swap_long,
-            "swap_short": s.swap_short,
-            "trade_mode": s.trade_mode,
-            "filling_mode": getattr(s, "filling_mode", 0)
+            "name": str(s.name),
+            "path": str(getattr(s, "path", "")),
+            "digits": int(s.digits),
+            "contract_size": float(s.trade_contract_size),
+            "volume_min": float(s.volume_min),
+            "volume_max": float(s.volume_max),
+            "volume_step": float(s.volume_step),
+            "stops_level": int(s.trade_stops_level),
+            "spread": int(s.spread),
+            "swap_long": float(s.swap_long),
+            "swap_short": float(s.swap_short),
+            "trade_mode": int(s.trade_mode),
+            "filling_mode": int(getattr(s, "filling_mode", 0))
         }
         if cat == "forex":
             forex_symbols.append(info_dict)
@@ -204,7 +208,6 @@ def run_spike(args) -> Dict[str, Any]:
 
     # Pick test symbols
     test_synthetic = "Volatility 10 Index"
-    # Find match if named differently
     for s in synthetic_symbols:
         if any(k in s["name"] for k in ["10 Index", "1HZ10V", "R_10"]):
             test_synthetic = s["name"]
@@ -219,14 +222,12 @@ def run_spike(args) -> Dict[str, Any]:
     results["test_synthetic_symbol"] = test_synthetic
     results["test_forex_symbol"] = test_forex
 
-    # Ensure symbols are visible in market watch
     mt5.symbol_select(test_synthetic, True)
     mt5.symbol_select(test_forex, True)
 
-    # Server time from tick
     synth_tick = mt5.symbol_info_tick(test_synthetic)
     if synth_tick:
-        server_epoch = synth_tick.time
+        server_epoch = int(synth_tick.time)
         local_utc_epoch = int(datetime.now(timezone.utc).timestamp())
         offset_hours = round((server_epoch - local_utc_epoch) / 3600.0, 1)
         results["server_time_epoch"] = server_epoch
@@ -236,11 +237,11 @@ def run_spike(args) -> Dict[str, Any]:
     # Rates & History Depth
     rates_report = {}
     timeframes = [
-        ("M1", mt5.TIMEFRAME_M1),
-        ("M5", mt5.TIMEFRAME_M5),
-        ("M15", mt5.TIMEFRAME_M15),
-        ("H1", mt5.TIMEFRAME_H1),
-        ("D1", mt5.TIMEFRAME_D1)
+        ("M1", getattr(mt5, "TIMEFRAME_M1", 1)),
+        ("M5", getattr(mt5, "TIMEFRAME_M5", 5)),
+        ("M15", getattr(mt5, "TIMEFRAME_M15", 15)),
+        ("H1", getattr(mt5, "TIMEFRAME_H1", 60)),
+        ("D1", getattr(mt5, "TIMEFRAME_D1", 1440))
     ]
 
     for sym in [test_synthetic, test_forex]:
@@ -267,46 +268,43 @@ def run_spike(args) -> Dict[str, Any]:
         print(f"[WARN] symbol_info({test_synthetic}) returned None")
     else:
         tick = mt5.symbol_info_tick(test_synthetic)
-        lot = sym_info.volume_min or 0.1
-        point = sym_info.point or 0.01
-        ask = tick.ask if tick else (sym_info.ask or 100.0)
-        bid = tick.bid if tick else (sym_info.bid or 99.0)
+        lot = float(sym_info.volume_min or 0.1)
+        point = float(sym_info.point or 0.01)
+        ask = float(tick.ask if tick else (sym_info.ask or 100.0))
+        bid = float(tick.bid if tick else (sym_info.bid or 99.0))
 
-        # 1. Order Check (Dry Run)
-        sl_price = round(ask - (100 * point), sym_info.digits)
-        tp_price = round(ask + (100 * point), sym_info.digits)
+        sl_price = round(ask - (100 * point), int(sym_info.digits))
+        tp_price = round(ask + (100 * point), int(sym_info.digits))
 
-        # Filling mode resolution
         filling = getattr(mt5, "ORDER_FILLING_FOK", 0)
-        if sym_info.filling_mode & 2:
+        if getattr(sym_info, "filling_mode", 0) & 2:
             filling = getattr(mt5, "ORDER_FILLING_IOC", 1)
-        elif sym_info.filling_mode & 1:
+        elif getattr(sym_info, "filling_mode", 0) & 1:
             filling = getattr(mt5, "ORDER_FILLING_FOK", 0)
 
         check_req = {
-            "action": mt5.TRADE_ACTION_DEAL,
-            "symbol": test_synthetic,
+            "action": int(mt5.TRADE_ACTION_DEAL),
+            "symbol": str(test_synthetic),
             "volume": float(lot),
-            "type": mt5.ORDER_TYPE_BUY,
+            "type": int(mt5.ORDER_TYPE_BUY),
             "price": float(ask),
             "sl": float(sl_price),
             "tp": float(tp_price),
             "deviation": 20,
             "magic": 999001,
             "comment": "sfx_spike_check",
-            "type_time": mt5.ORDER_TIME_GTC,
-            "type_filling": filling,
+            "type_time": int(getattr(mt5, "ORDER_TIME_GTC", 0)),
+            "type_filling": int(filling),
         }
 
         check_res = mt5.order_check(check_req)
         trade_test_result["order_check"] = {
             "retcode": getattr(check_res, "retcode", None),
             "comment": getattr(check_res, "comment", str(check_res)),
-            "margin_free": getattr(check_res, "margin_free", None)
+            "margin_free": float(getattr(check_res, "margin_free", 0.0)) if hasattr(check_res, "margin_free") else None
         }
         print(f"order_check dry-run result: retcode={getattr(check_res, 'retcode', None)} ({getattr(check_res, 'comment', '')})")
 
-        # 2. Live Demo Order Execution
         print(f"Executing real tiny demo order on {test_synthetic} (volume={lot})...")
         order_res = mt5.order_send(check_req)
         order_retcode = getattr(order_res, "retcode", None)
@@ -321,23 +319,21 @@ def run_spike(args) -> Dict[str, Any]:
             "comment": getattr(order_res, "comment", "")
         }
 
-        # 3. Position verification & Modify Stop
         time.sleep(1)
         positions = mt5.positions_get(symbol=test_synthetic) or []
         open_pos = None
         for p in positions:
-            if p.magic == 999001:
+            if getattr(p, "magic", 0) == 999001:
                 open_pos = p
                 break
 
         if open_pos:
             print(f"[OK] Position open confirmed: ticket={open_pos.ticket}, volume={open_pos.volume}, sl={open_pos.sl}")
-            # Modify Stop
-            new_sl = round(open_pos.price_open - (150 * point), sym_info.digits)
+            new_sl = round(open_pos.price_open - (150 * point), int(sym_info.digits))
             mod_req = {
-                "action": mt5.TRADE_ACTION_SLTP,
-                "position": open_pos.ticket,
-                "symbol": test_synthetic,
+                "action": int(mt5.TRADE_ACTION_SLTP),
+                "position": int(open_pos.ticket),
+                "symbol": str(test_synthetic),
                 "sl": float(new_sl),
                 "tp": float(open_pos.tp),
             }
@@ -348,21 +344,20 @@ def run_spike(args) -> Dict[str, Any]:
             }
             print(f"Stop modified result: retcode={getattr(mod_res, 'retcode', None)}")
 
-            # Close Position
             tick_now = mt5.symbol_info_tick(test_synthetic)
             close_price = tick_now.bid if tick_now else ask
             close_req = {
-                "action": mt5.TRADE_ACTION_DEAL,
-                "symbol": test_synthetic,
+                "action": int(mt5.TRADE_ACTION_DEAL),
+                "symbol": str(test_synthetic),
                 "volume": float(open_pos.volume),
-                "type": mt5.ORDER_TYPE_SELL,
-                "position": open_pos.ticket,
+                "type": int(mt5.ORDER_TYPE_SELL),
+                "position": int(open_pos.ticket),
                 "price": float(close_price),
                 "deviation": 20,
                 "magic": 999001,
                 "comment": "sfx_spike_close",
-                "type_time": mt5.ORDER_TIME_GTC,
-                "type_filling": filling,
+                "type_time": int(getattr(mt5, "ORDER_TIME_GTC", 0)),
+                "type_filling": int(filling),
             }
             close_res = mt5.order_send(close_req)
             trade_test_result["close_position"] = {
@@ -373,20 +368,18 @@ def run_spike(args) -> Dict[str, Any]:
         else:
             trade_test_result["positions_warning"] = "Position not found in positions_get"
 
-        # Check Deals history
         deals = mt5.history_deals_get(datetime.now(timezone.utc).replace(hour=0, minute=0, second=0), datetime.now(timezone.utc)) or []
         sfx_deals = [
-            {"deal": d.ticket, "order": d.order, "profit": d.profit, "symbol": d.symbol, "volume": d.volume}
+            {"deal": int(d.ticket), "order": int(d.order), "profit": float(d.profit), "symbol": str(d.symbol), "volume": float(d.volume)}
             for d in deals if getattr(d, "magic", 0) == 999001
         ]
         trade_test_result["recorded_deals"] = sfx_deals
 
     results["trade_test"] = trade_test_result
 
-    # Step: Second Terminal Concurrency Check
     print(f"Testing second terminal connection on port {args.port_second}...")
     try:
-        mt5_2, mode2 = get_mt5_connection(args.host, args.port_second)
+        mt5_2, mode2 = get_mt5_connection(args.host, args.port_second, timeout=10)
         init2 = mt5_2.initialize()
         login2 = mt5_2.login(login=login_int, password=args.password, server=chosen_server)
         if login2:
@@ -402,7 +395,7 @@ def run_spike(args) -> Dict[str, Any]:
                 "allowed": False,
                 "error_code": code2,
                 "message": msg2,
-                "note": "Second login failed or broker rejected concurrent session"
+                "note": "Second login rejected concurrent session"
             }
             print(f"[INFO] Second terminal login returned: ({code2}, {msg2})")
     except Exception as e_second:
@@ -412,14 +405,12 @@ def run_spike(args) -> Dict[str, Any]:
         }
         print(f"[INFO] Second terminal check: {results['second_terminal']['note']}")
 
-    # Step: Demo Balance Reset / Top-up Check
     results["demo_balance_reset"] = {
         "terminal_api_method": "MT5 protocol does not allow client-initiated deposit balance modifications directly via trade API",
         "deriv_site_method": "Deriv Traders Hub / Cashier supports one-click demo top-up to $10,000 when balance falls below threshold",
         "actionable_rule": "Bot treats balance as compounding pool without depending on reset API"
     }
 
-    # Step: 3 Iterations Reliability Test
     print("Running 3-iteration reliability test (login -> sync -> tick fetch -> disconnect)...")
     for i in range(1, 4):
         iter_start = time.time()
@@ -431,7 +422,7 @@ def run_spike(args) -> Dict[str, Any]:
             "iteration": i,
             "success": bool(ok_login and tick_check),
             "elapsed_sec": elapsed,
-            "tick_bid": getattr(tick_check, "bid", None) if tick_check else None
+            "tick_bid": float(getattr(tick_check, "bid", 0.0)) if tick_check else None
         }
         results["iterations"].append(res_entry)
         print(f"  Iteration {i}: success={res_entry['success']}, time={elapsed}s")
@@ -444,12 +435,10 @@ def run_spike(args) -> Dict[str, Any]:
     return results
 
 def write_reports(results: Dict[str, Any], out_md: str, out_json: str):
-    # Save JSON
     with open(out_json, "w") as f:
         json.dump(results, f, indent=2)
     print(f"Saved JSON artifact to {out_json}")
 
-    # Generate Markdown
     acct = results.get("account", {})
     sym_cnt = results.get("symbols_count", {})
     trade = results.get("trade_test", {})
