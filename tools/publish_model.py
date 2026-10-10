@@ -51,7 +51,7 @@ def main():
     ap.add_argument("--version", type=int, required=True)
     ap.add_argument("--token", default=os.environ.get("GITHUB_TOKEN", ""))
     a = ap.parse_args()
-    if not re.match(r"^frx[A-Z]{6}$", a.symbol):
+    if not re.match(r"^(frx[A-Z]{6}|R_\d+|1HZ\d+V)$", a.symbol):
         sys.exit("bad symbol")
     if not a.token:
         sys.exit("no token (env GITHUB_TOKEN or --token)")

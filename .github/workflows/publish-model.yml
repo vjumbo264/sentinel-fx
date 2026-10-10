@@ -30,7 +30,7 @@ jobs:
         run: |
           python3 - <<'EOF'
           import os, re
-          assert re.match(r"^frx[A-Z]{6}$", os.environ["SYMBOL"]), "bad symbol"
+          assert re.match(r"^(frx[A-Z]{6}|R_\d+|1HZ\d+V)$", os.environ["SYMBOL"]), "bad symbol"
           assert os.environ["VERSION"].isdigit(), "bad version"
           EOF
       - uses: actions/checkout@v4

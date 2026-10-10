@@ -1,75 +1,248 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SENTINEL-FX</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.3/lightweight-charts.standalone.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/sodium.min.js"></script>
-<link rel="stylesheet" href="style.css">
-</head><body>
-<header><b>SENTINEL-FX</b><span id="modeBadge"></span><span id="botDot" title="bot status"></span></header>
-<div id="auth" class="card">
-  <h3>Connect</h3>
-  <p class="dim">Paste your GitHub PAT (kept in this browser only).</p>
-  <input id="pat" type="password" placeholder="github_pat_...">
-  <button onclick="connect()">Connect</button>
-  <div id="authMsg" class="dim"></div>
-</div>
-<main id="app" class="hidden">
-  <nav>
-    <button data-p="dash" class="on">Dashboard</button><button data-p="pairs">Pairs</button>
-    <button data-p="upload">Add/Update</button><button data-p="train">Train</button><button data-p="risk">Risk</button>
-    <button data-p="news">News</button><button data-p="logs">Logs</button><button data-p="trades">Trades</button>
-  </nav>
-  <section id="dash" class="page on">
-    <div class="row">
-      <div class="card"><div class="dim" id="balLabel">Balance</div><div id="balance" class="big">—</div></div>
-      <div class="card"><div class="dim">Today PnL (Lagos)</div><div id="pnl" class="big">—</div></div>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>SENTINEL-FX · AI Model Trading System</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.3/lightweight-charts.standalone.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/sodium.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      SENTINEL-FX <span class="sub">MOTIONSALT</span>
     </div>
-    <div class="card">
-      <button id="powerBtn" onclick="togglePower()">BOT ON/OFF</button>
-      <button id="killBtn" class="danger" onclick="toggleKill()">KILL SWITCH</button>
-      <button onclick="toggleMode()">Demo/Real</button>
-      <span id="flags" class="dim"></span>
+    <div class="header-right">
+      <span id="modeBadge" class="mode-pill">DEMO</span>
+      <div class="status-pill">
+        <span id="botDot" class="status-dot"></span>
+        <span id="botStatusText">Connecting</span>
+      </div>
     </div>
-    <div class="card">
-      <div id="pairTabs"></div>
-      <div id="chartStatus" class="dim">chart idle</div>
-      <div id="chart" style="height:300px;min-height:240px"></div>
-    </div>
-  </section>
-  <section id="pairs" class="page"><div id="pairList"></div></section>
-  <section id="upload" class="page">
-    <div class="card">
-      <h3>Upload pair pack (.pairpack.json)</h3>
-      <input type="file" id="packFile" accept=".json">
-      <div id="packReport"></div>
-      <button id="promoteBtn" class="hidden" onclick="promotePack()">PROMOTE (install/activate)</button>
-    </div>
-  </section>
-  <section id="train" class="page"><!-- TRAINUI: Train page fragment (loaded by app.js). -->
-<div class="card">
-  <h3>Train pairs</h3>
-  <div class="dim">Pick pairs, copy the prompt, paste it to any AI. Data is refreshed daily; only stale pairs are refetched.</div>
-  <div id="trainPairs"></div>
-  <label><input type="checkbox" id="keepFresh"> Keep fresh daily</label>
-  <label><input type="checkbox" id="fullRefetch"> Full refetch (re-download all history)</label>
-  <button id="copyPromptBtn">Copy prompt &amp; start</button>
-  <div id="trainStatus" class="dim"></div>
-</div>
-<div class="card">
-  <h3>Publish access (optional)</h3>
-  <div class="dim">Only if you want the AI to upload the model itself. Use a <b>fine-grained</b> GitHub PAT limited to this ONE repository, permissions <b>Contents: Read and write</b> + <b>Actions: Read and write</b> only, expiry 1-7 days, and revoke it afterwards. The value is kept in memory only — never stored. Everything in the copied prompt is visible to the AI you paste it into.</div>
-  <input id="publishPat" type="password" placeholder="github_pat_... (optional)" autocomplete="off">
-</div>
-</section>
-  <section id="risk" class="page"><div class="card" id="riskForm"></div></section>
-  <section id="news" class="page"><div id="newsList"></div></section>
-  <section id="logs" class="page">
-    <div class="card"><select id="logLevel" onchange="loadLogs()">
-      <option value="">all</option><option>info</option><option>warn</option><option>error</option></select>
-      <div id="logList" class="logbox"></div></div>
-  </section>
-  <section id="trades" class="page"><div id="tradeList"></div></section>
-</main>
-<script src="app.js"></script>
-</body></html>
+  </header>
+
+  <!-- Connect Card -->
+  <div id="auth" class="card" style="max-width: 480px; margin: 30px auto;">
+    <h3 style="margin-bottom: 6px;">Connect Terminal</h3>
+    <p class="dim" style="margin-bottom: 12px;">Paste your GitHub PAT (kept in this browser session only).</p>
+    <input id="pat" type="password" placeholder="github_pat_...">
+    <button class="btn btn-primary" style="width: 100%;" onclick="connect()">Connect &amp; Launch</button>
+    <div id="authMsg" class="dim" style="margin-top: 8px;"></div>
+  </div>
+
+  <main id="app" class="hidden">
+    <nav>
+      <button data-p="dash" class="on">Dashboard</button>
+      <button data-p="pairs">Pairs (27)</button>
+      <button data-p="upload">Upload Model</button>
+      <button data-p="train">Train Pairs</button>
+      <button data-p="risk">Risk &amp; Auth</button>
+      <button data-p="news">News &amp; Accuracy</button>
+      <button data-p="logs">Logs</button>
+      <button data-p="trades">Trades</button>
+    </nav>
+
+    <!-- DASHBOARD -->
+    <section id="dash" class="page on">
+      <div class="row">
+        <div class="stat-box">
+          <div class="title" id="balLabel">Balance</div>
+          <div id="balance" class="value">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="title">Today PnL (Lagos)</div>
+          <div id="pnl" class="value">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="title">Win Rate</div>
+          <div id="todayWinRate" class="value">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="title">Trades Today</div>
+          <div id="todayTradesCount" class="value">0</div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="card">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button id="powerBtn" class="btn btn-primary" onclick="togglePower()">BOT POWER</button>
+            <button id="killBtn" class="btn btn-danger" onclick="toggleKill()">KILL SWITCH</button>
+            <button id="modeBtn" class="btn btn-secondary" onclick="toggleMode()">Switch Demo/Real</button>
+          </div>
+          <div id="flags" class="dim"></div>
+        </div>
+      </div>
+
+      <!-- Live Chart -->
+      <div class="card">
+        <div class="filter-bar" id="chartCategoryTabs">
+          <button class="filter-btn active" onclick="setChartCategory('volatility')">Volatility Indices</button>
+          <button class="filter-btn" onclick="setChartCategory('volatility_1s')">1-Second (1s)</button>
+          <button class="filter-btn" onclick="setChartCategory('forex')">Forex Pairs</button>
+        </div>
+        <div id="pairTabs" class="pair-tabs-container"></div>
+        <div id="chartStatus" class="dim">Initializing chart feed...</div>
+        <div id="chart" style="height: 320px; min-height: 250px;"></div>
+      </div>
+    </section>
+
+    <!-- PAIRS TAB -->
+    <section id="pairs" class="page">
+      <div class="card" style="padding: 12px 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <h3 style="margin-bottom: 2px;">Pair Management</h3>
+            <span class="dim">Enable pairs to trade in <b>DEMO MODE</b> anytime. Real mode requires verified models.</span>
+          </div>
+          <div class="filter-bar" style="margin: 0;" id="pairsFilterBar">
+            <button class="filter-btn active" onclick="filterPairsList('all')">All (27)</button>
+            <button class="filter-btn" onclick="filterPairsList('volatility')">Volatility</button>
+            <button class="filter-btn" onclick="filterPairsList('volatility_1s')">1-Second</button>
+            <button class="filter-btn" onclick="filterPairsList('forex')">Forex</button>
+          </div>
+        </div>
+      </div>
+      <div id="pairList" class="pair-grid"></div>
+    </section>
+
+    <!-- UPLOAD MODEL TAB -->
+    <section id="upload" class="page">
+      <div class="card">
+        <h3>Upload Trained Model Bundle (.sfxmodel.zip)</h3>
+        <p class="dim" style="margin-top: 4px; margin-bottom: 14px;">
+          Upload a trained pair model zip bundle containing <code>manifest.json</code>, <code>analysis_plan.json</code>, ONNX or LightGBM models.
+          The bundle will be staged, validated in GitHub Actions full mode, and activated for trading.
+        </p>
+
+        <div class="upload-zone" id="dropZone" onclick="$('modelFile').click()">
+          <div style="font-size: 28px; margin-bottom: 6px;">📦</div>
+          <div style="font-weight: 700; margin-bottom: 4px;">Click to select or drag &amp; drop .sfxmodel.zip</div>
+          <div class="dim">Supports .sfxmodel.zip &amp; .zip model packages</div>
+          <input type="file" id="modelFile" accept=".zip,.sfxmodel.zip" style="display: none;">
+        </div>
+
+        <div id="modelPreview" class="hidden" style="margin-top: 14px;">
+          <div style="padding: 12px; background: #090d16; border-radius: 8px; border: 1px solid var(--border-color);" id="modelInfo"></div>
+          <button id="uploadModelBtn" class="btn btn-primary" style="margin-top: 10px; width: 100%;" onclick="uploadModelBundle()">
+            Upload &amp; Dispatch Full Validation
+          </button>
+        </div>
+
+        <div id="uploadProgress" class="dim" style="margin-top: 12px;"></div>
+      </div>
+    </section>
+
+    <!-- TRAIN TAB -->
+    <section id="train" class="page">
+      <div class="card">
+        <h3>Train Per-Pair AI Models</h3>
+        <p class="dim" style="margin-top: 4px; margin-bottom: 12px;">
+          Select pairs to train, configure contract duration, and copy the prompt to paste into your AI.
+        </p>
+
+        <div class="filter-bar" style="margin-bottom: 8px;">
+          <button class="filter-btn active" onclick="filterTrainCategory('all')">All Pairs</button>
+          <button class="filter-btn" onclick="filterTrainCategory('volatility')">Volatility Indices</button>
+          <button class="filter-btn" onclick="filterTrainCategory('volatility_1s')">1-Second Indices</button>
+          <button class="filter-btn" onclick="filterTrainCategory('forex')">Forex Pairs</button>
+          <button class="filter-btn" style="margin-left: auto;" onclick="selectAllTrain(true)">Select All</button>
+          <button class="filter-btn" onclick="selectAllTrain(false)">Clear</button>
+        </div>
+
+        <div id="trainPairs" style="max-height: 280px; overflow-y: auto; padding: 4px; background: #090d16; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px;"></div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 12px;">
+          <div>
+            <label class="dim" style="font-weight: 600;">Trade Contract Duration:</label>
+            <select id="trainDuration">
+              <option value="60s">1 Minute (60s) - Recommended for Synthetics</option>
+              <option value="15s">15 Seconds (15s) - Fast Synthetics</option>
+              <option value="5s">5 Seconds (5s) - Ultra-Fast Synthetics</option>
+              <option value="5m">5 Minutes (5m) - Momentum Synthetics</option>
+              <option value="15m" selected>15 Minutes (15m) - Forex &amp; Standard</option>
+            </select>
+          </div>
+          <div>
+            <label class="dim" style="font-weight: 600;">Data Refresh Strategy:</label>
+            <div style="display: flex; gap: 12px; margin-top: 10px;">
+              <label style="font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                <input type="checkbox" id="keepFresh" checked> Keep fresh daily
+              </label>
+              <label style="font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                <input type="checkbox" id="fullRefetch"> Full refetch
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <button id="copyPromptBtn" class="btn btn-primary" style="width: 100%; padding: 12px;">
+          Copy Prompt &amp; Start Training Dispatch
+        </button>
+        <div id="trainStatus" class="dim" style="margin-top: 10px;"></div>
+      </div>
+
+      <div class="card">
+        <h3>Autonomous Publish Access (Optional)</h3>
+        <p class="dim" style="margin-top: 4px; margin-bottom: 8px;">
+          If provided, the copied prompt appends an authorization block allowing the AI to publish the finished model directly via <code>tools/publish_model.py</code>.
+          Kept in browser memory only — never stored.
+        </p>
+        <input id="publishPat" type="password" placeholder="github_pat_... (optional fine-grained PAT)" autocomplete="off">
+      </div>
+    </section>
+
+    <!-- RISK & SETTINGS -->
+    <section id="risk" class="page">
+      <div class="card" id="riskForm"></div>
+    </section>
+
+    <!-- NEWS & ACCURACY -->
+    <section id="news" class="page">
+      <div class="card" style="padding: 12px 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <h3 style="margin-bottom: 2px;">Economic Calendar &amp; Historical Accuracy</h3>
+            <span class="dim">Tracks real-time events and verifies if completed news moved market in predicted direction.</span>
+          </div>
+          <div class="filter-bar" style="margin: 0;">
+            <button class="filter-btn active" onclick="filterNewsView('all')">All Events</button>
+            <button class="filter-btn" onclick="filterNewsView('past')">Completed (Verified)</button>
+            <button class="filter-btn" onclick="filterNewsView('upcoming')">Upcoming</button>
+          </div>
+        </div>
+      </div>
+      <div id="newsList"></div>
+    </section>
+
+    <!-- LOGS -->
+    <section id="logs" class="page">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="font-size: 15px;">Bot Runtime Logs</h3>
+          <select id="logLevel" onchange="loadLogs()" style="width: auto; margin: 0; padding: 4px 8px;">
+            <option value="">All Levels</option>
+            <option value="info">Info</option>
+            <option value="warn">Warnings</option>
+            <option value="error">Errors</option>
+          </select>
+        </div>
+        <div id="logList" class="logbox"></div>
+      </div>
+    </section>
+
+    <!-- TRADES -->
+    <section id="trades" class="page">
+      <div class="card">
+        <h3 style="margin-bottom: 10px;">Trade Execution History</h3>
+        <div id="tradeList"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

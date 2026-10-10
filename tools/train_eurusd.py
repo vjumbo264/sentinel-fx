@@ -78,6 +78,8 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--symbol", default="frxEURUSD")
     ap.add_argument("--version", type=int, default=2)
+    ap.add_argument("--duration", type=int, default=None, help="Trade contract duration (minutes or seconds)")
+    ap.add_argument("--duration-unit", choices=["s", "m", "h"], default=None, help="Duration unit (s, m, h)")
     ap.add_argument("--plumbing", action="store_true",
                     help="tiny pipeline-test bundle (labeled; not for trading)")
     a = ap.parse_args()
@@ -98,12 +100,28 @@ def main():
     close = df["close"].to_numpy()
     open_ = df["open"].to_numpy()
     epoch = df["epoch"].to_numpy()
-    # target: entry open of next candle, exit close +15m; tie = loss
+    # Duration configuration: forex floor is 15m; synthetics allow flexible durations (down to 5s)
+    is_fx = a.symbol.startswith("frx")
+    if is_fx:
+        dur = a.duration if a.duration and a.duration >= 15 else 15
+        dur_unit = a.duration_unit or "m"
+    else:
+        dur = a.duration if a.duration is not None else 1
+        dur_unit = a.duration_unit or "m"
+
+    dur_sec = dur * 60 if dur_unit == "m" else (dur * 3600 if dur_unit == "h" else dur)
+    gran = int(epoch[1] - epoch[0]) if len(epoch) > 1 else 60
+    horizon_bars = max(1, round(dur_sec / max(1, gran)))
+    max_label_gap = max(3600, dur_sec * 3)
+
+    print(f"[train] pair={a.symbol} duration={dur}{dur_unit} ({dur_sec}s -> {horizon_bars} bars)", flush=True)
+
+    # target: entry open of next candle, exit close after duration; tie = loss
     y = np.full(n, np.nan)
     valid = np.zeros(n, dtype=bool)
-    for i in range(WARM, n - 16):
-        if epoch[i + 15] - epoch[i + 1] <= 2700:  # no weekend-spanning label
-            y[i] = 1.0 if close[i + 15] > open_[i + 1] else 0.0
+    for i in range(WARM, n - (horizon_bars + 1)):
+        if not is_fx or (epoch[i + horizon_bars] - epoch[i + 1] <= max_label_gap):
+            y[i] = 1.0 if close[i + horizon_bars] > open_[i + 1] else 0.0
             valid[i] = True
     idx_all = np.where(valid)[0][::STEP]
     cut = int(len(idx_all) * 0.8)

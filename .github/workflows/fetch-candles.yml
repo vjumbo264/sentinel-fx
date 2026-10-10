@@ -80,6 +80,8 @@ jobs:
       GRANULARITY: ${{ github.event.inputs.granularity || '60' }}
       MODE: ${{ github.event.inputs.mode || 'incremental' }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DERIV_BEARER_TOKEN: ${{ secrets.DERIV_BEARER_TOKEN }}
+      DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

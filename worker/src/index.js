@@ -11,6 +11,15 @@
  */
 
 const GITHUB_REPO = "vjumbo264/sentinel-fx";
+const ALL_TRACKED = [
+  "frxEURUSD", "frxGBPUSD", "frxUSDJPY", "frxAUDUSD", "frxUSDCAD",
+  "frxUSDCHF", "frxNZDUSD", "frxEURGBP", "frxEURJPY", "frxGBPJPY",
+  "frxEURAUD", "frxAUDJPY", "frxEURCAD", "frxEURCHF",
+  "R_10", "R_25", "R_50", "R_75", "R_100",
+  "1HZ10V", "1HZ25V", "1HZ50V", "1HZ75V", "1HZ100V",
+  "1HZ150V", "1HZ250V", "1HZ300V"
+];
+
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -257,7 +266,22 @@ export default {
         const settings = {};
         const rs = await env.DB.prepare("SELECT key, value FROM settings").all();
         for (const r of rs.results) settings[r.key] = JSON.parse(r.value);
-        const pairs = await env.DB.prepare("SELECT * FROM pairs").all();
+        let pairs = await env.DB.prepare("SELECT * FROM pairs").all();
+        // Ensure all tracked forex and synthetic pairs exist
+        const existingSyms = new Set((pairs.results || []).map(p => p.symbol));
+        let seeded = false;
+        for (const sym of ALL_TRACKED) {
+          if (!existingSyms.has(sym)) {
+            await env.DB.prepare(
+              `INSERT OR IGNORE INTO pairs (symbol, enabled, shadow_mode, status, min_stake, max_stake, stake_pct, max_consec_losses, pack_version, verdict, has_custom_code, updated_utc)
+               VALUES (?, 0, 0, 'ready', 0.35, 10.0, 0.01, 3, 0, 'untested', 0, ?)`
+            ).bind(sym, nowUTC()).run();
+            seeded = true;
+          }
+        }
+        if (seeded) {
+          pairs = await env.DB.prepare("SELECT * FROM pairs").all();
+        }
         const hb = await env.DB.prepare("SELECT * FROM heartbeat WHERE id=1").first();
         const today = await env.DB.prepare("SELECT * FROM daily_stats WHERE lagos_date=?")
           .bind(lagosDate()).first();
@@ -280,7 +304,7 @@ export default {
 
       if (path === "/api/pairs/update" && method === "POST") {
         const body = await request.json();
-        const allowed = ["enabled", "shadow_mode", "min_stake", "max_stake", "stake_pct",
+        const allowed = ["enabled", "shadow_mode", "duration", "duration_unit", "min_stake", "max_stake", "stake_pct",
                          "daily_loss_cap", "daily_target", "max_consec_losses", "status"];
         const sets = [], vals = [];
         for (const k of allowed) {
@@ -301,6 +325,54 @@ export default {
         const models = await env.DB.prepare("SELECT * FROM models ORDER BY version DESC").all().catch(() => ({ results: [] }));
         const fwd = await env.DB.prepare("SELECT * FROM forward_metrics").all().catch(() => ({ results: [] }));
         return json({ pairs: pairs.results, packs: packs.results, models: models.results, forward: fwd.results });
+      }
+
+            if (path === "/api/upload/staging-asset" && method === "POST") {
+        const name = url.searchParams.get("name");
+        if (!name) return err("missing name parameter");
+        const token = siteAuth.token;
+        let relRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/tags/staging`, {
+          headers: { Authorization: `token ${token}`, "User-Agent": "sentinel-fx-worker", Accept: "application/vnd.github+json" }
+        });
+        let relData;
+        if (!relRes.ok) {
+          const createRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases`, {
+            method: "POST",
+            headers: { Authorization: `token ${token}`, "User-Agent": "sentinel-fx-worker", Accept: "application/vnd.github+json", "Content-Type": "application/json" },
+            body: JSON.stringify({ tag_name: "staging", name: "staging", body: "Staging area for model bundles." })
+          });
+          relData = await createRes.json();
+        } else {
+          relData = await relRes.json();
+        }
+        if (!relData || !relData.id) return err("could not find or create staging release");
+
+        for (const asset of (relData.assets || [])) {
+          if (asset.name === name) {
+            await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/assets/${asset.id}`, {
+              method: "DELETE",
+              headers: { Authorization: `token ${token}`, "User-Agent": "sentinel-fx-worker" }
+            });
+          }
+        }
+
+        const bodyBytes = await request.arrayBuffer();
+        const uploadRes = await fetch(`https://uploads.github.com/repos/${GITHUB_REPO}/releases/${relData.id}/assets?name=${encodeURIComponent(name)}`, {
+          method: "POST",
+          headers: {
+            Authorization: `token ${token}`,
+            "User-Agent": "sentinel-fx-worker",
+            "Content-Type": "application/zip",
+            "Content-Length": String(bodyBytes.byteLength)
+          },
+          body: bodyBytes
+        });
+        if (!uploadRes.ok) {
+          const t = await uploadRes.text();
+          return err(`GitHub asset upload failed (${uploadRes.status}): ${t}`);
+        }
+        const assetJson = await uploadRes.json();
+        return json({ ok: true, asset: assetJson });
       }
 
       if (path === "/api/packs/register" && method === "POST") {
@@ -368,7 +440,10 @@ export default {
       if (path === "/api/news" && method === "GET") {
         const r = await env.DB.prepare(
           "SELECT * FROM news_events WHERE utc_time >= ? ORDER BY utc_time"
-        ).bind(new Date(Date.now() - 86400e3).toISOString().slice(0, 10) + "T00:00:00Z").all();
+        ).bind(new Date(Date.now() - 86400e3 * 3).toISOString().slice(0, 10) + "T00:00:00Z").all();
+        const rx = await env.DB.prepare(
+          "SELECT * FROM news_reactions ORDER BY id DESC LIMIT 500"
+        ).all().catch(() => ({ results: [] }));
         const cache = await env.DB.prepare("SELECT value FROM settings WHERE key='news_cache'").first();
         let newsMeta = null;
         if (cache) {
@@ -380,7 +455,7 @@ export default {
         } else {
           newsMeta = { fetched_utc: null, stale: true };
         }
-        return json({ events: r.results, meta: newsMeta });
+        return json({ events: r.results, reactions: rx.results || [], meta: newsMeta });
       }
 
       if (path === "/api/stats/daily" && method === "GET") {

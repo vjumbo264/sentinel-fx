@@ -17,7 +17,7 @@ from . import rules as _rules
 from . import models as _models
 from . import sandbox as _sandbox
 
-SYMBOL_RE = r"^frx[A-Z]{6}$"
+SYMBOL_RE = r"^(frx[A-Z]{6}|R_\d+|1HZ\d+V)$"
 MAX_PACK_BYTES = 20 * 1024 * 1024
 
 

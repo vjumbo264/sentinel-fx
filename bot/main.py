@@ -144,6 +144,35 @@ def request_otp_url(loginid: str) -> str:
 
 # ---------------- Deriv websocket session -----------------------------------
 
+
+def normalise_duration(symbol: str, duration=None, duration_unit=None) -> tuple[int, str]:
+    """
+    Forex (frx*) requires >= 15m intraday floor on Deriv.
+    Synthetic indices (R_*, 1HZ*V) allow any duration below 15m (down to 5s, 15s, 60s, 1m, 2m, etc.).
+    """
+    is_fx = symbol.startswith("frx")
+    if is_fx:
+        unit = str(duration_unit or "m").lower()
+        dur = int(duration or 15)
+        if unit == "s":
+            mins = dur / 60.0
+            return max(15, int(mins)), "m"
+        elif unit == "m":
+            return max(15, dur), "m"
+        elif unit in ("h", "d"):
+            return dur, unit
+        return 15, "m"
+    else:
+        unit = str(duration_unit or "m").lower() if duration_unit else "m"
+        dur = int(duration) if duration else 1
+        if unit == "s":
+            return max(5, dur), "s"
+        elif unit == "m":
+            return max(1, dur), "m"
+        elif unit == "t":
+            return max(5, dur), "t"
+        return dur, unit
+
 class DerivSession:
     """One authenticated websocket. OTP URLs are single-use, so every
     (re)connect requests a fresh account list and a NEW otp."""
@@ -211,11 +240,12 @@ class DerivSession:
         cs = r.get("candles", [])
         return pd.DataFrame(cs) if cs else pd.DataFrame()
 
-    async def propose_and_buy(self, symbol, side, stake):
+    async def propose_and_buy(self, symbol, side, stake, duration=None, duration_unit=None):
+        dur, dur_u = normalise_duration(symbol, duration, duration_unit)
         prop = await self.rpc({
             "proposal": 1, "amount": round(stake, 2), "basis": "stake",
-            "contract_type": side, "currency": "USD", "duration": 15,
-            "duration_unit": "m", "symbol": symbol})
+            "contract_type": side, "currency": "USD", "duration": dur,
+            "duration_unit": dur_u, "underlying_symbol": symbol})
         if "error" in prop:
             return {"error": prop["error"].get("message", "proposal error")}
         pid = prop["proposal"]["id"]
@@ -520,18 +550,24 @@ class Bot:
 
         for p in self.state.get("pairs", []):
             sym = p["symbol"]
-            if not p.get("enabled") and not p.get("shadow_mode", 1):
+            # Any enabled pair is allowed to trade in DEMO mode;
+            # in REAL mode only models meeting pass requirements are allowed.
+            if not p.get("enabled"):
                 continue
             if sym not in packs:
                 continue
             pack, _ = packs[sym]
+
+            if self.sess.mode == "real" and p.get("verdict") != "pass":
+                log("warn", sym, f"model did not meet pass requirements (verdict={p.get('verdict')}); real mode trading blocked (demo only)")
+                continue
+
             try:
                 df = await self.sess.fetch_candles(sym, count=500)
                 if df.empty or len(df) < 100:
                     continue
                 news_ctx = self.news_ctx_for(sym, "CALL")
                 dec = pack.decide(df, news_ctx)
-                # recompute news_state for the ACTUAL side
                 news_ctx2 = self.news_ctx_for(sym, dec["side"] or "CALL")
                 if news_ctx2["news_state"] != news_ctx["news_state"]:
                     dec = pack.decide(df, news_ctx2)
@@ -547,10 +583,21 @@ class Bot:
                 if bal < MIN_STAKE or stake < MIN_STAKE:
                     log("warn", sym, f"balance {bal:.2f} too low; pausing")
                     continue
+
+                # Determine duration from pair settings or bundle
+                req_dur = p.get("duration")
+                req_unit = p.get("duration_unit")
+                if not req_dur and hasattr(pack, "bundle") and getattr(pack, "bundle", None):
+                    b = pack.bundle
+                    d_cfg = getattr(b, "decision", {})
+                    req_dur = d_cfg.get("duration") or d_cfg.get("duration_sec") or d_cfg.get("horizon_min")
+                    req_unit = d_cfg.get("duration_unit") or ("s" if "duration_sec" in d_cfg else "m")
+                dur, dur_u = normalise_duration(sym, req_dur, req_unit)
+
                 prop = await self.sess.rpc({
                     "proposal": 1, "amount": stake, "basis": "stake",
                     "contract_type": dec["side"], "currency": "USD",
-                    "duration": 15, "duration_unit": "m", "symbol": sym})
+                    "duration": dur, "duration_unit": dur_u, "underlying_symbol": sym})
                 if "error" in prop:
                     log("warn", sym,
                         f"proposal error: {prop['error'].get('message')}")
@@ -564,19 +611,10 @@ class Bot:
                         {"live_payout": live_payout})
                     continue
 
-                if p.get("shadow_mode", 1) or not p.get("enabled"):
-                    http("POST", "/api/bot/shadow", {
-                        "pair": sym, "side": dec["side"], "stake": stake,
-                        "entry_price": float(df["close"].iloc[-1]),
-                        "model_prob": dec["prob"], "reason": reasons})
-                    log("info", sym,
-                        f"shadow {dec['side']} @ {df['close'].iloc[-1]} "
-                        f"prob={dec['prob']:.3f}")
-                    continue
                 if time.time() >= stop_open_at:
                     log("info", sym, "near end-of-run; not opening")
                     continue
-                buy = await self.sess.propose_and_buy(sym, dec["side"], stake)
+                buy = await self.sess.propose_and_buy(sym, dec["side"], stake, dur, dur_u)
                 if "error" in buy:
                     log("warn", sym, f"buy failed: {buy['error']}")
                     continue
@@ -586,8 +624,8 @@ class Bot:
                     "payout": buy["payout"], "mode": self.sess.mode,
                     "model_prob": dec["prob"],
                     "news_flag": news_ctx.get("news_state"), "reason": reasons})
-                log("info", sym, f"LIVE {dec['side']} stake={buy['stake']} "
-                                 f"contract={buy['contract_id']}")
+                log("info", sym, f"TRADE {self.sess.mode.upper()} {dec['side']} {dur}{dur_u} stake={buy['stake']} contract={buy['contract_id']}")
+
             except (websockets.exceptions.WebSocketException, OSError,
                     asyncio.TimeoutError):
                 raise  # supervisor handles reconnects

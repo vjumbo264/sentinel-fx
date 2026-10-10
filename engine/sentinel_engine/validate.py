@@ -190,8 +190,19 @@ def _check_schema(pack: dict, rep: Report):
     if float(dec.get("margin", 0)) < 0:
         rep.add("schema", "fail", "margin must be >= 0")
         return
-    if int(dec.get("horizon_min", 0)) != 15:
-        rep.add("schema", "fail", "horizon_min must be 15 (Deriv forex minimum)")
+    sym = str(pack.get("symbol", ""))
+    is_fx = sym.startswith("frx")
+    h_min = int(dec.get("horizon_min", 0) or 0)
+    dur = int(dec.get("duration", 0) or 0)
+    if is_fx:
+        if h_min != 15 and dur != 15:
+            rep.add("schema", "fail", "horizon_min must be 15 for forex (Deriv forex minimum)")
+    else:
+        h_sec = int(dec.get("horizon_sec", 0) or 0)
+        dur_u = dec.get("duration_unit", "m")
+        total_s = h_sec or (h_min * 60) or (dur * 60 if dur_u == "m" else dur)
+        if total_s < 5:
+            rep.add("schema", "fail", "synthetic duration must be at least 5 seconds")
         return
     if float(risk.get("max_stake_suggested", 0)) < MIN_STAKE_FLOOR:
         rep.add("schema", "fail", f"max_stake_suggest below {MIN_STAKE_FLOOR}")

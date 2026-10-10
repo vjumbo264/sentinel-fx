@@ -9,8 +9,12 @@ Inputs: PAIR_SYMBOLS (e.g. frxEURUSD), optional PAYOUT_ASSUMPTION (default
 existing v<N>".
 
 ## Facts you must respect
-- Deriv forex (frx*) binaries: 15-minute minimum. Target: entry at the open of
-  the candle after the decision, exit at the close 15 minutes later, tie = loss.
+- Deriv forex (frx*) binaries: 15-minute minimum duration floor.
+- Deriv synthetic indices (Volatility Indices R_10/25/50/75/100 and 1-second variants 1HZ10V/25V/50V/75V/100V/150V/250V/300V):
+  Trade 24/7/365 with NO weekend gaps. Flexible durations from 5 seconds and up (e.g. 5s, 15s, 30s, 60s, 1m, 2m, 5m, etc.).
+  Target horizon is dynamic: horizon_bars = max(1, round(duration_sec / candle_granularity_sec)).
+  Store "duration" and "duration_unit" in decision.json and manifest.json.
+- Demo vs Real: Shadow mode is removed. Any model can be traded live in DEMO mode so the owner can test it on Deriv demo account. Real mode is strictly guarded for models that passed full validation.
 - Honesty: a failing backtest is verdict "fail", never massaged. If you lack
   network or compute for a proper run, SAY SO — never invent numbers, never
   call synthetic data real.

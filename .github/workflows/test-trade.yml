@@ -1,0 +1,137 @@
+name: test-trade
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: "Synthetic symbol (e.g. R_100, 1HZ100V, R_50)"
+        required: false
+        default: "R_100"
+      duration:
+        description: "Duration (e.g. 60s, 1m, 15s)"
+        required: false
+        default: "60"
+      duration_unit:
+        description: "s or m"
+        required: false
+        default: "s"
+
+jobs:
+  test_demo_trade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DERIV_BEARER_TOKEN: ${{ secrets.DERIV_BEARER_TOKEN }}
+      DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
+      SYMBOL: ${{ github.event.inputs.symbol || 'R_100' }}
+      DURATION: ${{ github.event.inputs.duration || '60' }}
+      DURATION_UNIT: ${{ github.event.inputs.duration_unit || 's' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install dependencies
+        run: pip install --quiet websockets
+      - name: Execute Live Demo Trade Test on Deriv Synthetic Index
+        run: |
+          python3 - <<'PYEOF'
+          import asyncio, json, os, urllib.request, websockets
+
+          token = os.environ.get("DERIV_BEARER_TOKEN", "")
+          app_id = os.environ.get("DERIV_APP_ID", "")
+          symbol = os.environ.get("SYMBOL", "R_100")
+          dur = int(os.environ.get("DURATION", "60"))
+          dur_u = os.environ.get("DURATION_UNIT", "s")
+
+          print(f"Testing live demo trade on synthetic index {symbol} with duration {dur}{dur_u}...")
+
+          # 1. Fetch accounts
+          req = urllib.request.Request(
+              "https://api.derivws.com/trading/v1/options/accounts",
+              headers={
+                  "Authorization": f"Bearer {token}",
+                  "Deriv-App-ID": app_id,
+                  "Accept": "application/json",
+                  "User-Agent": "sentinel-trade-tester/1.0"
+              }
+          )
+          with urllib.request.urlopen(req, timeout=20) as r:
+              accs = json.loads(r.read().decode()).get("data", [])
+          demo_acc = next((a for a in accs if a.get("account_type") == "demo"), None)
+          if not demo_acc:
+              raise SystemExit("No demo account found on Deriv token")
+          
+          loginid = demo_acc.get("account_id") or demo_acc.get("loginid")
+          print(f"Connected to demo account: {loginid[:3]}*** ({demo_acc.get('currency', 'USD')})")
+
+          # 2. Request OTP
+          req_otp = urllib.request.Request(
+              f"https://api.derivws.com/trading/v1/options/accounts/{loginid}/otp",
+              data=b"{}",
+              method="POST",
+              headers={
+                  "Authorization": f"Bearer {token}",
+                  "Deriv-App-ID": app_id,
+                  "Content-Type": "application/json",
+                  "Accept": "application/json",
+                  "User-Agent": "sentinel-trade-tester/1.0"
+              }
+          )
+          with urllib.request.urlopen(req_otp, timeout=20) as r:
+              otp_url = json.loads(r.read().decode())["data"]["url"]
+
+          async def run():
+              async with websockets.connect(otp_url, ping_interval=20, ping_timeout=20) as ws:
+                  print("WebSocket connected via OTP URL.")
+                  
+                  # Balance
+                  await ws.send(json.dumps({"balance": 1, "req_id": 1}))
+                  bal_res = json.loads(await ws.recv())
+                  cur_bal = bal_res.get("balance", {}).get("balance", 0)
+                  print(f"Demo Balance: ${cur_bal:.2f}")
+
+                  # Proposal with underlying_symbol and duration
+                  print(f"Sending proposal for {symbol} CALL duration={dur}{dur_u} stake=0.35...")
+                  prop_req = {
+                      "proposal": 1,
+                      "amount": 0.35,
+                      "basis": "stake",
+                      "contract_type": "CALL",
+                      "currency": "USD",
+                      "duration": dur,
+                      "duration_unit": dur_u,
+                      "underlying_symbol": symbol,
+                      "req_id": 2
+                  }
+                  await ws.send(json.dumps(prop_req))
+                  prop_res = json.loads(await ws.recv())
+                  if "error" in prop_res:
+                      print("PROPOSAL ERROR:", prop_res["error"])
+                      raise RuntimeError(f"Proposal failed: {prop_res['error'].get('message')}")
+                  
+                  prop = prop_res.get("proposal", {})
+                  pid = prop.get("id")
+                  payout = prop.get("payout")
+                  ask = prop.get("ask_price")
+                  print(f"PROPOSAL SUCCESS! ID={pid}, ask=${ask}, payout=${payout}")
+
+                  # Buy trade on demo
+                  print(f"Placing demo buy on Deriv...")
+                  buy_req = {
+                      "buy": pid,
+                      "price": 0.35,
+                      "req_id": 3
+                  }
+                  await ws.send(json.dumps(buy_req))
+                  buy_res = json.loads(await ws.recv())
+                  if "error" in buy_res:
+                      print("BUY ERROR:", buy_res["error"])
+                      raise RuntimeError(f"Buy failed: {buy_res['error'].get('message')}")
+                  
+                  contract_id = buy_res.get("buy", {}).get("contract_id")
+                  longcode = buy_res.get("buy", {}).get("longcode")
+                  print(f"TRADE PLACED SUCCESSFULLY ON DEMO!")
+                  print(f"Contract ID: {contract_id}")
+                  print(f"Description: {longcode}")
+
+          asyncio.run(run())
+          PYEOF

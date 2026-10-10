@@ -41,7 +41,26 @@ def replay(bundle, candles, news_events=None, payout: float = 0.85,
     n = len(df)
     warm = 120
     trades, equity, curve = [], 0.0, []
-    for i in range(warm, n - 16, decision_every):
+    gran = 60
+    if len(df) > 1:
+        diff = int(df["epoch"].iloc[1] - df["epoch"].iloc[0])
+        if diff > 0:
+            gran = diff
+    dur_s = 900
+    if hasattr(bundle, "decision") and bundle.decision:
+        d = bundle.decision
+        if "duration_sec" in d:
+            dur_s = int(d["duration_sec"])
+        elif "horizon_sec" in d:
+            dur_s = int(d["horizon_sec"])
+        elif "horizon_min" in d:
+            dur_s = int(d["horizon_min"]) * 60
+        elif "duration" in d:
+            unit = d.get("duration_unit", "m")
+            dur_s = int(d["duration"] * 60 if unit == "m" else (d["duration"] * 3600 if unit == "h" else d["duration"]))
+    horizon_bars = max(1, round(dur_s / gran))
+
+    for i in range(warm, n - (horizon_bars + 1), decision_every):
         ctx = {}
         if news_events:
             t = pd.to_datetime(df["epoch"].iloc[i], unit="s", utc=True).to_pydatetime()
@@ -59,7 +78,7 @@ def replay(bundle, candles, news_events=None, payout: float = 0.85,
         if min_conf is not None and (pwin is None or pwin < min_conf):
             continue
         entry = float(df["open"].iloc[i + 1])
-        exitp = float(df["close"].iloc[i + 15])
+        exitp = float(df["close"].iloc[i + horizon_bars])
         side = dec["side"]
         win = (side == "CALL" and exitp > entry) or (side == "PUT" and exitp < entry)
         if exitp == entry:
