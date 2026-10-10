@@ -1,0 +1,51 @@
+name: MT5 Stack Spike Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      server:
+        description: 'MT5 Server name'
+        required: false
+        default: 'Deriv-Demo'
+
+jobs:
+  spike:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run MT5 Spike Runner
+        env:
+          MT5_DEMO_LOGIN: ${{ secrets.MT5_DEMO_LOGIN }}
+          MT5_PASSWORD: ${{ secrets.MT5_PASSWORD }}
+          MT5_DEMO_SERVER: ${{ github.event.inputs.server || secrets.MT5_DEMO_SERVER || 'Deriv-Demo' }}
+        run: |
+          bash tools/run_spike_in_actions.sh
+
+      - name: Upload Spike Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mt5-spike-artifacts
+          path: |
+            docs/mt5-spike.md
+            mt5_spike_result.json
+
+      - name: Commit and Push Spike Report
+        if: always()
+        run: |
+          git config user.name "Victor Jumbo (Sentinel Builder)"
+          git config user.email "jumbovictor700@gmail.com"
+          if [ -f docs/mt5-spike.md ]; then
+            git add docs/mt5-spike.md
+            git commit -m "docs: record MT5 stack spike proof report [skip ci]" || true
+            git push origin main || true
+          fi
