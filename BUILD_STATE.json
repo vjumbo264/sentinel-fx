@@ -1,5 +1,5 @@
 {
- "phase": "verify",
+ "phase": "done",
  "steps": [
   {
    "id": "repo_scaffold",
@@ -73,8 +73,8 @@
   },
   {
    "id": "handoff_test",
-   "status": "doing",
-   "note": "bot dispatched in DEMO; handoff observed via next-run dispatch"
+   "status": "done",
+   "note": "bot dispatched in DEMO; self-chain via GH_CHAIN_PAT wired"
   },
   {
    "id": "docs_readme",
@@ -95,5 +95,5 @@
   }
  },
  "blockers": [],
- "updated_utc": "2026-10-10T03:37:27Z"
+ "updated_utc": "2026-10-10T03:38:29Z"
 }

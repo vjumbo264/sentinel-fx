@@ -176,7 +176,7 @@ def validate_dsl(dsl: list) -> list[str]:
     problems = []
     if not isinstance(dsl, list):
         return ["dsl must be a list"]
-    seen = set(["open", "high", "low", "close"])
+    seen = set(["open", "high", "low", "close", "hour_sin", "hour_cos", "dow_sin", "dow_cos", "sess_asia", "sess_london", "sess_ny", "hour_utc"])
     allowed = set(_CANDLE_OPS) | set(_SERIES_OPS) | set(_ARITH) | set(_CMP) | set(_LOGIC) | {"const"}
     for node in dsl:
         nid, op = node.get("id"), node.get("op")
