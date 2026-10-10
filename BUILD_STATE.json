@@ -1,5 +1,5 @@
 {
- "phase": "worker",
+ "phase": "bot",
  "steps": [
   {
    "id": "repo_scaffold",
@@ -43,13 +43,13 @@
   },
   {
    "id": "worker_d1",
-   "status": "doing",
-   "note": "worker deployed; schema apply pending (PRAGMA fix)"
+   "status": "done",
+   "note": "worker live, schema applied, settings seeded"
   },
   {
    "id": "site_pages",
-   "status": "doing",
-   "note": "site written; Pages deploy pending"
+   "status": "done",
+   "note": "deployed to Cloudflare Pages"
   },
   {
    "id": "bot_workflow",
@@ -84,10 +84,10 @@
  ],
  "deployed": {
   "worker_url": "https://sentinel-fx-worker.vjumbo264.workers.dev",
-  "pages_url": "",
+  "pages_url": "https://sentinel-fx.pages.dev",
   "d1_id": "5e272a6b-ad11-4bd6-bd61-70569c9f74f6"
  },
  "pairs": {},
  "blockers": [],
- "updated_utc": "2026-10-10T03:31:25Z"
+ "updated_utc": "2026-10-10T03:32:42Z"
 }
