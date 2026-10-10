@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "run_utc": "2026-10-10T17:34:00Z",
+    "account": "DOT93176227",
+    "mode": "demo",
+    "symbol": "R_10",
+    "durations": "60",
+    "call_ok": true,
+    "put_ok": true,
+    "start_balance": 10000.0,
+    "end_balance": 9999.92
+  },
+  "results": [
+    {
+      "symbol": "R_10",
+      "side": "CALL",
+      "duration": 60,
+      "duration_unit": "s",
+      "stake": 0.35,
+      "open_utc": "2026-10-10T17:31:54Z",
+      "status": "settled",
+      "proposal_id": "6670c2f9-ef77-f907-b6ad-d0f47f6181d9",
+      "ask_price": 0.35,
+      "payout": 0.62,
+      "contract_id": "16418107359",
+      "buy_price": 0.35,
+      "exit_price": 0.62,
+      "profit": 0.27,
+      "result": "win",
+      "close_utc": "2026-10-10T17:32:57Z"
+    },
+    {
+      "symbol": "R_10",
+      "side": "PUT",
+      "duration": 60,
+      "duration_unit": "s",
+      "stake": 0.35,
+      "open_utc": "2026-10-10T17:32:57Z",
+      "status": "settled",
+      "proposal_id": "9e38fecf-b19d-df49-8771-648dc6110932",
+      "ask_price": 0.35,
+      "payout": 0.62,
+      "contract_id": "16418214839",
+      "buy_price": 0.35,
+      "exit_price": 0.0,
+      "profit": -0.35,
+      "result": "loss",
+      "close_utc": "2026-10-10T17:33:59Z"
+    }
+  ]
+}
