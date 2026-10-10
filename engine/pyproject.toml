@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinel-engine"
+version = "1.0.0"
+description = "SENTINEL-FX engine: causal indicators, feature DSL, rule layer, model loaders, sandboxed custom code, decision pipeline"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "pandas>=2.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sentinel_engine*"]
