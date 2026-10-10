@@ -127,6 +127,12 @@ class Bundle:
         self.training_report = (json.loads(self.zf.read("training_report.json"))
                                 if "training_report.json" in self.zf.namelist() else {})
         self._models = {}
+        for n in self.plan.get("nodes", []):
+            if n.get("model") and n["model"] in self.zf.namelist():
+                try:
+                    self.model(n["model"])
+                except Exception:
+                    pass
 
     def model(self, name: str):
         if name in self._models:
