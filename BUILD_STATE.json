@@ -104,7 +104,7 @@
   {
    "id": "FIX-D",
    "status": "doing",
-   "note": "/api/candles deployed + auth-gated. Workers outbound WS to Deriv rejected (bare and with header-init, which is invalid in Workers). Site chart has its own direct-Deriv fallback so chart still renders; Worker proxy remains a next-session item (fetch-upgrade form).",
+   "note": "/api/candles deployed, auth-gated. Deriv rejects Workers outbound WS (bare form, and header-init is invalid in Workers - reverted). Chart unaffected: site renders via direct-Deriv path. Remaining: fetch-upgrade form with Origin/UA headers.",
    "evidence": "site/app.js chart rewritten per aurelia miniapp (status line, sorted candles, adjust_start_time, msg.error, reconnect backoff, market-closed state, trade markers, ResizeObserver)"
   },
   {
@@ -185,8 +185,8 @@
   },
   {
    "id": "BUYTEST",
-   "status": "doing",
-   "note": "Two runs failed. Run1: OTP 404 (fixed to accounts/{loginid}/otp). Run2 error pulled to repo notes; tooling committed, re-runnable: gh workflow run buy-test.yml. Next session: one more fix iteration then evidence lands in docs/."
+   "status": "blocked",
+   "note": "BLOCKED on credential: run1 OTP path 404 (fixed to proven accounts/{loginid}/otp); run2 OTP call now returns HTTP 401 - DERIV_BEARER_TOKEN repo secret rejected by Deriv REST from Actions, though fetch-candles auth-otp path succeeded earlier today (13:31). Suspect token rotation/scope or secret value drift. Tooling committed; finish with: gh workflow run buy-test.yml (after confirming DERIV_BEARER_TOKEN secret)."
   },
   {
    "id": "RESET",
@@ -213,5 +213,5 @@
   }
  },
  "blockers": [],
- "updated_utc": "2026-10-10T16:55:45Z"
+ "updated_utc": "2026-10-10T16:56:16Z"
 }
