@@ -1,0 +1,15 @@
+<!-- TRAINUI: Train page fragment (loaded by app.js). -->
+<div class="card">
+  <h3>Train pairs</h3>
+  <div class="dim">Pick pairs, copy the prompt, paste it to any AI. Data is refreshed daily; only stale pairs are refetched.</div>
+  <div id="trainPairs"></div>
+  <label><input type="checkbox" id="keepFresh"> Keep fresh daily</label>
+  <label><input type="checkbox" id="fullRefetch"> Full refetch (re-download all history)</label>
+  <button id="copyPromptBtn">Copy prompt &amp; start</button>
+  <div id="trainStatus" class="dim"></div>
+</div>
+<div class="card">
+  <h3>Publish access (optional)</h3>
+  <div class="dim">Only if you want the AI to upload the model itself. Use a <b>fine-grained</b> GitHub PAT limited to this ONE repository, permissions <b>Contents: Read and write</b> + <b>Actions: Read and write</b> only, expiry 1-7 days, and revoke it afterwards. The value is kept in memory only — never stored. Everything in the copied prompt is visible to the AI you paste it into.</div>
+  <input id="publishPat" type="password" placeholder="github_pat_... (optional)" autocomplete="off">
+</div>

@@ -17,7 +17,7 @@
 <main id="app" class="hidden">
   <nav>
     <button data-p="dash" class="on">Dashboard</button><button data-p="pairs">Pairs</button>
-    <button data-p="upload">Add/Update</button><button data-p="risk">Risk</button>
+    <button data-p="upload">Add/Update</button><button data-p="train">Train</button><button data-p="risk">Risk</button>
     <button data-p="news">News</button><button data-p="logs">Logs</button><button data-p="trades">Trades</button>
   </nav>
   <section id="dash" class="page on">
@@ -46,6 +46,22 @@
       <button id="promoteBtn" class="hidden" onclick="promotePack()">PROMOTE (install/activate)</button>
     </div>
   </section>
+  <section id="train" class="page"><!-- TRAINUI: Train page fragment (loaded by app.js). -->
+<div class="card">
+  <h3>Train pairs</h3>
+  <div class="dim">Pick pairs, copy the prompt, paste it to any AI. Data is refreshed daily; only stale pairs are refetched.</div>
+  <div id="trainPairs"></div>
+  <label><input type="checkbox" id="keepFresh"> Keep fresh daily</label>
+  <label><input type="checkbox" id="fullRefetch"> Full refetch (re-download all history)</label>
+  <button id="copyPromptBtn">Copy prompt &amp; start</button>
+  <div id="trainStatus" class="dim"></div>
+</div>
+<div class="card">
+  <h3>Publish access (optional)</h3>
+  <div class="dim">Only if you want the AI to upload the model itself. Use a <b>fine-grained</b> GitHub PAT limited to this ONE repository, permissions <b>Contents: Read and write</b> + <b>Actions: Read and write</b> only, expiry 1-7 days, and revoke it afterwards. The value is kept in memory only — never stored. Everything in the copied prompt is visible to the AI you paste it into.</div>
+  <input id="publishPat" type="password" placeholder="github_pat_... (optional)" autocomplete="off">
+</div>
+</section>
   <section id="risk" class="page"><div class="card" id="riskForm"></div></section>
   <section id="news" class="page"><div id="newsList"></div></section>
   <section id="logs" class="page">
