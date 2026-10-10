@@ -419,6 +419,11 @@ def _check_sanity(pack: dict, df: pd.DataFrame, rep: Report):
 
 
 def main(argv=None):
+    import sys
+    args_list = argv if argv is not None else sys.argv[1:]
+    if any(a.endswith(".zip") for a in args_list):
+        from .validate_bundle import main as bundle_main
+        return bundle_main(args_list)
     ap = argparse.ArgumentParser(description="SENTINEL-FX pair-pack validator")
     ap.add_argument("pack")
     ap.add_argument("--mode", choices=["fast", "full"], default="full")
