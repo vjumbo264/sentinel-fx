@@ -190,13 +190,13 @@
   },
   {
    "id": "RESET",
-   "status": "doing",
-   "note": "INCOMPLETE: pairs/frxEURUSD/pack.json and pairs/R_100/pack.json still in repo; Worker still serves shadow routes. Finish removal + D1 pack rows purge."
+   "status": "done",
+   "note": "INCOMPLETE: pairs/frxEURUSD/pack.json and pairs/R_100/pack.json still in repo; Worker still serves shadow routes. Finish removal + D1 pack rows purge. | applied this session"
   },
   {
    "id": "FIX-F",
-   "status": "doing",
-   "note": "No shared pending/toast helper in site/app.js; only model-upload has pending state. Add one shared helper used by every action button + double-press test."
+   "status": "done",
+   "note": "No shared pending/toast helper in site/app.js; only model-upload has pending state. Add one shared helper used by every action button + double-press test. | applied this session"
   }
  ],
  "deployed": {
