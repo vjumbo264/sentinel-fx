@@ -217,6 +217,28 @@ async function toggleMode() {
   refresh();
 }
 
+async function runBuyTest() {
+  const btn = $("buyTestBtn");
+  await sfxBusy(btn, async () => {
+    const res = await gh(`/repos/${REPO}/actions/workflows/buy-test.yml/dispatches`, {
+      method: "POST",
+      body: {
+        ref: "main",
+        inputs: { symbol: curPair || "R_10", durations: "60" }
+      }
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Failed to dispatch buy test: ${err}`);
+    }
+    return res;
+  }, {
+    pending: "Testing buy...",
+    ok: "Demo buy test dispatched! Watch Actions and Trades table.",
+    err: "Buy test dispatch failed"
+  });
+}
+
 // Reset Demo Balance
 async function resetDemoBalance() {
   if (!confirm("Reset Deriv demo balance to $10,000.00 and clear today's PnL session stats?")) return;
@@ -810,7 +832,6 @@ async function copyTrainPrompt() {
     return;
   }
 
-  const selectedDuration = $("trainDuration").value;
   let tpl = "";
   try {
     tpl = await (await fetch(`https://raw.githubusercontent.com/${REPO}/main/TRAIN_PROMPT.md`)).text();
@@ -819,8 +840,12 @@ async function copyTrainPrompt() {
   }
 
   let prompt = tpl + `\n\n## RUN PARAMETERS\nPAIR_SYMBOLS:\n` +
-    chosen.map(s => `- ${s} (${PAIR_METADATA[s]?.name || s})`).join("\n") +
-    `\nTRADE_DURATION: ${selectedDuration}\nPAYOUT_ASSUMPTION: 0.85\n`;
+    chosen.map(s => {
+      const isFx = s.startsWith("frx");
+      const durs = isFx ? "15m and above (Deriv intraday floor)" : "Deriv allowed durations (seconds, minutes)";
+      return `- ${s} (${PAIR_METADATA[s]?.name || s}) | Allowed Durations: ${durs}`;
+    }).join("\n") +
+    `\nOBJECTIVE: Compounding Balance Growth (model reasons about duration and stake)\nPAYOUT_ASSUMPTION: 0.85\n`;
 
   const pat = $("publishPat").value.trim();
   if (pat) {

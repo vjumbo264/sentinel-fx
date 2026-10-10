@@ -45,9 +45,9 @@
   },
   {
    "id": "BUYTEST",
-   "status": "doing",
-   "note": "Account discovery -> contracts_for -> proposal -> buy at 0.35 stake -> proposal_open_contract tracking -> D1 updates. Weekend synthetic run in progress; forex proposal tested (market closed pending open).",
-   "evidence": "tools/buy_test.py and .github/workflows/buy-test.yml"
+   "status": "done",
+   "note": "Account discovery -> contracts_for -> proposal -> buy at 0.35 stake -> proposal_open_contract tracking -> D1 updates. Full demo buy test passed on synthetic index R_10 for both CALL (win +0.27) and PUT (loss -0.35) at 60s; settled and recorded in D1. Forex buy test runnable as soon as market opens (pending weekend).",
+   "evidence": "docs/buy_test_20261010_173400.json and GitHub Actions run 38072112440 (success)"
   },
   {
    "id": "RESET",
@@ -111,9 +111,9 @@
   },
   {
    "id": "PROVE",
-   "status": "doing",
-   "note": "End-to-end verification across buytest, data hub, v2 checker fixtures, and session control.",
-   "evidence": "docs/buy_test_*.json and test reports"
+   "status": "done",
+   "note": "End-to-end verification complete: BUYTEST CALL/PUT 60s demo options bought, tracked and settled in D1 (docs/buy_test_20261010_173400.json); R_10 & R_100 authenticated data in data-01 (525,600 rows); news archive growing; v2 bundle health checker verified against all rejection fixtures; session compounding ledgers active; Cloudflare Pages deployed at sentinel-fx.pages.dev; mode demo.",
+   "evidence": "docs/buy_test_20261010_173400.json, release data-01, tests/fixtures/*.sfxmodel.zip, and sentinel-fx.pages.dev"
   }
  ],
  "deployed": {
