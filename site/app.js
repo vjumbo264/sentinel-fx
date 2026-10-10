@@ -14,6 +14,25 @@ let curPair = null;
 let curGranularity = 60; // default 1m
 let chartCandles = [];
 let chartRetry = 0;
+
+/* FIX-F shared button feedback: sfxBusy(btn, promise, {pending,ok,err}) */
+function sfxToast(msg, isErr){
+  let t = document.getElementById('sfx-toast');
+  if(!t){ t=document.createElement('div'); t.id='sfx-toast';
+    t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:92vw;padding:10px 16px;border-radius:10px;font:14px/1.4 system-ui;z-index:9999;box-shadow:0 4px 18px rgba(0,0,0,.35);transition:opacity .25s'; document.body.appendChild(t);}
+  t.textContent = msg; t.style.background = isErr?'#7f1d1d':'#14532d'; t.style.color='#fff'; t.style.opacity='1';
+  clearTimeout(t._h); t._h=setTimeout(()=>t.style.opacity='0', 4200);
+}
+async function sfxBusy(btn, work, opts){
+  opts = opts||{}; if(!btn || btn.dataset.busy==='1') return; // double-press guard
+  btn.dataset.busy='1'; const old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="sfx-spin" style="display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:sfxrot .7s linear infinite;vertical-align:-2px"></span> '+(opts.pending||'Working...');
+  if(!document.getElementById('sfx-spin-css')){const st=document.createElement('style');st.id='sfx-spin-css';st.textContent='@keyframes sfxrot{to{transform:rotate(360deg)}}';document.head.appendChild(st);}
+  try{ const r = await work(); sfxToast(opts.ok||'Done'); return r; }
+  catch(e){ sfxToast((opts.err?opts.err+': ':'Error: ')+(e&&e.message||e), true); throw e; }
+  finally{ btn.dataset.busy=''; btn.disabled=false; btn.innerHTML=old; }
+}
+
 let pendingModelFile = null, pendingModelData = null;
 let curTrainFilter = "all";
 
