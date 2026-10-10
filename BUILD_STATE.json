@@ -1,77 +1,25 @@
 {
- "phase": "verify",
- "steps": [
-  {
-   "id": "repo_scaffold",
-   "status": "done",
-   "note": "repo created under vjumbo264/sentinel-fx (PAT account login is vjumbo264, not sentinel-fx)"
-  },
-  {
-   "id": "engine",
-   "status": "done",
-   "note": "sentinel_engine 1.0.0: 66 causal DSL ops, indicators, rules, news, pipeline, sandbox (unshare --net, empty env, fail-closed), static scan; smoke-tested"
-  },
-  {
-   "id": "validator",
-   "status": "done",
-   "note": "CONFIRMED: clean pack VERDICT:PASS; tampered/malicious/leaky all rejected with non-zero exit. Fast+full modes, 10 checks."
-  },
-  {
-   "id": "fixtures",
-   "status": "done",
-   "note": "leaky (negative shift), tampered checksum, malicious code fixtures + clean pack; validator rejects all three bad ones in fast mode"
-  },
-  {
-   "id": "worker_d1",
-   "status": "blocked",
-   "note": "worker/index.js + schema.sql written, DEPLOY BLOCKED: Cloudflare API token HTTP 401"
-  },
-  {
-   "id": "site",
-   "status": "blocked",
-   "note": "site/index.html (mobile-first dark SPA, chart/news/logger/risk/upload) written, Pages deploy BLOCKED by CF token"
-  },
-  {
-   "id": "bot_workflow",
-   "status": "done",
-   "note": "bot/bot.py: 3h50m self-chain, D1 lease+heartbeat, demo default, risk gates, news, shadow mode, Lagos day reset"
-  },
-  {
-   "id": "validate_workflow",
-   "status": "done",
-   "note": "validate-pack.yml on push to pairs/*/incoming/**, no secrets in job, artifacts report"
-  },
-  {
-   "id": "first_pair_train",
-   "status": "blocked",
-   "note": "frxEURUSD pack NOT trained: no Deriv market data could be pulled this session and no valid Deriv token; the training pipeline (engine+validator+TRAIN_PROMPT.md) is ready for any AI to run credential-free."
-  },
-  {
-   "id": "first_pair_install",
-   "status": "blocked",
-   "note": "blocked on first_pair_train + worker_d1"
-  },
-  {
-   "id": "verify",
-   "status": "blocked",
-   "note": "end-to-end verify blocked by two invalid credentials: Cloudflare token (401) and Deriv token (401). Engine/validator/fixtures/workflows/docs are verified locally."
-  },
-  {
-   "id": "docs",
-   "status": "done",
-   "note": "PAIRPACK_SPEC.md + TRAIN_PROMPT.md (credential-free) complete"
-  }
- ],
- "deployed": {
-  "worker_url": "",
-  "pages_url": "",
-  "d1_id": ""
- },
- "pairs": {},
- "blockers": [
-  "BLOCKER 1 - CLOUDFLARE_API_TOKEN invalid: HTTP 401 from /client/v4/user/tokens/verify on 2026-10-10. Worker, D1, Pages cannot deploy. Fix: Cloudflare dashboard -> My Profile -> API Tokens -> create token with Account: Workers Scripts/Pages/D1 edit -> restart builder with it.",
-  "BLOCKER 2 - DERIV_BEARER_TOKEN invalid: HTTP 401 from api.derivws.com/trading/v1/options/accounts on 2026-10-10 (status-code check, token never printed). Bot cannot authenticate or trade. Fix: generate a new Deriv API token with trading scope and save it to repo secret DERIV_BEARER_TOKEN.",
-  "SECURITY: all credentials were pasted in plaintext in the build prompt. Rotate GitHub PAT, Cloudflare token, Telegram bot token and Deriv token; update repo secrets (GH_PAT, DERIV_BEARER_TOKEN, DERIV_APP_ID, BOT_SHARED_SECRET, WORKER_URL) and Worker secrets accordingly."
- ],
- "updated_utc": "2026-10-10T02:31:51Z"
+  "phase": "scaffold",
+  "steps": [
+    {"id": "repo_scaffold", "status": "doing", "note": "repo created public; initial scaffold commit"},
+    {"id": "engine_indicators", "status": "todo", "note": "sentinel_engine: indicator library"},
+    {"id": "engine_dsl", "status": "todo", "note": "feature DSL interpreter, causal-only"},
+    {"id": "engine_rules_models", "status": "todo", "note": "rule layer + model loaders (lgbm text/tree/logreg json)"},
+    {"id": "engine_sandbox", "status": "todo", "note": "custom-code sandbox runner, fail-closed"},
+    {"id": "engine_pipeline", "status": "todo", "note": "decision pipeline features->model->rules->news"},
+    {"id": "validator", "status": "todo", "note": "tools/validate_pack.py fast+full modes"},
+    {"id": "fixtures", "status": "todo", "note": "leaky/tampered/malicious packs must be rejected"},
+    {"id": "worker_d1", "status": "todo", "note": "Cloudflare Worker + D1 schema + endpoints"},
+    {"id": "site_pages", "status": "todo", "note": "mobile-first control site on Pages"},
+    {"id": "bot_workflow", "status": "todo", "note": "bot/ + self-chaining bot.yml"},
+    {"id": "validate_workflow", "status": "todo", "note": "validate-pack.yml, no secrets in job"},
+    {"id": "train_prompt", "status": "todo", "note": "TRAIN_PROMPT.md credential-free"},
+    {"id": "first_pair", "status": "todo", "note": "train frxEURUSD via TRAIN_PROMPT, upload path, honest verdict"},
+    {"id": "handoff_test", "status": "todo", "note": "observe one self-chain handoff in DEMO"},
+    {"id": "docs_readme", "status": "todo", "note": "PAIRPACK_SPEC.md + README setup"}
+  ],
+  "deployed": {"worker_url": "", "pages_url": "", "d1_id": ""},
+  "pairs": {},
+  "blockers": [],
+  "updated_utc": "2026-10-10T00:00:00Z"
 }

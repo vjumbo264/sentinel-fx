@@ -2,9 +2,9 @@ __pycache__/
 *.pyc
 *.egg-info/
 .venv/
+venv/
 node_modules/
-.wrangler/
 dist/
 .env
 *.log
-.DS_Store
+.sentinel_env
