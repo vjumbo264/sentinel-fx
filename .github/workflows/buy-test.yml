@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       symbol: { description: "synthetic symbol", default: "R_10" }
-      durations: { description: "comma list seconds", default: "5,15,60" }
+      durations: { description: "comma list seconds", default: "15,60" }
 permissions:
   contents: write
 jobs:

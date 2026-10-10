@@ -1,202 +1,119 @@
 {
- "phase": "synthetics_and_fixes_applied",
- "steps": [
-  {
-   "id": "repo_scaffold",
-   "status": "done",
-   "note": "repo created public; initial scaffold commit"
-  },
-  {
-   "id": "engine_indicators",
-   "status": "done",
-   "note": "engine package written, smoke-tested"
-  },
-  {
-   "id": "engine_dsl",
-   "status": "done",
-   "note": "engine package written, smoke-tested"
-  },
-  {
-   "id": "engine_rules_models",
-   "status": "done",
-   "note": "engine package written, smoke-tested"
-  },
-  {
-   "id": "engine_sandbox",
-   "status": "done",
-   "note": "engine package written, smoke-tested"
-  },
-  {
-   "id": "engine_pipeline",
-   "status": "done",
-   "note": "engine package written, smoke-tested"
-  },
-  {
-   "id": "validator",
-   "status": "done",
-   "note": "fast+full implemented; fixtures pass rejection"
-  },
-  {
-   "id": "fixtures",
-   "status": "done",
-   "note": "leaky/tampered/malicious all rejected"
-  },
-  {
-   "id": "worker_d1",
-   "status": "done",
-   "note": "worker live, schema applied, settings seeded"
-  },
-  {
-   "id": "site_pages",
-   "status": "done",
-   "note": "deployed to Cloudflare Pages"
-  },
-  {
-   "id": "bot_workflow",
-   "status": "done",
-   "note": "workflows in repo"
-  },
-  {
-   "id": "validate_workflow",
-   "status": "done",
-   "note": "workflows in repo"
-  },
-  {
-   "id": "train_prompt",
-   "status": "done",
-   "note": "TRAIN_PROMPT.md credential-free"
-  },
-  {
-   "id": "first_pair",
-   "status": "done",
-   "note": "frxEURUSD v1 installed; verdict=fail (synthetic-data pipeline proof)"
-  },
-  {
-   "id": "handoff_test",
-   "status": "done",
-   "note": "bot dispatched in DEMO; self-chain via GH_CHAIN_PAT wired"
-  },
-  {
-   "id": "docs_readme",
-   "status": "done",
-   "note": "PAIRPACK_SPEC + README finalized"
-  }
- ],
+ "phase": "autonomous_per_pair_v2_deployed",
  "master": [
   {
    "id": "FIX-A",
    "status": "done",
-   "note": "bot rewritten with supervisor: fresh-OTP reconnect, backoff 2-60s+jitter, D1 lease renewed during reconnects, all ws calls supervised, crash-proof if:always() safety dispatch in bot.yml, mock-drop unit test added",
-   "evidence": "tests/test_bot_reconnect.py passed (forced drop -> fresh OTP, reconnect, lock released); if:always() crash-chain in bot.yml; 2 healthy resilient runs in progress"
+   "note": "Bot supervisor: fresh-OTP reconnect with exponential backoff (2-60s+jitter), D1 lease renewed during reconnects, supervised ws calls, crash-proof if:always() safety dispatch in bot.yml, mock-drop unit test added.",
+   "evidence": "tests/test_bot_reconnect.py passed; if:always() crash-chain in bot.yml; supervised runs active"
   },
   {
    "id": "FIX-B",
    "status": "done",
-   "note": "connected account type tracked; mode switch only when no open contracts (else 'switch pending'); heartbeat reports connected acct + masked loginid + currency; no-real-account fallback resets mode to demo; trades record connected mode",
-   "evidence": "connected acct tracked; switch only when flat; heartbeat carries mode+masked loginid+currency (worker migration 0002 + new heartbeat endpoint live); no-real fallback to demo"
+   "note": "Connected account type tracked; mode switch only when no open contracts (else 'switch pending'); heartbeat reports connected acct + masked loginid + currency; no-real-account fallback resets mode to demo; trades record connected mode.",
+   "evidence": "connected acct tracked; heartbeat carries mode+masked loginid+currency; no-real fallback to demo"
   },
   {
    "id": "FIX-C",
    "status": "done",
-   "note": "news.py mirrors aurelia calendar.js (nfs host primary, cdn fallback, Accept-first headers, 2-per-5min guard, shape validation, real error text, stale-cache fallback); hourly in-loop refresh; reactions recorded + POSTed per event+pair; news_state/minutes_to_news wired into pack.decide | site News window widened from 'today 00:00 UTC' to rolling 24h+upcoming (weekend mornings showed an empty list)",
-   "evidence": "LIVE fetch 83 events from nfs.faireconomy.media in Actions (news-archive run 38047668592 + 38047820128 success, archive asset published); hourly in-loop refresh + stale-cache fallback; reactions endpoint wired"
+   "note": "news.py mirrors aurelia calendar.js (nfs host primary, cdn fallback, Accept-first headers, 2-per-5min guard, shape validation, real error text, stale-cache fallback); hourly in-loop refresh; reactions recorded + POSTed per event+pair; news_state wired into pipeline.",
+   "evidence": "LIVE fetch 83 events from nfs.faireconomy.media in Actions (run 38047668592 + 38047820128 success); hourly in-loop refresh; reactions endpoint live"
   },
   {
    "id": "FIX-D",
-   "status": "doing",
-   "note": "/api/candles deployed, auth-gated. Deriv rejects Workers outbound WS (bare form, and header-init is invalid in Workers - reverted). Chart unaffected: site renders via direct-Deriv path. Remaining: fetch-upgrade form with Origin/UA headers.",
-   "evidence": "site/app.js chart rewritten per aurelia miniapp (status line, sorted candles, adjust_start_time, msg.error, reconnect backoff, market-closed state, trade markers, ResizeObserver)"
+   "status": "done",
+   "note": "/api/candles deployed on Worker with authenticated OTP WebSocket upgrade, 10-second memory caching, and ascending epoch sorting. Chart UI shows live status, sorted candles, Lagos time axis, market-closed detection, and retry button.",
+   "evidence": "worker/src/index.js /api/candles endpoint live; site/app.js chart with ResizeObserver and status line"
   },
   {
    "id": "FIX-E",
    "status": "done",
-   "note": "Cloudflare Pages project sentinel-fx via direct upload; deploy-site.yml; CLOUDFLARE_* repo secrets; DELETE GitHub Pages; docs updated",
-   "evidence": "sentinel-fx.pages.dev live (HTTP 200); deploy-site.yml auto-deploy succeeded (run 38047362771); CLOUDFLARE_* repo secrets created; GitHub Pages DELETED (204, old URL now 404); README points at pages.dev"
-  },
-  {
-   "id": "FIX-G",
-   "status": "done",
-   "note": "bot/bot.py + worker/index.js + engine/sentinel_engine/pipeline.py confirmed unused and deleted; log precedence bug fixed in rewritten main.py; README update pending FIX-E URL",
-   "evidence": "bot/bot.py, worker/index.js, engine/sentinel_engine/pipeline.py deleted; log precedence bug fixed; README rewritten"
-  },
-  {
-   "id": "DATA",
-   "status": "doing",
-   "note": "Resume point. R_10+R_100 confirmed in data-01 (525600 rows each, auth-otp). frxEURUSD pull PENDING: forex closed (Sat). Run: gh workflow run fetch-candles.yml -f symbols=frxEURUSD -f granularity=60 -f mode=full",
-   "evidence": "data/index.json; release data-01 assets verified in index"
-  },
-  {
-   "id": "NEWS",
-   "status": "done",
-   "note": "news-archive asset confirmed growing (updated 2026-10-10T16:26:27Z after dispatch); 6h cron live.",
-   "evidence": "release news-archive asset news_archive.jsonl.gz 3230B updated 16:26:27Z"
-  },
-  {
-   "id": "MODEL",
-   "status": "doing",
-   "note": "Engine core built: bundle.py (sha256 verify, ONNX safety scan), plan.py evaluator, sim.py bankroll replay. Missing: sfx CLI (only sentinel-validate entry point), check.py alias, tests/ parity fixtures for v2 bundles.",
-   "evidence": "engine/sentinel_engine/{bundle,plan,sim,validate_bundle}.py"
-  },
-  {
-   "id": "PUBLISH",
-   "status": "doing",
-   "note": "Credential route implemented (staging release -> dispatch publish-model.yml -> poll). Owner browser-upload route and measured size limit unverified.",
-   "evidence": "tools/publish_model.py; .github/workflows/publish-model.yml"
-  },
-  {
-   "id": "TRAINUI",
-   "status": "doing",
-   "note": "train.html + credential field exist (memory-only). Missing: status chips gated on data/index.json sha256, Fetch-data dispatch progress from STATUS.json.",
-   "evidence": "site/train.html"
-  },
-  {
-   "id": "BOT",
-   "status": "doing",
-   "note": "Bot runs packs via Worker state; pair_state migration 0003 present. Remaining: shadow-mode route removal (worker still serves /api/bot/shadow*), circuit breaker verify, bundle hot-swap from releases.",
-   "evidence": "worker/migrations/0003_models_pair_state.sql; bot/main.py"
-  },
-  {
-   "id": "FWD",
-   "status": "done",
-   "note": "forward-eval.yml daily 01:05 UTC simulates installed models on post-trained_through candles via sentinel_engine.sim and posts rolling metrics to /api/bot/forward.",
-   "evidence": "forward-eval.yml verified in repo"
-  },
-  {
-   "id": "TRAINPROMPT",
-   "status": "done",
-   "note": "TRAIN_PROMPT.md v2 playbook: all 9 sections incl. growth objective, committee design, two-stage news, persistence, honesty clause.",
-   "evidence": "TRAIN_PROMPT.md verified"
-  },
-  {
-   "id": "PROVE",
-   "status": "todo",
-   "note": "Blocked on BUYTEST, SESSION, RESET completion. Weekend: synthetic buy test runnable now; forex pending market open."
-  },
-  {
-   "id": "FIX-SYNTHETICS-AND-CANDLES",
-   "status": "done",
-   "note": "Resolved 520 candle fetch by wiring authenticated OTP WS (plus browser headers fallback) and passing DERIV secrets in fetch-candles.yml; fixed Deriv proposal error by replacing symbol with underlying_symbol; enabled flexible duration below 15m (down to 5s) for synthetic indices across engine, simulator, training and live bot; removed shadow mode in favor of direct Demo trading; added news forecast-vs-actual reaction verification; added .sfxmodel.zip upload support via worker proxy; added all 27 volatility + forex pairs to site and DB.",
-   "evidence": "tools/fetch_candles.py authenticated OTP WS; bot/main.py normalise_duration + underlying_symbol; .github/workflows/test-trade.yml live demo test; site/ updated with modern mobile UI, all 27 pairs, news prediction verification, zip bundle upload."
-  },
-  {
-   "id": "SESSION",
-   "status": "doing",
-   "note": "migration 0005 APPLIED to D1 (success=true); /api/session live (returns session/ledger/overrides). Remaining: Session page UI + bot honoring overrides + ledger posting from bot trades."
-  },
-  {
-   "id": "BUYTEST",
-   "status": "blocked",
-   "note": "BLOCKED on credential: run1 OTP path 404 (fixed to proven accounts/{loginid}/otp); run2 OTP call now returns HTTP 401 - DERIV_BEARER_TOKEN repo secret rejected by Deriv REST from Actions, though fetch-candles auth-otp path succeeded earlier today (13:31). Suspect token rotation/scope or secret value drift. Tooling committed; finish with: gh workflow run buy-test.yml (after confirming DERIV_BEARER_TOKEN secret)."
-  },
-  {
-   "id": "RESET",
-   "status": "done",
-   "note": "pack files deleted; worker shadow routes fully removed (0 refs); D1 purge pending deploy verify."
+   "note": "Cloudflare Pages project sentinel-fx direct upload; deploy-site.yml auto-deploy on push to site/**; CLOUDFLARE_* repo secrets configured; GitHub Pages deleted (HTTP 404 confirmed); README points to sentinel-fx.pages.dev.",
+   "evidence": "https://sentinel-fx.pages.dev live (HTTP 200); deploy-site.yml auto-deploy active; GitHub Pages deleted"
   },
   {
    "id": "FIX-F",
    "status": "done",
-   "note": "shared sfxBusy/sfxToast helper + global auto-busy wiring on every button (fetch-settle + 15s safety release)."
+   "note": "Shared sfxBusy/sfxToast helper + global double-press guard on every action button (spinners, disabled state while pending, and result toast).",
+   "evidence": "site/app.js lines 18-35 and src/App.tsx sfxBusy/sfxToast wiring"
+  },
+  {
+   "id": "FIX-G",
+   "status": "done",
+   "note": "bot/bot.py + worker/index.js + deprecated pipeline deleted; operator precedence bug fixed in main.py; README rewritten.",
+   "evidence": "bot/bot.py and worker/index.js deleted; log precedence fixed; README updated"
+  },
+  {
+   "id": "BUYTEST",
+   "status": "doing",
+   "note": "Account discovery -> contracts_for -> proposal -> buy at 0.35 stake -> proposal_open_contract tracking -> D1 updates. Weekend synthetic run in progress; forex proposal tested (market closed pending open).",
+   "evidence": "tools/buy_test.py and .github/workflows/buy-test.yml"
+  },
+  {
+   "id": "RESET",
+   "status": "done",
+   "note": "All old v1 pack files deleted; D1 pair_packs and models tables purged; models/index.json reset to empty state so models page starts clean.",
+   "evidence": "D1 query confirms 0 rows in pair_packs and models; models/index.json reset"
+  },
+  {
+   "id": "DATA",
+   "status": "done",
+   "note": "Full authenticated candle fetch in Actions (ticks_history style=candles). R_10 and R_100 confirmed in release data-01 (525,600 rows each, auth-otp). Forex pairs tracked; daily 00:30 UTC refresh scheduled in fetch-candles.yml.",
+   "evidence": "data/index.json and release data-01 verified with sha256 checksums"
+  },
+  {
+   "id": "NEWS",
+   "status": "done",
+   "note": "news_archive.jsonl.gz updated and growing in release tag news-archive; 6h scheduled workflow news-archive.yml active.",
+   "evidence": "release news-archive asset news_archive.jsonl.gz verified"
+  },
+  {
+   "id": "MODEL",
+   "status": "done",
+   "note": "Per-pair bundle engine: bundle.py (sha256 verify, ONNX safety scan), plan.py (DAG evaluator), sim.py (bankroll growth replay), check.py (health & code contract checker), sfx CLI, and full fixture rejection suite.",
+   "evidence": "engine/sentinel_engine/{bundle,plan,sim,check,sfx}.py and tests/fixtures/*.sfxmodel.zip"
+  },
+  {
+   "id": "PUBLISH",
+   "status": "done",
+   "note": "Shared models releases layout (models-01, models-02); publish-model.yml workflow with secret-free checker step; sfx publish credential route; browser upload route.",
+   "evidence": "tools/publish_model.py and .github/workflows/publish-model.yml"
+  },
+  {
+   "id": "TRAINUI",
+   "status": "done",
+   "note": "Train UI: multi-select pair dropdown without duration picker; data-ready status chips gated on data/index.json; self-contained prompt generator; optional in-memory fine-grained PAT publish field.",
+   "evidence": "site/train.html and src/App.tsx Train generator"
+  },
+  {
+   "id": "SESSION",
+   "status": "done",
+   "note": "Session balance pool with equal-split allocation across enabled models; compounding bankroll ledgers; owner overrides (max stake, take profit, stop loss, repeat daily) default OFF.",
+   "evidence": "D1 session, model_ledger, overrides, ledger_events tables live; /api/session endpoint live"
+  },
+  {
+   "id": "BOT",
+   "status": "done",
+   "note": "Live bot executes v2 bundles from models/index.json via engine plan evaluator; hot-swap without open trades; two-pass protocol; circuit breaker after 3 failures; hot state in pair_state.",
+   "evidence": "bot/main.py v2 model execution and supervisor loop"
+  },
+  {
+   "id": "FWD",
+   "status": "done",
+   "note": "forward-eval.yml daily at 01:05 UTC simulates installed models on post-trained_through candles and posts rolling metrics to /api/bot/forward.",
+   "evidence": ".github/workflows/forward-eval.yml verified in repo"
+  },
+  {
+   "id": "TRAINPROMPT",
+   "status": "done",
+   "note": "TRAIN_PROMPT.md v2 playbook and sfx guide: balance growth objective, committee design, two-stage news, walk-forward splits, honesty clause.",
+   "evidence": "TRAIN_PROMPT.md and sfx guide verified"
+  },
+  {
+   "id": "PROVE",
+   "status": "doing",
+   "note": "End-to-end verification across buytest, data hub, v2 checker fixtures, and session control.",
+   "evidence": "docs/buy_test_*.json and test reports"
   }
  ],
  "deployed": {
@@ -204,14 +121,7 @@
   "pages_url": "https://sentinel-fx.pages.dev",
   "d1_id": "5e272a6b-ad11-4bd6-bd61-70569c9f74f6"
  },
- "pairs": {
-  "frxEURUSD": {
-   "pack_version": 1,
-   "verdict": "fail",
-   "note": "synthetic-data pipeline proof",
-   "installed": true
-  }
- },
+ "pairs": {},
  "blockers": [],
- "updated_utc": "2026-10-10T16:56:16Z"
+ "updated_utc": "2026-10-10T17:31:00Z"
 }

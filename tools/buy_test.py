@@ -147,12 +147,29 @@ async def run_single_trade(ws_client: WSClient, symbol: str, side: str, duration
     entry["ask_price"] = ask_price
     entry["payout"] = payout
 
-    # 2. Buy
+    # 2. Buy (with tolerance above ask_price, and fallback to direct parameters)
     buy_req = {
         "buy": pid,
-        "price": ask_price,
+        "price": round(ask_price + 0.10, 2),
     }
     buy_res = await ws_client.call(buy_req, timeout=30.0)
+    if "error" in buy_res:
+        # Fallback to direct buy with parameters
+        buy_param_req = {
+            "buy": 1,
+            "price": round(stake + 0.10, 2),
+            "parameters": {
+                "amount": round(stake, 2),
+                "basis": "stake",
+                "contract_type": side,
+                "currency": "USD",
+                "duration": duration,
+                "duration_unit": duration_unit,
+                "symbol": symbol,
+            }
+        }
+        buy_res = await ws_client.call(buy_param_req, timeout=30.0)
+
     if "error" in buy_res:
         err_msg = buy_res["error"].get("message", "buy error")
         entry["status"] = "buy_error"
@@ -253,7 +270,7 @@ async def async_main():
             sys.exit(3)
 
         # 3. Query contracts_for
-        cf_res = await client.call({"contracts_for": args.symbol, "currency": "USD"})
+        cf_res = await client.call({"contracts_for": args.symbol})
         if "error" in cf_res:
             err_msg = cf_res["error"].get("message", "contracts_for error")
             print(f"[WARN] contracts_for for {args.symbol}: {err_msg}")
