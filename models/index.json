@@ -1,0 +1,16 @@
+{
+ "R_10": {
+  "active_version": 2,
+  "versions": [
+   {
+    "N": 2,
+    "asset": "R_10_v2.sfxmodel.zip",
+    "created_utc": "2026-10-10T13:55:35Z",
+    "release_tag": "models-01",
+    "sha256": "82573b2a132394a0be281db7609b35a34ea7ba1139bd0b327e4adbe41af96a46",
+    "size": 657940,
+    "verdict": null
+   }
+  ]
+ }
+}

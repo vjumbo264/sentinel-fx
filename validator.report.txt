@@ -1,0 +1,1 @@
+VALIDATOR {"ok": false, "problems": ["honesty gate: Wilson lower bound 0.5028 not above break-even at payout-3 (0.5495)"], "warnings": [], "symbol": "R_10", "version": 2, "verdict": "fail"}
