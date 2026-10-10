@@ -1,157 +1,194 @@
-"""Feature DSL: a JSON expression graph. STRICTLY CAUSAL.
-
-Nodes: {"name": str, "op": str, "inputs": [str, ...], "params": {...}}
-Inputs reference candle fields (open/high/low/close/epoch) or earlier node names.
-Rejected: negative shifts, centered windows, whole-series statistics,
-unknown ops, forward references. DSL ops are append-only across engine versions.
 """
+sentinel_engine.dsl
+===================
+Causal feature expression graph (JSON). Nodes: {"id", "op", "inputs", "params"}.
+All ops are strictly causal: no negative shifts, no centered windows, no
+whole-series statistics (rolling/expanding only). Non-causal requests raise.
+"""
+from __future__ import annotations
 import numpy as np
 import pandas as pd
 from . import indicators as ind
 
-class DSLError(ValueError):
+ENGINE_VERSION = "1.0.0"
+
+# Registry of indicator ops that take candle columns
+_CANDLE_OPS = {
+    "sma": lambda c, df, p: ind.sma(df[p.get("col", "close")], p["period"]),
+    "ema": lambda c, df, p: ind.ema(df[p.get("col", "close")], p["period"]),
+    "wma": lambda c, df, p: ind.wma(df[p.get("col", "close")], p["period"]),
+    "rsi": lambda c, df, p: ind.rsi(df[p.get("col", "close")], p.get("period", 14)),
+    "macd": lambda c, df, p: ind.macd(df[p.get("col", "close")], p.get("fast", 12), p.get("slow", 26), p.get("signal", 9))[p.get("out", "macd")],
+    "bollinger": lambda c, df, p: ind.bollinger(df[p.get("col", "close")], p.get("period", 20), p.get("mult", 2.0))[p.get("out", "mid")],
+    "atr": lambda c, df, p: ind.atr(df["high"], df["low"], df["close"], p.get("period", 14)),
+    "stochastic": lambda c, df, p: ind.stochastic(df["high"], df["low"], df["close"], p.get("k", 14), p.get("d", 3), p.get("smooth", 3))[p.get("out", "k")],
+    "adx": lambda c, df, p: ind.adx(df["high"], df["low"], df["close"], p.get("period", 14))[p.get("out", "adx")],
+    "cci": lambda c, df, p: ind.cci(df["high"], df["low"], df["close"], p.get("period", 20)),
+    "willr": lambda c, df, p: ind.willr(df["high"], df["low"], df["close"], p.get("period", 14)),
+    "roc": lambda c, df, p: ind.roc(df[p.get("col", "close")], p.get("period", 10)),
+    "mom": lambda c, df, p: ind.mom(df[p.get("col", "close")], p.get("period", 10)),
+    "keltner": lambda c, df, p: ind.keltner(df["high"], df["low"], df["close"], p.get("period", 20), p.get("mult", 2.0))[p.get("out", "mid")],
+    "donchian": lambda c, df, p: ind.donchian(df["high"], df["low"], p.get("period", 20))[p.get("out", "mid")],
+    "ichimoku": lambda c, df, p: ind.ichimoku(df["high"], df["low"])[p.get("out", "tenkan")],
+    "rolling_volatility": lambda c, df, p: ind.rolling_volatility(df[p.get("col", "close")], p.get("period", 20)),
+    "rolling_skew": lambda c, df, p: ind.rolling_skew(df[p.get("col", "close")], p.get("period", 20)),
+    "rolling_kurt": lambda c, df, p: ind.rolling_kurt(df[p.get("col", "close")], p.get("period", 20)),
+    "zscore": lambda c, df, p: ind.zscore(df[p.get("col", "close")], p.get("period", 20)),
+}
+
+# Series-transform ops operating on node inputs (causal only)
+def _shift(s, p):
+    n = p.get("n", 1)
+    if n < 0:
+        raise ValueError("negative shift is non-causal and forbidden")
+    return s.shift(n)
+
+def _rolling(s, p):
+    fn = p["fn"]; w = int(p["window"])
+    r = s.rolling(w, min_periods=w)
+    m = {"mean": r.mean, "std": lambda: r.std(ddof=0), "min": r.min, "max": r.max,
+         "sum": r.sum, "median": r.median}
+    if fn not in m:
+        raise ValueError(f"unsupported rolling fn {fn}")
+    return m[fn]()
+
+def _expanding(s, p):
+    fn = p["fn"]
+    e = s.expanding(min_periods=1)
+    m = {"mean": e.mean, "std": lambda: e.std(ddof=0), "min": e.min, "max": e.max, "sum": e.sum}
+    if fn not in m:
+        raise ValueError(f"unsupported expanding fn {fn}")
+    return m[fn]()
+
+def _ewm(s, p):
+    return s.ewm(span=int(p["span"]), adjust=False, min_periods=int(p["span"])).mean()
+
+def _cross_over(a, b):
+    return ((a > b) & (a.shift(1) <= b.shift(1))).astype(float)
+
+def _cross_under(a, b):
+    return ((a < b) & (a.shift(1) >= b.shift(1))).astype(float)
+
+_SERIES_OPS = {
+    "shift": _shift,
+    "rolling": _rolling,
+    "expanding": _expanding,
+    "ewm": _ewm,
+    "cross_over": lambda s, p: _cross_over(s, p["_second"]),
+    "cross_under": lambda s, p: _cross_under(s, p["_second"]),
+    "rank": lambda s, p: ind.rolling_rank(s, p.get("window", 100)),
+    "zscore_of": lambda s, p: ind.zscore(s, p.get("period", 20)),
+}
+
+_ARITH = {
+    "add": lambda xs: xs[0] + xs[1],
+    "sub": lambda xs: xs[0] - xs[1],
+    "mul": lambda xs: xs[0] * xs[1],
+    "div": lambda xs: xs[0] / xs[1].replace(0.0, np.nan),
+    "abs": lambda xs: xs[0].abs(),
+    "log": lambda xs: np.log(xs[0].where(xs[0] > 0)),
+    "sqrt": lambda xs: np.sqrt(xs[0].clip(lower=0)),
+    "neg": lambda xs: -xs[0],
+    "pow": lambda xs, p: xs[0] ** p.get("exp", 2),
+}
+
+_CMP = {
+    "gt": lambda xs: (xs[0] > xs[1]).astype(float),
+    "gte": lambda xs: (xs[0] >= xs[1]).astype(float),
+    "lt": lambda xs: (xs[0] < xs[1]).astype(float),
+    "lte": lambda xs: (xs[0] <= xs[1]).astype(float),
+    "eq": lambda xs: (xs[0] == xs[1]).astype(float),
+}
+
+_LOGIC = {
+    "and": lambda xs: ((xs[0] > 0) & (xs[1] > 0)).astype(float),
+    "or": lambda xs: ((xs[0] > 0) | (xs[1] > 0)).astype(float),
+    "not": lambda xs: (xs[0] <= 0).astype(float),
+}
+
+
+class DSLError(Exception):
     pass
 
-def _candles_to_df(candles) -> pd.DataFrame:
-    df = pd.DataFrame(candles)
-    for c in ("open", "high", "low", "close"):
-        df[c] = pd.to_numeric(df[c], errors="raise")
-    if "epoch" in df.columns:
-        df["epoch"] = pd.to_numeric(df["epoch"], errors="raise").astype("int64")
-    return df
 
-def _roll(s, n, fn):
-    return s.rolling(int(n), min_periods=int(n)).apply(fn, raw=True)
+def compute_features(dsl: list, df: pd.DataFrame, extra: dict | None = None) -> pd.DataFrame:
+    """Evaluate a DSL graph against a candle DataFrame (columns: epoch,open,high,low,close).
+    `extra` may carry precomputed frames keyed by name (e.g. session/news/tf resamples).
+    Returns DataFrame of node outputs aligned to df.index."""
+    df = df.reset_index(drop=True).copy()
+    ctx: dict[str, pd.Series] = {
+        "open": df["open"].astype(float), "high": df["high"].astype(float),
+        "low": df["low"].astype(float), "close": df["close"].astype(float),
+    }
+    extra = extra or {}
+    sess = ind.session_features(df)
+    for col in sess.columns:
+        ctx[col] = sess[col].reset_index(drop=True)
+    for k, frame in extra.items():
+        if isinstance(frame, pd.DataFrame):
+            for col in frame.columns:
+                ctx[col] = frame[col].reset_index(drop=True)
 
-def compute_features(dsl_nodes: list, candles) -> pd.DataFrame:
-    """Evaluate the DSL graph. Raises DSLError on any non-causal construct."""
-    if not isinstance(dsl_nodes, list):
-        raise DSLError("dsl must be a list of nodes")
-    df = _candles_to_df(candles)
-    env = {c: df[c] for c in df.columns if c in ("open", "high", "low", "close", "epoch")}
-    names = set()
-    for node in dsl_nodes:
-        name, op = node.get("name"), node.get("op")
-        params = node.get("params", {}) or {}
-        ins = node.get("inputs", []) or []
-        if not name or not op:
-            raise DSLError("every node needs name and op")
-        for i in ins:
-            if i not in env:
-                raise DSLError(f"node {name}: unknown/forward input '{i}'")
-        env[name] = _eval_op(name, op, ins, params, env)
-        names.add(name)
-    return pd.DataFrame({n: env[n] for n in names}, index=df.index)
+    out_cols = {}
+    for node in dsl:
+        nid, op = node.get("id"), node.get("op")
+        inputs = node.get("inputs", []) or []
+        params = dict(node.get("params", {}) or {})
+        if not nid or not op:
+            raise DSLError(f"node missing id/op: {node}")
+        if op in _CANDLE_OPS:
+            res = _CANDLE_OPS[op](None, df, params)
+        elif op in _SERIES_OPS:
+            if not inputs:
+                raise DSLError(f"op {op} needs inputs")
+            s = ctx.get(inputs[0])
+            if s is None:
+                raise DSLError(f"unknown input {inputs[0]} for op {op}")
+            if op in ("cross_over", "cross_under"):
+                if len(inputs) < 2:
+                    raise DSLError(f"{op} needs 2 inputs")
+                params["_second"] = ctx.get(inputs[1])
+                if params["_second"] is None:
+                    raise DSLError(f"unknown input {inputs[1]} for {op}")
+            res = _SERIES_OPS[op](s, params)
+        elif op in _ARITH or op in _CMP or op in _LOGIC:
+            xs = [ctx.get(i) for i in inputs]
+            if any(x is None for x in xs):
+                missing = [i for i, x in zip(inputs, xs) if x is None]
+                raise DSLError(f"unknown inputs {missing} for {op}")
+            fn = _ARITH.get(op) or _CMP.get(op) or _LOGIC.get(op)
+            try:
+                res = fn(xs, params) if fn.__code__.co_argcount == 2 else fn(xs)
+            except TypeError:
+                res = fn(xs)
+        elif op == "const":
+            res = pd.Series(params.get("value", 0.0), index=df.index, dtype=float)
+        else:
+            raise DSLError(f"unsupported op '{op}' (engine {ENGINE_VERSION})")
+        res = pd.Series(res).reset_index(drop=True).astype(float)
+        ctx[nid] = res
+        out_cols[nid] = res
+    return pd.DataFrame(out_cols)
 
-def _num(params, key, default=None):
-    v = params.get(key, default)
-    if v is None:
-        raise DSLError(f"missing param {key}")
-    return v
 
-def _window(params, key="n"):
-    n = int(_num(params, key))
-    if n < 1:
-        raise DSLError(f"window must be >= 1, got {n}")
-    return n
-
-def _eval_op(name, op, ins, params, env):
-    a = env[ins[0]] if ins else None
-    b = env[ins[1]] if len(ins) > 1 else None
-
-    if op == "shift":
-        n = int(_num(params, "n"))
-        if n < 0:  # negative shift = look-ahead. Hard reject.
-            raise DSLError(f"node {name}: negative shift is non-causal")
-        return a.shift(n)
-    if op == "const":
-        return pd.Series(float(_num(params, "value")), index=a.index if a is not None else None)
-    if op in ("add", "sub", "mul", "div"):
-        if op == "add": return a + b
-        if op == "sub": return a - b
-        if op == "mul": return a * b
-        return a / b.replace(0.0, np.nan)
-    if op in ("gt", "ge", "lt", "le", "eq", "ne"):
-        return {"gt": a > b, "ge": a >= b, "lt": a < b, "le": a <= b, "eq": a == b, "ne": a != b}[op].astype(float)
-    if op in ("and_", "or_", "xor"):
-        return {"and_": (a > 0) & (b > 0), "or_": (a > 0) | (b > 0), "xor": (a > 0) ^ (b > 0)}[op].astype(float)
-    if op == "not_":
-        return (a <= 0).astype(float)
-    if op == "clip":
-        return a.clip(float(_num(params, "lo")), float(_num(params, "hi")))
-    if op == "abs": return a.abs()
-    if op == "log":
-        return np.log(a.where(a > 0))
-    if op == "diff":
-        return a.diff(int(params.get("n", 1)))
-    if op == "pct_change":
-        return a.pct_change(int(params.get("n", 1)))
-    if op == "logret":
-        return np.log(a / a.shift(1).where(a.shift(1) > 0))
-
-    # rolling / expanding stats only (causal). Whole-series stats are banned.
-    if op == "roll_mean": return a.rolling(_window(params), min_periods=_window(params)).mean()
-    if op == "roll_std":  return a.rolling(_window(params), min_periods=_window(params)).std(ddof=0)
-    if op == "roll_min":  return a.rolling(_window(params), min_periods=_window(params)).min()
-    if op == "roll_max":  return a.rolling(_window(params), min_periods=_window(params)).max()
-    if op == "roll_sum":  return a.rolling(_window(params), min_periods=_window(params)).sum()
-    if op == "roll_median": return a.rolling(_window(params), min_periods=_window(params)).median()
-    if op == "roll_skew": return ind.rolling_skew(a, _window(params))
-    if op == "roll_kurt": return ind.rolling_kurtosis(a, _window(params))
-    if op == "roll_rank":
-        n = _window(params)
-        return a.rolling(n, min_periods=n).apply(lambda x: (x[:-1] < x[-1]).mean(), raw=True)
-    if op == "expanding_mean": return a.expanding(min_periods=_window(params)).mean()
-    if op == "ewm_mean": return a.ewm(span=_window(params, "span"), adjust=False, min_periods=_window(params, "span")).mean()
-    if op == "ewm_std":  return a.ewm(span=_window(params, "span"), adjust=False, min_periods=_window(params, "span")).std()
-    if op == "zscore": return ind.zscore(a, _window(params))
-    if op == "cross_over": return ind.cross_over(a, b)
-    if op == "cross_under": return ind.cross_under(a, b)
-
-    # library indicators (all causal by construction)
-    if op == "sma": return ind.sma(a, _window(params))
-    if op == "ema": return ind.ema(a, _window(params))
-    if op == "wma": return ind.wma(a, _window(params))
-    if op == "rsi": return ind.rsi(a, int(params.get("n", 14)))
-    if op == "macd":        return ind.macd(a, int(params.get("fast",12)), int(params.get("slow",26)), int(params.get("signal",9)))[0]
-    if op == "macd_signal": return ind.macd(a, int(params.get("fast",12)), int(params.get("slow",26)), int(params.get("signal",9)))[1]
-    if op == "macd_hist":   return ind.macd(a, int(params.get("fast",12)), int(params.get("slow",26)), int(params.get("signal",9)))[2]
-    if op == "bb_upper": return ind.bollinger(a, int(params.get("n",20)), float(params.get("k",2.0)))[0]
-    if op == "bb_lower": return ind.bollinger(a, int(params.get("n",20)), float(params.get("k",2.0)))[2]
-    if op == "bb_width":
-        u, m, l = ind.bollinger(a, int(params.get("n",20)), float(params.get("k",2.0)))
-        return (u - l) / m.replace(0.0, np.nan)
-    if op == "atr":  return ind.atr(env[ins[0]], env[ins[1]], env[ins[2]], int(params.get("n", 14)))
-    if op == "stoch_k": return ind.stochastic(env[ins[0]], env[ins[1]], env[ins[2]], int(params.get("n",14)), int(params.get("d",3)))[0]
-    if op == "stoch_d": return ind.stochastic(env[ins[0]], env[ins[1]], env[ins[2]], int(params.get("n",14)), int(params.get("d",3)))[1]
-    if op == "adx":  return ind.adx(env[ins[0]], env[ins[1]], env[ins[2]], int(params.get("n", 14)))[0]
-    if op == "di_plus":  return ind.adx(env[ins[0]], env[ins[1]], env[ins[2]], int(params.get("n", 14)))[1]
-    if op == "di_minus": return ind.adx(env[ins[0]], env[ins[1]], env[ins[2]], int(params.get("n", 14)))[2]
-    if op == "cci": return ind.cci(env[ins[0]], env[ins[1]], env[ins[2]], int(params.get("n", 20)))
-    if op == "willr": return ind.willr(env[ins[0]], env[ins[1]], env[ins[2]], int(params.get("n", 14)))
-    if op == "roc": return ind.roc(a, int(params.get("n", 10)))
-    if op == "kc_upper": return ind.keltner(env[ins[0]], env[ins[1]], env[ins[2]], int(params.get("n",20)), float(params.get("k",2.0)))[0]
-    if op == "kc_lower": return ind.keltner(env[ins[0]], env[ins[1]], env[ins[2]], int(params.get("n",20)), float(params.get("k",2.0)))[2]
-    if op == "donchian_high": return ind.donchian(env[ins[0]], env[ins[1]], int(params.get("n",20)))[0]
-    if op == "donchian_low":  return ind.donchian(env[ins[0]], env[ins[1]], int(params.get("n",20)))[1]
-    if op == "ichimoku_tenkan": return ind.ichimoku(env[ins[0]], env[ins[1]])[0]
-    if op == "ichimoku_kijun":  return ind.ichimoku(env[ins[0]], env[ins[1]])[1]
-    if op == "roll_vol": return ind.rolling_volatility(a, _window(params))
-
-    # session / calendar features from epoch (UTC) - causal, known in advance
-    if op in ("hour_utc", "dow_utc", "hour_lagos"):
-        e = env["epoch"]
-        if op == "hour_utc": return pd.Series((e // 3600) % 24, index=e.index).astype(float)
-        if op == "dow_utc":  return pd.Series((e // 86400 + 3) % 7, index=e.index).astype(float)  # 1970-01-01 = Thu=3
-        return pd.Series(((e + 3600) // 3600) % 24, index=e.index).astype(float)
-
-    raise DSLError(f"node {name}: unknown op '{op}' (DSL ops are append-only; upgrade the engine or use a supported op)")
-
-SUPPORTED_OPS = frozenset("""
-shift const add sub mul div gt ge lt le eq ne and_ or_ xor not_ clip abs log diff pct_change logret
-roll_mean roll_std roll_min roll_max roll_sum roll_median roll_skew roll_kurt roll_rank
-expanding_mean ewm_mean ewm_std zscore cross_over cross_under
-sma ema wma rsi macd macd_signal macd_hist bb_upper bb_lower bb_width atr stoch_k stoch_d
-adx di_plus di_minus cci willr roc kc_upper kc_lower donchian_high donchian_low
-ichimoku_tenkan ichimoku_kijun roll_vol hour_utc dow_utc hour_lagos
-""".split())
+def validate_dsl(dsl: list) -> list[str]:
+    """Static validation of a DSL graph. Returns list of problems (empty = ok)."""
+    problems = []
+    if not isinstance(dsl, list):
+        return ["dsl must be a list"]
+    seen = set(["open", "high", "low", "close"])
+    allowed = set(_CANDLE_OPS) | set(_SERIES_OPS) | set(_ARITH) | set(_CMP) | set(_LOGIC) | {"const"}
+    for node in dsl:
+        nid, op = node.get("id"), node.get("op")
+        if not nid:
+            problems.append(f"node without id: {node}")
+            continue
+        if op not in allowed:
+            problems.append(f"node {nid}: unsupported op '{op}'")
+        for p in node.get("inputs", []) or []:
+            if p not in seen and p not in [n.get("id") for n in dsl]:
+                problems.append(f"node {nid}: unknown input '{p}'")
+        if op == "shift" and (node.get("params", {}).get("n", 1) < 0):
+            problems.append(f"node {nid}: negative shift forbidden")
+        seen.add(nid)
+    return problems

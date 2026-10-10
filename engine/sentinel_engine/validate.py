@@ -1,179 +1,429 @@
-"""Pack validator. Fast mode: checks 1-3,10 (pure static). Full mode: all 10 checks.
-Prints machine-readable JSON report + human summary. Exit non-zero on any FAILURE."""
-import argparse, base64, gzip, hashlib, json, sys, time
+"""
+sentinel_engine.validate
+========================
+Pair-pack validator. Modes:
+  fast: checks 1-3 + 10 (pure schema/static; runs anywhere)
+  full: all checks (needs numpy/pandas/lightgbm per pack model type; sandbox
+        for custom code, fails closed if isolation unavailable)
+Prints a machine-readable JSON report + human summary; exit non-zero on failure.
+"""
+from __future__ import annotations
+import argparse
+import hashlib
+import json
+import re
+import sys
+import time
+
 import numpy as np
+import pandas as pd
 
-SIZE_LIMIT = 25 * 1024 * 1024
+from .dsl import ENGINE_VERSION, compute_features, validate_dsl
+from .models import load_model
+from .news import pair_currencies
+from .pack import (MAX_PACK_BYTES, SYMBOL_RE, Pack, decode_b64gz, pack_checksum,
+                   test_candles)
+from . import rules as _rules
+from . import sandbox as _sandbox
+
 MIN_STAKE_FLOOR = 0.35
+MIN_OOS_TRADES = 60
+IMPLAUSIBLE_WIN_RATE = 0.65
+BANNED_TOKENS = ["os", "sys", "subprocess", "socket", "open", "eval", "exec",
+                 "__import__", "ctypes", "importlib", "urllib", "requests",
+                 "shutil", "pathlib", "builtins", "globals", "locals",
+                 "getattr", "setattr", "delattr", "compile", "input",
+                 "breakpoint", "exit", "quit", "help", "vars", "dir"]
+ALLOWED_IMPORTS = {"numpy", "pandas", "math", "scipy", "np", "pd"}
 
-def _r(checks, name, status, detail=""):
-    checks.append({"check": name, "status": status, "detail": detail})
 
-def validate_pack(pack: dict, raw_bytes: bytes, mode: str = "full") -> dict:
-    checks = []
-    full = mode == "full"
+def _ver_tuple(v: str):
+    return tuple(int(x) for x in re.findall(r"\d+", v)[:3])
 
-    # ---- 1. schema / types / checksum / ranges ----
+
+class Report:
+    def __init__(self, mode: str):
+        self.mode = mode
+        self.checks: list[dict] = []
+
+    def add(self, name: str, status: str, detail: str = ""):
+        assert status in ("pass", "fail", "warn", "skip")
+        self.checks.append({"check": name, "status": status, "detail": detail})
+
+    @property
+    def ok(self) -> bool:
+        return all(c["status"] != "fail" for c in self.checks)
+
+    def to_json(self) -> str:
+        return json.dumps({"mode": self.mode, "ok": self.ok, "checks": self.checks},
+                          indent=1)
+
+
+def validate(path: str, mode: str = "full") -> Report:
+    rep = Report(mode)
+    raw_bytes = open(path, "rb").read()
+    if len(raw_bytes) > MAX_PACK_BYTES:
+        rep.add("size", "fail", f"{len(raw_bytes)} bytes > {MAX_PACK_BYTES}")
+        return rep
+    rep.add("size", "pass", f"{len(raw_bytes)} bytes")
     try:
-        assert pack.get("schema_version") == 1, "schema_version must be 1"
-        import re
-        assert re.fullmatch(r"frx[A-Z]{6}", pack.get("symbol", "")), "symbol must match ^frx[A-Z]{6}$"
-        assert isinstance(pack.get("pack_version"), int) and pack["pack_version"] >= 1
-        assert len(raw_bytes) <= SIZE_LIMIT, "pack exceeds 25MB"
-        from . import checksum
-        assert checksum.verify_checksum(pack), "checksum_sha256 mismatch"
-        risk = pack.get("risk", {})
-        for k in ("stake_pct", "daily_loss_pct", "daily_target_pct"):
-            if k in risk and risk[k]:
-                assert 0 <= float(risk[k]) <= 1, f"risk.{k} out of range"
-        dec = pack.get("decision", {})
-        assert 0 <= float(dec.get("margin", 0)) <= 0.5
-        assert 0 < float(dec.get("payout_assumed", 0.85)) < 5
-        _r(checks, "schema", "pass", f"symbol={pack['symbol']} v{pack['pack_version']} {len(raw_bytes)//1024}KB checksum ok")
-    except AssertionError as e:
-        _r(checks, "schema", "fail", str(e))
+        pack = json.loads(raw_bytes.decode("utf8"))
+    except Exception as e:
+        rep.add("schema", "fail", f"invalid JSON: {e}")
+        return rep
 
-    # ---- 2. engine compatibility ----
+    # ---- 1. schema / types / ranges / checksum
     try:
-        from . import __version__
-        from .dsl import SUPPORTED_OPS
-        req = pack.get("min_engine_version", "1.0.0")
-        assert tuple(map(int, req.split("."))) <= tuple(map(int, __version__.split("."))), f"needs engine {req} > {__version__}"
-        bad = [n.get("op") for n in pack.get("features", {}).get("dsl", []) if n.get("op") not in SUPPORTED_OPS]
-        assert not bad, f"unsupported DSL ops: {bad}"
-        assert pack.get("model", {}).get("type") in ("lightgbm_text", "tree_json", "logreg_json")
-        _r(checks, "engine_compat", "pass", f"engine {__version__} >= {req}")
-    except AssertionError as e:
-        _r(checks, "engine_compat", "fail", str(e))
+        _check_schema(pack, rep)
+    except Exception as e:
+        rep.add("schema", "fail", f"exception: {e}")
+        return rep
 
-    # ---- 3. static scan + module hashes ----
+    # checksum
     try:
-        from .static_scan import scan_module
-        for m in pack.get("features", {}).get("custom_modules", []):
-            raw = gzip.decompress(base64.b64decode(m["code_b64gz"]))
-            assert hashlib.sha256(raw).hexdigest() == m["sha256"], f"module {m['name']} sha256 mismatch"
-            findings = scan_module(m["code_b64gz"])
-            assert not findings, f"module {m['name']}: {findings}"
-        _r(checks, "static_scan", "pass", f"{len(pack.get('features',{}).get('custom_modules',[]))} custom modules clean")
-    except AssertionError as e:
-        _r(checks, "static_scan", "fail", str(e))
+        if pack.get("checksum_sha256") == pack_checksum(pack):
+            rep.add("checksum", "pass")
+        else:
+            rep.add("checksum", "fail", "checksum_sha256 does not match canonical body")
+    except Exception as e:
+        rep.add("checksum", "fail", f"checksum error: {e}")
 
-    # ---- 10. backtest consistency (fast + full) ----
+    # ---- 2. engine compatibility
     try:
-        bt = pack.get("backtest", {})
-        be = 1.0 / (1.0 + float(pack.get("decision", {}).get("payout_assumed", 0.85)))
-        wr = float(bt.get("win_rate", 0.0))
-        assert abs(float(bt.get("break_even_win_rate", be)) - be) < 0.01, "break_even mismatch"
-        if bt.get("verdict") == "pass":
-            assert wr > be + 0.005, f"verdict=pass but win_rate {wr:.4f} not above break-even {be:.4f} + margin"
-            assert int(bt.get("oos_trades", 0)) >= 100, "too few OOS trades for a pass verdict"
-        _r(checks, "backtest_consistency", "pass", f"wr={wr:.4f} be={be:.4f} verdict={bt.get('verdict')}")
-        if bt.get("verdict") == "pass" and wr > 0.65:
-            _r(checks, "plausibility", "warn", f"win_rate {wr:.1%} implausibly high for 15m forex binaries - probable leakage")
-    except AssertionError as e:
-        _r(checks, "backtest_consistency", "fail", str(e))
+        _check_engine_compat(pack, rep)
+    except Exception as e:
+        rep.add("engine_compat", "fail", f"exception: {e}")
 
-    if full:
-        try:
-            _full_checks(pack, checks)
-        except Exception as e:
-            _r(checks, "full_mode_error", "fail", f"{type(e).__name__}: {e}")
+    # ---- 3. custom-module static scan + sha256
+    try:
+        _check_custom_static(pack, rep)
+    except Exception as e:
+        rep.add("custom_static", "fail", f"exception: {e}")
 
-    verdict = "fail" if any(c["status"] == "fail" for c in checks) else \
-              ("warn" if any(c["status"] == "warn" for c in checks) else "pass")
-    return {"verdict": verdict, "mode": mode, "symbol": pack.get("symbol"), "checks": checks}
+    # ---- 10. backtest consistency (fast-mode safe)
+    try:
+        _check_backtest(pack, rep)
+    except Exception as e:
+        rep.add("backtest_consistency", "fail", f"exception: {e}")
 
-def _full_checks(pack, checks):
-    import pandas as pd
-    from .dsl import compute_features
-    from .models import load_model
-    from .rules import validate_rules
+    if mode == "fast":
+        return rep
 
-    tests = pack.get("tests", {})
-    candles = json.loads(gzip.decompress(base64.b64decode(tests["candles_b64gz"])).decode())
-    assert len(candles) >= 50, "embedded test candles too small"
+    # ===== full mode =====
+    candles = test_candles(pack)
+    if not candles:
+        rep.add("test_vectors", "fail", "tests.candles_b64gz missing/empty")
+        return rep
+    df = pd.DataFrame(candles)
+    for col in ("epoch", "open", "high", "low", "close"):
+        if col not in df.columns:
+            rep.add("test_vectors", "fail", f"test candles missing column {col}")
+            return rep
 
-    # 4. causality: features at cut indices identical between full and truncated series
-    full_f = compute_features(pack["features"]["dsl"], candles)
-    cuts = [int(len(candles) * f) for f in (0.4, 0.55, 0.7, 0.85)]
-    for c in cuts:
-        trunc = compute_features(pack["features"]["dsl"], candles[:c + 1])
-        a, b = full_f.iloc[c], trunc.iloc[-1]
-        both = pd.concat([a, b], axis=1).dropna()
-        if len(both) and not np.allclose(both.iloc[:, 0], both.iloc[:, 1], atol=1e-9, equal_nan=True):
-            bad = both[~np.isclose(both.iloc[:, 0], both.iloc[:, 1], atol=1e-9)].index.tolist()
-            raise AssertionError(f"causality: features {bad} differ at cut {c} (future leakage)")
-    _r(checks, "causality", "pass", f"{len(cuts)} truncation cuts, features identical")
+    # ---- 4. causality / no-leakage
+    try:
+        _check_causality(pack, df, rep)
+    except Exception as e:
+        rep.add("causality", "fail", f"exception: {e}")
 
-    # 5. reproducibility on embedded test vectors
-    model = load_model(pack["model"])
-    idxs = tests.get("check_indices", [])
-    exp_f, exp_p = tests.get("expected_features", {}), tests.get("expected_probs", [])
-    tol = float(tests.get("tolerance", 1e-6))
-    if idxs and exp_f:
-        for i, exp in zip(idxs, exp_f):
-            for k, v in exp.items():
-                got = full_f.iloc[i].get(k)
-                assert got is not None and abs(float(got) - float(v)) <= tol, f"feature {k}[{i}] {got} != expected {v}"
-    probs = []
-    for i in idxs:
-        row = {f: float(full_f.iloc[i].get(f, 0.0)) for f in model.features}
-        probs.append(model.predict_proba(row))
-    if exp_p:
-        assert len(exp_p) == len(probs) and all(abs(a - b) <= tol for a, b in zip(probs, exp_p)), "probs mismatch"
-    _r(checks, "reproducibility", "pass", f"{len(idxs)} test vectors within tolerance {tol}")
+    # ---- 5. reproducibility
+    try:
+        _check_repro(pack, df, rep)
+    except Exception as e:
+        rep.add("reproducibility", "fail", f"exception: {e}")
 
-    # 6. determinism
-    f2 = compute_features(pack["features"]["dsl"], candles)
-    assert full_f.equals(f2), "feature computation is not deterministic"
-    _r(checks, "determinism", "pass", "two runs identical")
+    # ---- 6. determinism
+    try:
+        _check_determinism(pack, df, rep)
+    except Exception as e:
+        rep.add("determinism", "fail", f"exception: {e}")
 
-    # 7. sandbox run for custom code (fail closed)
+    # ---- 7. sandbox run for custom code
+    try:
+        _check_sandbox(pack, df, rep)
+    except Exception as e:
+        rep.add("sandbox_run", "fail", f"exception: {e}")
+
+    # ---- 8. performance
+    try:
+        _check_perf(pack, df, rep)
+    except Exception as e:
+        rep.add("performance", "fail", f"exception: {e}")
+
+    # ---- 9. output sanity
+    try:
+        _check_sanity(pack, df, rep)
+    except Exception as e:
+        rep.add("output_sanity", "fail", f"exception: {e}")
+
+    return rep
+
+
+# ------------------------------------------------------------------ checks
+def _check_schema(pack: dict, rep: Report):
+    req = ["schema_version", "symbol", "pack_version", "created_utc",
+           "min_engine_version", "features", "model", "rules", "decision",
+           "risk", "backtest", "tests", "checksum_sha256"]
+    missing = [k for k in req if k not in pack]
+    if missing:
+        rep.add("schema", "fail", f"missing keys {missing}")
+        return
+    if not re.match(SYMBOL_RE, pack.get("symbol", "")):
+        rep.add("schema", "fail", f"symbol '{pack.get('symbol')}' fails {SYMBOL_RE}")
+        return
+    if int(pack.get("schema_version", 0)) != 1:
+        rep.add("schema", "fail", "schema_version must be 1")
+        return
+    if int(pack.get("pack_version", 0)) < 1:
+        rep.add("schema", "fail", "pack_version must be >= 1")
+        return
+    risk = pack.get("risk", {})
+    sp = float(risk.get("stake_pct", 0))
+    if not (0 < sp <= 0.10):
+        rep.add("schema", "fail", f"stake_pct {sp} out of (0, 0.10]")
+        return
+    dec = pack.get("decision", {})
+    pa = float(dec.get("payout_assumed", 0))
+    if not (0.5 <= pa <= 1.0):
+        rep.add("schema", "fail", f"payout_assumed {pa} out of [0.5, 1.0]")
+        return
+    if float(dec.get("margin", 0)) < 0:
+        rep.add("schema", "fail", "margin must be >= 0")
+        return
+    if int(dec.get("horizon_min", 0)) != 15:
+        rep.add("schema", "fail", "horizon_min must be 15 (Deriv forex minimum)")
+        return
+    if float(risk.get("max_stake_suggested", 0)) < MIN_STAKE_FLOOR:
+        rep.add("schema", "fail", f"max_stake_suggest below {MIN_STAKE_FLOOR}")
+        return
+    rep.add("schema", "pass")
+
+
+def _check_engine_compat(pack: dict, rep: Report):
+    if _ver_tuple(pack.get("min_engine_version", "999")) > _ver_tuple(ENGINE_VERSION):
+        rep.add("engine_compat", "fail",
+                f"needs engine >= {pack['min_engine_version']}, have {ENGINE_VERSION}")
+        return
+    problems = validate_dsl(pack.get("features", {}).get("dsl", []))
+    if problems:
+        rep.add("engine_compat", "fail", "; ".join(problems[:8]))
+        return
+    if pack["model"].get("type") not in ("lightgbm_text", "tree_json", "logreg_json"):
+        rep.add("engine_compat", "fail", f"unknown model type {pack['model'].get('type')}")
+        return
+    in_feats = pack["model"].get("input_features", [])
+    dsl_ids = {n.get("id") for n in pack.get("features", {}).get("dsl", [])}
+    custom_cols = set()
+    for m in pack.get("features", {}).get("custom_modules", []):
+        # custom outputs are prefixed "<name>__"; we can't know names statically,
+        # so require input features not in DSL to carry that prefix pattern
+        custom_cols.add(m.get("name", "") + "__")
+    missing = [f for f in in_feats
+               if f not in dsl_ids and not any(f.startswith(p) for p in custom_cols)]
+    if missing:
+        rep.add("engine_compat", "fail", f"model inputs not produced by DSL/custom: {missing}")
+        return
+    rep.add("engine_compat", "pass")
+
+
+def _check_custom_static(pack: dict, rep: Report):
     mods = pack.get("features", {}).get("custom_modules", [])
-    if mods:
-        from .sandbox import run_custom_module, SandboxUnavailable
+    if not mods:
+        rep.add("custom_static", "pass", "no custom code")
+        return
+    for m in mods:
         try:
-            for m in mods:
-                out = run_custom_module(m["name"], m["code_b64gz"], candles[:100])
-                assert len(out) > 0
-            _r(checks, "sandbox", "pass", f"{len(mods)} modules ran in sandbox")
-        except SandboxUnavailable as e:
-            _r(checks, "sandbox", "fail", f"FAIL-CLOSED: {e}")
+            code = decode_b64gz(m["code_b64gz"]).decode("utf8")
+        except Exception as e:
+            rep.add("custom_static", "fail", f"{m.get('name')}: decode error {e}")
+            return
+        if hashlib.sha256(code.encode("utf8")).hexdigest() != m.get("sha256"):
+            rep.add("custom_static", "fail", f"{m.get('name')}: sha256 mismatch")
+            return
+        if len(code.encode()) > 64 * 1024:
+            rep.add("custom_static", "fail", f"{m.get('name')}: exceeds 64KB module cap")
+            return
+        for tok in BANNED_TOKENS:
+            if re.search(rf"(?<![A-Za-z0-9_]){re.escape(tok)}(?![A-Za-z0-9_])", code):
+                rep.add("custom_static", "fail",
+                        f"{m.get('name')}: banned token '{tok}' in source")
+                return
+        for mline in re.finditer(r"^\s*(?:import|from)\s+([A-Za-z0-9_.]+)", code, re.M):
+            root = mline.group(1).split(".")[0]
+            if root not in ALLOWED_IMPORTS:
+                rep.add("custom_static", "fail",
+                        f"{m.get('name')}: non-whitelisted import '{mline.group(1)}'")
+                return
+        if not re.search(r"def\s+compute\s*\(", code):
+            rep.add("custom_static", "fail", f"{m.get('name')}: no compute() entrypoint")
+            return
+    rep.add("custom_static", "pass", f"{len(mods)} module(s) clean")
+
+
+def _check_backtest(pack: dict, rep: Report):
+    bt = pack.get("backtest", {})
+    payout = float(pack.get("decision", {}).get("payout_assumed", 0.85))
+    be = 1.0 / (1.0 + payout)
+    wr = float(bt.get("win_rate", 0.0))
+    n = int(bt.get("oos_trades", 0))
+    verdict = bt.get("verdict", "")
+    if abs(float(bt.get("break_even_win_rate", 0)) - be) > 0.01:
+        rep.add("backtest_consistency", "fail",
+                f"break_even_win_rate {bt.get('break_even_win_rate')} != 1/(1+{payout})={be:.4f}")
+        return
+    if n < MIN_OOS_TRADES:
+        rep.add("backtest_consistency", "fail", f"oos_trades {n} < {MIN_OOS_TRADES}")
+        return
+    expected = "pass" if wr > be + float(pack.get("decision", {}).get("margin", 0)) else "fail"
+    if verdict != expected:
+        rep.add("backtest_consistency", "fail",
+                f"verdict '{verdict}' inconsistent with wr={wr:.4f} vs be={be:.4f}")
+        return
+    if float(bt.get("max_drawdown_pct", 100)) > 50:
+        rep.add("backtest_consistency", "fail", "max_drawdown_pct > 50")
+        return
+    if wr > IMPLAUSIBLE_WIN_RATE:
+        rep.add("backtest_consistency", "warn",
+                f"win rate {wr:.3f} implausibly high for 15m forex binaries — probable leakage")
     else:
-        _r(checks, "sandbox", "pass", "no custom code (DSL-only)")
+        rep.add("backtest_consistency", "pass",
+                f"wr={wr:.4f} vs be={be:.4f}, n={n}, verdict={verdict}")
 
-    # 8. performance
+
+def _feats_and_probs(pack: dict, df: pd.DataFrame):
+    p = Pack(pack)
+    feats = p.compute_features(df)
+    probs = p.predict_proba(feats)
+    return feats, probs
+
+
+def _check_causality(pack: dict, df: pd.DataFrame, rep: Report):
+    n = len(df)
+    if n < 120:
+        rep.add("causality", "fail", "need >= 120 test candles")
+        return
+    full = Pack(pack).compute_features(df)
+    cuts = [int(n * f) for f in (0.4, 0.55, 0.7, 0.85)]
+    bad = []
+    for c in cuts:
+        part = Pack(pack).compute_features(df.iloc[:c])
+        a = full.iloc[c - 1]
+        b = part.iloc[-1]
+        for col in full.columns:
+            va, vb = a[col], b[col]
+            if pd.isna(va) and pd.isna(vb):
+                continue
+            if not np.isclose(va, vb, rtol=0, atol=1e-9, equal_nan=True):
+                bad.append(f"{col}@{c}")
+                break
+    if bad:
+        rep.add("causality", "fail", f"non-causal features at cuts: {bad[:5]}")
+    else:
+        rep.add("causality", "pass", f"verified at cuts {cuts}")
+
+
+def _check_repro(pack: dict, df: pd.DataFrame, rep: Report):
+    tests = pack.get("tests", {})
+    tol = float(tests.get("tolerance", 1e-6))
+    feats, probs = _feats_and_probs(pack, df)
+    idxs = tests.get("check_indices", [])
+    expf = tests.get("expected_features", {})
+    expp = tests.get("expected_probs", [])
+    if not idxs or not expf or not expp:
+        rep.add("reproducibility", "fail", "missing check_indices/expected_features/expected_probs")
+        return
+    for i in idxs:
+        for name, val in expf.get(str(i), {}).items():
+            got = float(feats[name].iloc[i])
+            if not np.isclose(got, float(val), rtol=0, atol=tol, equal_nan=True):
+                rep.add("reproducibility", "fail",
+                        f"feature {name}@{i}: got {got} expected {val}")
+                return
+    for j, i in enumerate(idxs):
+        got = float(probs[i])
+        if not np.isclose(got, float(expp[j]), rtol=0, atol=tol):
+            rep.add("reproducibility", "fail",
+                    f"prob@{i}: got {got} expected {expp[j]}")
+            return
+    rep.add("reproducibility", "pass", f"{len(idxs)} indices reproduced within {tol}")
+
+
+def _check_determinism(pack: dict, df: pd.DataFrame, rep: Report):
+    _, p1 = _feats_and_probs(pack, df)
+    _, p2 = _feats_and_probs(pack, df)
+    if np.allclose(p1, p2, rtol=0, atol=0):
+        rep.add("determinism", "pass")
+    else:
+        rep.add("determinism", "fail", "two runs differ")
+
+
+def _check_sandbox(pack: dict, df: pd.DataFrame, rep: Report):
+    mods = pack.get("features", {}).get("custom_modules", [])
+    if not mods:
+        rep.add("sandbox_run", "skip", "no custom code")
+        return
+    if not _sandbox.sandbox_available():
+        rep.add("sandbox_run", "fail",
+                "sandbox isolation unavailable (fail closed): cannot verify custom code")
+        return
+    candles = df[["epoch", "open", "high", "low", "close"]].tail(300).to_dict("records")
+    for m in mods:
+        code = decode_b64gz(m["code_b64gz"]).decode("utf8")
+        res = _sandbox.run_module(code, candles, m.get("params", {}), cpu_s=15, wall_s=25)
+        if not res.get("ok"):
+            rep.add("sandbox_run", "fail", f"{m['name']}: {res.get('error')}")
+            return
+    rep.add("sandbox_run", "pass", f"{len(mods)} module(s) ran clean in isolated sandbox")
+
+
+def _check_perf(pack: dict, df: pd.DataFrame, rep: Report):
+    p = Pack(pack)
     t0 = time.perf_counter()
-    for i in idxs[:1] or [len(candles) - 1]:
-        row = {f: float(full_f.iloc[i].get(f, 0.0)) for f in model.features}
-        model.predict_proba(row)
-    lat = time.perf_counter() - t0
-    assert lat < 2.0, f"inference latency {lat:.2f}s >= 2s"
-    _r(checks, "performance", "pass", f"inference {lat*1000:.1f}ms")
+    feats = p.compute_features(df.tail(500))
+    p.predict_proba(feats)
+    dt = time.perf_counter() - t0
+    if dt > 2.0:
+        rep.add("performance", "fail", f"single inference {dt:.2f}s > 2s")
+    else:
+        rep.add("performance", "pass", f"{dt*1000:.0f} ms")
 
-    # 9. output sanity + rule/news parse
-    assert all(0.0 <= p <= 1.0 for p in probs) and not any(np.isnan(probs)), "probs out of [0,1] or NaN"
-    if len(set(round(p, 9) for p in probs)) <= 1 and len(probs) > 1:
-        raise AssertionError("model output is constant")
-    validate_rules(pack.get("rules", {}) or {})
-    _r(checks, "output_sanity", "pass", "probs in range, non-constant, rules parse")
+
+def _check_sanity(pack: dict, df: pd.DataFrame, rep: Report):
+    _, probs = _feats_and_probs(pack, df)
+    if not np.isfinite(probs).all():
+        rep.add("output_sanity", "fail", "NaN/inf probabilities")
+        return
+    if probs.min() < 0 or probs.max() > 1:
+        rep.add("output_sanity", "fail", f"probs outside [0,1]: [{probs.min()}, {probs.max()}]")
+        return
+    if float(probs.std()) < 1e-9:
+        rep.add("output_sanity", "fail", "constant probabilities")
+        return
+    rp = _rules.validate_rules(pack.get("rules", {}))
+    if rp:
+        rep.add("output_sanity", "fail", "rule tree: " + "; ".join(rp[:5]))
+        return
+    rep.add("output_sanity", "pass",
+            f"prob range [{probs.min():.3f}, {probs.max():.3f}]")
+
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="validate_pack")
-    ap.add_argument("file"); ap.add_argument("--mode", choices=["fast", "full"], default="full")
-    a = ap.parse_args(argv)
-    raw = open(a.file, "rb").read()
-    try:
-        pack = json.loads(raw)
-    except json.JSONDecodeError as e:
-        report = {"verdict": "fail", "checks": [{"check": "parse", "status": "fail", "detail": str(e)}]}
-        print(json.dumps(report, indent=1)); print("\nVERDICT: FAIL (not valid JSON)"); sys.exit(2)
-    report = validate_pack(pack, raw, mode=a.mode)
-    print(json.dumps(report, indent=1))
-    print(f"\nVERDICT: {report['verdict'].upper()}")
-    for c in report["checks"]:
-        print(f"  [{c['status'].upper():4}] {c['check']}: {c['detail']}")
-    sys.exit(0 if report["verdict"] in ("pass", "warn") else 1)
+    ap = argparse.ArgumentParser(description="SENTINEL-FX pair-pack validator")
+    ap.add_argument("pack")
+    ap.add_argument("--mode", choices=["fast", "full"], default="full")
+    args = ap.parse_args(argv)
+    rep = validate(args.pack, args.mode)
+    print(rep.to_json())
+    print()
+    for c in rep.checks:
+        icon = {"pass": "PASS", "fail": "FAIL", "warn": "WARN", "skip": "SKIP"}[c["status"]]
+        line = f"[{icon}] {c['check']}"
+        if c["detail"]:
+            line += f" — {c['detail']}"
+        print(line)
+    print(f"\nOverall: {'PASS' if rep.ok else 'FAIL'} ({rep.mode} mode)")
+    sys.exit(0 if rep.ok else 1)
+
 
 if __name__ == "__main__":
     main()

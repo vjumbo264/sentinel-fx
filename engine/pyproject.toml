@@ -1,13 +1,24 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "sentinel-engine"
 version = "1.0.0"
-description = "SENTINEL-FX engine: causal indicators, feature DSL, rule layer, model loaders, sandboxed custom code, decision pipeline"
+description = "SENTINEL-FX public engine: indicators, causal feature DSL, rule layer, model loaders, sandbox, pack validator"
+readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["numpy>=1.24", "pandas>=2.0"]
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+]
+
+[project.optional-dependencies]
+lightgbm = ["lightgbm>=4.0"]
+
+[project.scripts]
+sentinel-validate = "sentinel_engine.validate:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

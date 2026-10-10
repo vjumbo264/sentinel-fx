@@ -1,25 +1,93 @@
 {
-  "phase": "scaffold",
-  "steps": [
-    {"id": "repo_scaffold", "status": "doing", "note": "repo created public; initial scaffold commit"},
-    {"id": "engine_indicators", "status": "todo", "note": "sentinel_engine: indicator library"},
-    {"id": "engine_dsl", "status": "todo", "note": "feature DSL interpreter, causal-only"},
-    {"id": "engine_rules_models", "status": "todo", "note": "rule layer + model loaders (lgbm text/tree/logreg json)"},
-    {"id": "engine_sandbox", "status": "todo", "note": "custom-code sandbox runner, fail-closed"},
-    {"id": "engine_pipeline", "status": "todo", "note": "decision pipeline features->model->rules->news"},
-    {"id": "validator", "status": "todo", "note": "tools/validate_pack.py fast+full modes"},
-    {"id": "fixtures", "status": "todo", "note": "leaky/tampered/malicious packs must be rejected"},
-    {"id": "worker_d1", "status": "todo", "note": "Cloudflare Worker + D1 schema + endpoints"},
-    {"id": "site_pages", "status": "todo", "note": "mobile-first control site on Pages"},
-    {"id": "bot_workflow", "status": "todo", "note": "bot/ + self-chaining bot.yml"},
-    {"id": "validate_workflow", "status": "todo", "note": "validate-pack.yml, no secrets in job"},
-    {"id": "train_prompt", "status": "todo", "note": "TRAIN_PROMPT.md credential-free"},
-    {"id": "first_pair", "status": "todo", "note": "train frxEURUSD via TRAIN_PROMPT, upload path, honest verdict"},
-    {"id": "handoff_test", "status": "todo", "note": "observe one self-chain handoff in DEMO"},
-    {"id": "docs_readme", "status": "todo", "note": "PAIRPACK_SPEC.md + README setup"}
-  ],
-  "deployed": {"worker_url": "", "pages_url": "", "d1_id": ""},
-  "pairs": {},
-  "blockers": [],
-  "updated_utc": "2026-10-10T00:00:00Z"
+ "phase": "engine",
+ "steps": [
+  {
+   "id": "repo_scaffold",
+   "status": "done",
+   "note": "repo created public; initial scaffold commit"
+  },
+  {
+   "id": "engine_indicators",
+   "status": "done",
+   "note": "engine package written, smoke-tested"
+  },
+  {
+   "id": "engine_dsl",
+   "status": "done",
+   "note": "engine package written, smoke-tested"
+  },
+  {
+   "id": "engine_rules_models",
+   "status": "done",
+   "note": "engine package written, smoke-tested"
+  },
+  {
+   "id": "engine_sandbox",
+   "status": "done",
+   "note": "engine package written, smoke-tested"
+  },
+  {
+   "id": "engine_pipeline",
+   "status": "done",
+   "note": "engine package written, smoke-tested"
+  },
+  {
+   "id": "validator",
+   "status": "doing",
+   "note": "validator written; fixtures next"
+  },
+  {
+   "id": "fixtures",
+   "status": "todo",
+   "note": "leaky/tampered/malicious packs must be rejected"
+  },
+  {
+   "id": "worker_d1",
+   "status": "todo",
+   "note": "Cloudflare Worker + D1 schema + endpoints"
+  },
+  {
+   "id": "site_pages",
+   "status": "todo",
+   "note": "mobile-first control site on Pages"
+  },
+  {
+   "id": "bot_workflow",
+   "status": "todo",
+   "note": "bot/ + self-chaining bot.yml"
+  },
+  {
+   "id": "validate_workflow",
+   "status": "todo",
+   "note": "validate-pack.yml, no secrets in job"
+  },
+  {
+   "id": "train_prompt",
+   "status": "todo",
+   "note": "TRAIN_PROMPT.md credential-free"
+  },
+  {
+   "id": "first_pair",
+   "status": "todo",
+   "note": "train frxEURUSD via TRAIN_PROMPT, upload path, honest verdict"
+  },
+  {
+   "id": "handoff_test",
+   "status": "todo",
+   "note": "observe one self-chain handoff in DEMO"
+  },
+  {
+   "id": "docs_readme",
+   "status": "todo",
+   "note": "PAIRPACK_SPEC.md + README setup"
+  }
+ ],
+ "deployed": {
+  "worker_url": "",
+  "pages_url": "",
+  "d1_id": ""
+ },
+ "pairs": {},
+ "blockers": [],
+ "updated_utc": "2026-10-10T03:12:40Z"
 }
