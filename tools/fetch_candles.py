@@ -13,6 +13,7 @@ Usage:
       --mode full|incremental [--existing prev.csv.gz] --out out/
 
 Output: <out>/<symbol>_<granularity>s.csv.gz  (epoch,open,high,low,close)
+Symbols: forex frxEURUSD-style OR synthetic indices (R_100, 1HZ100V, ...).
 Prints a final line "STATS {json}" for the workflow to parse.
 """
 from __future__ import annotations
@@ -29,11 +30,15 @@ PUBLIC_WS = "wss://ws.derivws.com/websockets/v3?app_id=1089"
 MAX_PER_REQ = 5000
 
 
-async def fetch_batch(symbol, gran, end, count):
+DEADLINE_S = 1500  # hard cap: never spin inside the 120-min job timeout
+
+async def fetch_batch(symbol, gran, end, count, deadline):
     """One page of candles, reconnecting with backoff on any failure."""
-    import websockets
+    import websockets, time as _t
     backoff = 1.0
     while True:
+        if _t.time() > deadline:
+            raise SystemExit("fetch deadline exceeded; partial pages kept")
         try:
             async with websockets.connect(PUBLIC_WS, ping_interval=20,
                                           ping_timeout=20, close_timeout=10) as ws:
@@ -56,9 +61,14 @@ async def fetch_batch(symbol, gran, end, count):
 
 async def pull(symbol, gran, start_after=None):
     """Full backfill, or incremental (only epochs > start_after)."""
+    import time as _t
+    deadline = _t.time() + DEADLINE_S
     rows, end, prev_oldest = [], "latest", None
     while True:
-        cs = await fetch_batch(symbol, gran, end, MAX_PER_REQ)
+        if _t.time() > deadline:
+            print("[fetch] deadline reached; writing what we have", flush=True)
+            break
+        cs = await fetch_batch(symbol, gran, end, MAX_PER_REQ, deadline)
         if not cs:
             break
         cs = sorted({int(c["epoch"]): c for c in cs}.values(),
@@ -108,7 +118,8 @@ def main():
     ap.add_argument("--out", default="out")
     a = ap.parse_args()
     import os, re
-    assert re.match(r"^frx[A-Z]{6}$", a.symbol), "bad symbol"
+    assert re.match(r"^(frx[A-Z]{6}|R_\d+|1HZ\d+V)$", a.symbol), \
+        "bad symbol: expected frxXXXYYY, R_<n> or 1HZ<n>V"
     os.makedirs(a.out, exist_ok=True)
 
     existing = {}
@@ -128,9 +139,10 @@ def main():
     epochs = sorted(existing)
     assert all(b > x for x, b in zip(epochs, epochs[1:])), "epochs not increasing"
 
+    is_fx = a.symbol.startswith("frx")
     gaps = []
     for x, b in zip(epochs, epochs[1:]):
-        if b - x > a.granularity * 5 and not weekend_span(x, b):
+        if b - x > a.granularity * 5 and (not is_fx or not weekend_span(x, b)):
             gaps.append({"from": x, "to": b, "seconds": b - x})
 
     fname = f"{a.symbol}_{a.granularity}s.csv.gz"

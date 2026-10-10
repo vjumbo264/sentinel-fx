@@ -121,8 +121,8 @@
   },
   {
    "id": "DATA",
-   "status": "todo",
-   "note": "tools/fetch_candles.py + fetch-candles.yml; shared data-0N releases; data/index.json; daily incremental update"
+   "status": "doing",
+   "note": "fetch_candles.py now accepts frx* AND synthetic indices (R_50/75/100, 1HZ75V/100V); weekend-gap check skipped for 24/7 synthetics; added 25-min hard deadline so a 520-loop can never spin 120min again; tracked_pairs.json extended with 5 synthetics"
   },
   {
    "id": "NEWS",
@@ -179,5 +179,5 @@
   }
  },
  "blockers": [],
- "updated_utc": "2026-10-10T11:35:00Z"
+ "updated_utc": "2026-10-10T12:45:00Z"
 }

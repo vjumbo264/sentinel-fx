@@ -1,9 +1,25 @@
 {
  "pairs": [
-  "frxEURUSD", "frxGBPUSD", "frxUSDJPY", "frxAUDUSD", "frxUSDCAD",
-  "frxUSDCHF", "frxNZDUSD", "frxEURGBP", "frxEURJPY", "frxGBPJPY",
-  "frxEURAUD", "frxAUDJPY", "frxEURCAD", "frxEURCHF"
+  "frxEURUSD",
+  "frxGBPUSD",
+  "frxUSDJPY",
+  "frxAUDUSD",
+  "frxUSDCAD",
+  "frxUSDCHF",
+  "frxNZDUSD",
+  "frxEURGBP",
+  "frxEURJPY",
+  "frxGBPJPY",
+  "frxEURAUD",
+  "frxAUDJPY",
+  "frxEURCAD",
+  "frxEURCHF",
+  "R_100",
+  "R_75",
+  "R_50",
+  "1HZ100V",
+  "1HZ75V"
  ],
- "note": "Cached tracked set (Deriv frx* pairs offering 15-minute rise/fall, per active_symbols/contracts_for; static fallback list from TRAINUI spec). Editable from the Train page.",
+ "note": "Tracked set: frx* forex pairs (15-min rise/fall) plus synthetic indices R_50/75/100 and 1HZ75V/100V (24/7, 1-min contracts). Editable from the Train page.",
  "updated_utc": "2026-10-10T00:00:00Z"
 }
