@@ -35,9 +35,11 @@ python3 tools/mt5_spike.py \
   --password "${MT5_PASSWORD:-Kaiju-No.8}" \
   --server "${MT5_DEMO_SERVER:-Deriv-Demo}" \
   --out-md docs/mt5-spike.md \
-  --out-json mt5_spike_result.json
+  --out-json mt5_spike_result.json || SPIKE_EXIT=$?
 
 echo "Container logs inspection:"
+docker logs --tail 100 mt5-spike-primary || true
+if [ "${SPIKE_EXIT:-0}" -ne 0 ]; then exit $SPIKE_EXIT; fi
 docker logs --tail 30 mt5-spike-primary || true
 
 echo "MT5 Spike completed successfully."
