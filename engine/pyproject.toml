@@ -19,6 +19,8 @@ lightgbm = ["lightgbm>=4.0"]
 
 [project.scripts]
 sentinel-validate = "sentinel_engine.validate:main"
+sentinel-check = "sentinel_engine.check:main"
+sfx = "sentinel_engine.sfx:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

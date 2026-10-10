@@ -457,36 +457,6 @@ class Bot:
         except Exception as e:
             log("warn", None, f"reconcile failed: {e}")
 
-    async def settle_shadow(self, packs):
-        for p in self.state.get("pairs", []):
-            sym = p["symbol"]
-            try:
-                r = http("GET", f"/api/bot/shadow/open?pair={sym}")
-                opens = r.get("open", [])
-                if not opens:
-                    continue
-                df = await self.sess.fetch_candles(sym, count=30)
-                if df.empty:
-                    continue
-                df = df.sort_values("epoch")
-                last_close = float(df["close"].iloc[-1])
-                now_epoch = int(time.time())
-                for sg in opens:
-                    opened = datetime.fromisoformat(
-                        sg["open_utc"].replace("Z", "+00:00")).timestamp()
-                    if now_epoch - opened < 15 * 60:
-                        continue
-                    entry = float(sg["entry_price"])
-                    win = (sg["side"] == "CALL" and last_close > entry) or \
-                          (sg["side"] == "PUT" and last_close < entry)
-                    stake = float(sg["stake"] or MIN_STAKE)
-                    pnl = stake * 0.85 if win else -stake
-                    http("POST", "/api/bot/shadow/settle",
-                         {"id": sg["id"], "exit_price": last_close,
-                          "result": "win" if win else "loss", "pnl": round(pnl, 2)})
-            except Exception as e:
-                log("warn", sym, f"shadow settle failed: {e}")
-
     # -- one supervised iteration ---------------------------------------------
     async def iteration(self, packs, stop_open_at):
         self.refresh_state()
@@ -499,7 +469,6 @@ class Bot:
         bal = await self.sess.balance()
         heartbeat(self.sess.mode, bal, "loop",
                   self.sess.masked(), self.sess.currency)
-        await self.settle_shadow(packs)
 
         for p in self.state.get("pairs", []):
             sym = p["symbol"]

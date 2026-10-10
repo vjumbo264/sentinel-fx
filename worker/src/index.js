@@ -241,31 +241,134 @@ export default {
       // FIX-D: candle proxy so the site chart always renders through the Worker.
       if (path === "/api/candles" && method === "GET") {
         const symbol = url.searchParams.get("symbol") || "R_100";
-        const gran = Math.max(60, parseInt(url.searchParams.get("granularity") || "60", 10) || 60);
-        const count = Math.min(5000, Math.max(50, parseInt(url.searchParams.get("count") || "500", 10) || 500));
+        const gran = Math.max(1, parseInt(url.searchParams.get("granularity") || "60", 10) || 60);
+        const count = Math.min(5000, Math.max(10, parseInt(url.searchParams.get("count") || "300", 10) || 300));
+
+        // Check memory cache (10 seconds)
+        const cacheKey = `${symbol}_${gran}`;
+        const now = Date.now();
+        if (globalThis._candlesCache && globalThis._candlesCache[cacheKey] && (now - globalThis._candlesCache[cacheKey].ts < 10000)) {
+          const cached = globalThis._candlesCache[cacheKey];
+          return json({ ok: true, symbol, granularity: gran, count: cached.candles.length, candles: cached.candles, source: "cache" });
+        }
+
         try {
+          const derivToken = env.DERIV_BEARER_TOKEN;
+          const derivAppId = env.DERIV_APP_ID || "1089";
+          let wsUrl = `wss://ws.derivws.com/websockets/v3?app_id=${derivAppId}`;
+
+          // Authenticated OTP flow
+          if (derivToken) {
+            try {
+              const accsRes = await fetch("https://api.derivws.com/trading/v1/options/accounts", {
+                headers: {
+                  "Authorization": `Bearer ${derivToken}`,
+                  "Deriv-App-ID": derivAppId,
+                  "Accept": "application/json",
+                  "User-Agent": "sentinel-fx-worker/2.0"
+                }
+              });
+              if (accsRes.ok) {
+                const accsData = await accsRes.json();
+                const accs = accsData.data || accsData.accounts || [];
+                const demoAcc = accs.find(a =>
+                  a.account_type === "demo" ||
+                  String(a.loginid || a.account_id || "").startsWith("VRTC") ||
+                  String(a.loginid || a.account_id || "").startsWith("DOT")
+                ) || accs[0];
+
+                if (demoAcc) {
+                  const lid = demoAcc.account_id || demoAcc.loginid;
+                  const otpRes = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${lid}/otp`, {
+                    method: "POST",
+                    headers: {
+                      "Authorization": `Bearer ${derivToken}`,
+                      "Deriv-App-ID": derivAppId,
+                      "Content-Type": "application/json",
+                      "Accept": "application/json",
+                      "User-Agent": "sentinel-fx-worker/2.0"
+                    },
+                    body: "{}"
+                  });
+                  if (otpRes.ok) {
+                    const otpData = await otpRes.json();
+                    if (otpData?.data?.url) {
+                      wsUrl = otpData.data.url;
+                    }
+                  }
+                }
+              }
+            } catch (authErr) {
+              console.warn("Worker auth OTP fallback:", authErr);
+            }
+          }
+
+          // Open outbound WebSocket in Cloudflare Workers
+          const wsResponse = await fetch(wsUrl, {
+            headers: {
+              Upgrade: "websocket",
+              Origin: "https://app.deriv.com",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+          });
+          const sock = wsResponse.webSocket;
+          if (!sock) {
+            throw new Error("Deriv WebSocket upgrade failed");
+          }
+          sock.accept();
+
           const candles = await new Promise((resolve, reject) => {
-            const to = setTimeout(() => reject(new Error("deriv ws timeout")), 9000);
-            let sock;
-            try { sock = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1089"); }
-            catch (e) { clearTimeout(to); return reject(e); }
-            sock.addEventListener("open", () => sock.send(JSON.stringify({
-              ticks_history: symbol, adjust_start_time: 1, count, end: "latest",
-              granularity: gran, style: "candles"
-            })));
+            const timeout = setTimeout(() => {
+              try { sock.close(); } catch (_) {}
+              reject(new Error("Deriv ticks_history timeout"));
+            }, 8000);
+
             sock.addEventListener("message", (ev) => {
               try {
-                const m = JSON.parse(ev.data);
-                if (m.error) { clearTimeout(to); sock.close(); return reject(new Error(m.error.message)); }
-                if (m.candles) { clearTimeout(to); sock.close(); resolve(m.candles); }
-              } catch (e) { /* keep waiting */ }
+                const msg = JSON.parse(ev.data);
+                if (msg.error) {
+                  clearTimeout(timeout);
+                  try { sock.close(); } catch (_) {}
+                  return reject(new Error(msg.error.message || "Deriv error"));
+                }
+                if (msg.candles) {
+                  clearTimeout(timeout);
+                  try { sock.close(); } catch (_) {}
+                  return resolve(msg.candles);
+                }
+              } catch (_) {}
             });
-            sock.addEventListener("error", () => { clearTimeout(to); reject(new Error("deriv ws error")); });
+
+            sock.addEventListener("error", (err) => {
+              clearTimeout(timeout);
+              try { sock.close(); } catch (_) {}
+              reject(new Error("WebSocket connection error"));
+            });
+
+            sock.send(JSON.stringify({
+              ticks_history: symbol,
+              adjust_start_time: 1,
+              count,
+              end: "latest",
+              granularity: gran,
+              style: "candles",
+              req_id: 1
+            }));
           });
-          candles.sort((a, b) => a.epoch - b.epoch);
+
+          candles.sort((a, b) => +a.epoch - +b.epoch);
+          if (!globalThis._candlesCache) globalThis._candlesCache = {};
+          globalThis._candlesCache[cacheKey] = { ts: now, candles };
+
           return json({ ok: true, symbol, granularity: gran, count: candles.length, candles });
         } catch (e) {
-          return err("candles unavailable: " + (e && e.message || e), 502);
+          const errMsg = (e && e.message) ? e.message : String(e);
+          const isMarketClosed = errMsg.toLowerCase().includes("closed") || errMsg.toLowerCase().includes("market is closed");
+          return json({
+            error: errMsg,
+            market_closed: isMarketClosed,
+            symbol
+          }, isMarketClosed ? 200 : 502);
         }
       }
 

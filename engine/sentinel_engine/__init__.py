@@ -8,10 +8,13 @@ Install:
 """
 from .dsl import ENGINE_VERSION, compute_features, validate_dsl
 from .pack import Pack, load_pack, pack_checksum, verify_checksum
+from .check import check_bundle
+from .bundle import load_bundle, verify_bundle
 
 __version__ = ENGINE_VERSION
 __all__ = [
     "ENGINE_VERSION", "__version__", "compute_features", "validate_dsl",
     "Pack", "load_pack", "pack_checksum", "verify_checksum",
+    "check_bundle", "load_bundle", "verify_bundle",
     "indicators", "rules", "models", "news", "sandbox", "pack", "validate",
 ]
