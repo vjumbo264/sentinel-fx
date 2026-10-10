@@ -90,7 +90,7 @@ jobs:
         run: |
           mkdir -p out prev
           ASSET="${SYMBOL}_${GRANULARITY}s.csv.gz"
-          gh release download data-01 -p "$ASSET" -D prev --clobber 2>/dev/null || \
+          gh release download data-01 -p "$ASSET" -R "$GITHUB_REPOSITORY" -D prev --clobber 2>/dev/null || \
             echo "no existing asset; first run is a full pull"
       - name: Fetch candles from Deriv public WS
         run: |
@@ -102,16 +102,16 @@ jobs:
       - name: Swap asset into shared release (never leave a half-written asset)
         run: |
           ASSET="${SYMBOL}_${GRANULARITY}s.csv.gz"
-          gh release view data-01 >/dev/null 2>&1 || \
-            gh release create data-01 --title "data-01" \
+          gh release view data-01 -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create data-01 -R "$GITHUB_REPOSITORY" --title "data-01" \
               --notes "SENTINEL-FX candle data hub (shared release 01). One asset per pair+granularity."
           # 1) upload the verified local file under a temporary name
-          gh release upload data-01 "out/${ASSET}#${ASSET}.next" --clobber
+          gh release upload data-01 -R "$GITHUB_REPOSITORY" "out/${ASSET}#${ASSET}.next" --clobber
           # 2) only now delete the old asset and publish under the final name
           OLD_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/data-01" \
                    --jq ".assets[] | select(.name==\"$ASSET\") | .id" || true)
           [ -n "$OLD_ID" ] && gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$OLD_ID" || true
-          gh release upload data-01 "out/$ASSET" --clobber
+          gh release upload data-01 -R "$GITHUB_REPOSITORY" "out/$ASSET" --clobber
           NEXT_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/data-01" \
                     --jq ".assets[] | select(.name==\"$ASSET.next\") | .id" || true)
           [ -n "$NEXT_ID" ] && gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$NEXT_ID" || true
@@ -169,5 +169,5 @@ jobs:
           git push || true
       - name: Publish index.json as release asset
         run: |
-          gh release view data-01 >/dev/null 2>&1 || exit 0
-          gh release upload data-01 "data/index.json#index.json" --clobber
+          gh release view data-01 -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || exit 0
+          gh release upload data-01 -R "$GITHUB_REPOSITORY" "data/index.json#index.json" --clobber
