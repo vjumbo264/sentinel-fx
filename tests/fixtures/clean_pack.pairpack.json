@@ -1,0 +1,80 @@
+{
+ "schema_version": 1,
+ "symbol": "frxEURUSD",
+ "pack_version": 1,
+ "parent_version": null,
+ "created_utc": "2026-10-10T00:00:00Z",
+ "min_engine_version": "1.0.0",
+ "trainer": {
+  "ai": "fixture",
+  "notes": "test fixture"
+ },
+ "data": {
+  "granularity_s": 60,
+  "from_utc": "",
+  "to_utc": "",
+  "candles": 300
+ },
+ "features": {
+  "dsl": [
+   {
+    "name": "ret",
+    "op": "logret",
+    "inputs": [
+     "close"
+    ]
+   }
+  ],
+  "custom_modules": []
+ },
+ "model": {
+  "type": "logreg_json",
+  "encoding": "utf8",
+  "blob": "{\"coef\": [0.1], \"intercept\": 0.0}",
+  "input_features": [
+   "ret"
+  ],
+  "output": "prob_up"
+ },
+ "rules": {},
+ "decision": {
+  "horizon_min": 15,
+  "payout_assumed": 0.85,
+  "margin": 0.0,
+  "cooldown_min": 0
+ },
+ "risk": {
+  "stake_pct": 0.01,
+  "max_stake_suggested": 5.0,
+  "daily_loss_pct": 0.03,
+  "daily_target_pct": 0.045,
+  "max_consecutive_losses": 5,
+  "loss_cooldown_min": 30
+ },
+ "sessions": {
+  "allowed_utc_hours": []
+ },
+ "news_rules": {},
+ "backtest": {
+  "method": "walk_forward",
+  "folds": 4,
+  "oos_trades": 400,
+  "win_rate": 0.55,
+  "break_even_win_rate": 0.5405,
+  "edge": 0.01,
+  "max_drawdown_pct": 8.0,
+  "verdict": "fail",
+  "notes": "fixture"
+ },
+ "tests": {
+  "candles_b64gz": "H4sIAJiiyWoC/7Xby2pTYRiF4VspHRf5zgdvRRyVYoViCg4ciPfujseBkUKzVmZ/IIskmzfhGex3X28fnk/3j7dvb7Tl1+Pu5vb0/PDp/NwbPQ6PHz88/jzI+fh0+vLjJLvH6f7p9Pnh93nt293Nv5N1zWTIn4deWle7Zr0uTs41k/P3DV/8Oixeu37x8/urL5j+7x16XTP50gULu2b94gWLuWbypQuWAU+ihJlEFTyJNmYSPdAkJuBJrDCT2EInoWLEJFQGnYRqEJM4/iTQSagVMQl1QyahPugkNIKYhKbAk8hiJlEGT6KGmUQHPIkRZhJT0CTW4EnsEJMwCXQSpkJMwrTQSZgZMQmzQSdhHsQkDkogk7AodBKWxkwiB55EBTOJhvPamslrGzivbZi8toXy2gXOaxcmr13hvHZl8toNzmt3Jq/d4bz2YPLaA8prTzivvZi89oLz2pvJa284r32YvPaF89qXyesQKK9D4LwOZfI6DM7rMCavw+G8DmfyOgLO60gmryOhvI6C8zqKyetoOK9jmLyOgfM6lsnrWDivU5i8ToXyOhXO6zQmr9PgvE5n8joDzusMJq8z4bzOZPI6C8rrbDivs5m8zoHzOofJ61w4r0uYvC6B87qUyetSKK/L4LwuZ/K6HM7rCiavK+C8rmTyugrO6yomr6uhvK6G87qGyetaOK9rmbxugfO6hcnrVjiv25i8boPyuh3O63YmrzvgvO5k8roTzusuJq+74LzuZvK6B8rrHjive5m87oXzeoTJ61E4r0eZvB6D83qMyetxKK8n4LyeYPJ6Es7rSSavp+C8nmbyehrO6xkmr2egvJ6F83qFyesVOK9XmbxehfN6jcnrdTiv15m83oDyegPO600mr7fgvN5i8nobzuttJq934LzeZfJ6F8lrFUHzWkWIvD5ej+b1+Q4iXhLHOprXKk7k9bGO5rVKEHmtkgJNIgueRBkziRp4Eh3MJEbgSUwxk1iDJ7FEXqsKkteqiub1MUnktaqheX1MEnmt6mhen+8zJSahgea1ahoziRxoEhXwJFqYSXTBkxhjJjEDT2KJvD7feo1OwoTIazVF8vqYQ/P6+Bkn8lrN0bw+Jom8Vgs0r4/JYSaRAU+ihJlEQXltDee1NZPXNnBe2zJ5bQvntQuT1y5wXrsyee0G5bUbnNfuTF67w3ntweS1J5zXnkxee8F57cXktTeU1z5wXvswee0L57Uvk9chcF6HMnkdCud1GJPXYVBeh8N5HcHkdQSc15FMXkfCeR3F5HU0nNfRTF7HQHkdA+d1LJPXKXBepzB5nQrndSqT12lwXqczeZ0O5XUGnNcZTF5nwnmdxeR1FpzX2UxeZ8N5ncPkdS6U17lwXpcweV0C53Upk9dlcF6XMXldDud1OZPXFVBeV8J5XcnkdRWc11VMXlfDeV3D5HUNnNe1TF7XQnndAud1K5PXrXBetzF53QbndTuT1x1wXncwed0J5XUnnNddTF53w3ndzeR1D5zXPUxe917J6/ffAfq2A5V3ZgAA",
+  "check_indices": [
+   250,
+   299
+  ],
+  "expected_features": {},
+  "expected_probs": [],
+  "tolerance": 1e-06
+ },
+ "checksum_sha256": "04767354012acb30c446386834ff00e1a274213286eb30f9337c7b3360627a37"
+}

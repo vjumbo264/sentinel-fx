@@ -1,0 +1,26 @@
+name: validate-pair-pack
+on:
+  push:
+    paths: ["pairs/*/incoming/**"]
+permissions: { contents: read }   # NO secrets in this job. Custom code runs only in the sandbox.
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e ./engine
+      - name: full validation of incoming packs (sandbox enforced)
+        run: |
+          status=0
+          for f in $(git diff --name-only HEAD~1 HEAD -- 'pairs/*/incoming/*.json'); do
+            echo "=== validating $f ==="
+            python tools/validate_pack.py "$f" --mode full > "${f%.json}.report.json" || status=1
+          done
+          exit 0   # report files carry the verdict; site/worker reads them
+      - name: upload reports as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: validation-reports, path: "pairs/**/incoming/*.report.json" }

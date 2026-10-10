@@ -1,0 +1,25 @@
+name: sentinel-fx-bot
+on:
+  workflow_dispatch:
+  schedule: [{ cron: "17 */4 * * *" }]   # backup only; bot self-chains
+concurrency:
+  group: bot
+  cancel-in-progress: false
+permissions: { contents: read }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 245
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e ./engine websockets requests
+      - name: run bot (~3h50m, self-chains via GH_PAT)
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          DERIV_BEARER_TOKEN: ${{ secrets.DERIV_BEARER_TOKEN }}
+          DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
+          BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
+          WORKER_URL: ${{ secrets.WORKER_URL }}
+        run: python bot/bot.py

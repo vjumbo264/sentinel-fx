@@ -1,24 +1,76 @@
 {
-  "phase": "scaffold",
-  "steps": [
-    {"id": "repo_scaffold", "status": "done", "note": "repo created under vjumbo264/sentinel-fx (PAT account login is vjumbo264, not sentinel-fx)"},
-    {"id": "engine", "status": "todo", "note": "sentinel_engine package: indicators, causal DSL, rules, model loaders, sandbox, pipeline"},
-    {"id": "validator", "status": "todo", "note": "tools/validate_pack.py + engine.validate, fast/full modes"},
-    {"id": "fixtures", "status": "todo", "note": "leaky pack, tampered checksum pack, malicious code pack (must all be rejected)"},
-    {"id": "worker_d1", "status": "blocked", "note": "Cloudflare API token returned HTTP 401 on /user/tokens/verify — cannot deploy until owner supplies a valid token"},
-    {"id": "site", "status": "blocked", "note": "Pages deploy blocked by invalid Cloudflare token"},
-    {"id": "bot_workflow", "status": "todo", "note": "bot.yml self-chaining, 3h50m runs, D1 lease/heartbeat, demo default"},
-    {"id": "validate_workflow", "status": "todo", "note": "validate-pack.yml on push to pairs/*/incoming/**, no secrets in job"},
-    {"id": "first_pair_train", "status": "todo", "note": "frxEURUSD per TRAIN_PROMPT.md, honest verdict"},
-    {"id": "first_pair_install", "status": "todo", "note": "install via upload/validate/promote path"},
-    {"id": "verify", "status": "todo", "note": "end-to-end checks from section 14"},
-    {"id": "docs", "status": "todo", "note": "PAIRPACK_SPEC.md, TRAIN_PROMPT.md, README complete"}
-  ],
-  "deployed": {"worker_url": "", "pages_url": "", "d1_id": ""},
-  "pairs": {},
-  "blockers": [
-    "CLOUDFLARE_API_TOKEN invalid: HTTP 401 from https://api.cloudflare.com/client/v4/user/tokens/verify on 2026-10-10. Worker, D1 and Pages deployment are blocked. Owner must create a new Cloudflare API token (Account: Workers Scripts/Pages/D1 edit) and restart the builder with it.",
-    "Security: all credentials were transmitted in plaintext in the build prompt. Rotate GitHub PAT, Cloudflare token, Telegram bot token and Deriv token after deployment; update repo secrets (GH_PAT, DERIV_BEARER_TOKEN, DERIV_APP_ID, BOT_SHARED_SECRET, WORKER_URL) and Cloudflare Worker secrets accordingly."
-  ],
-  "updated_utc": "2026-10-10T02:21:00Z"
+ "phase": "engine",
+ "steps": [
+  {
+   "id": "repo_scaffold",
+   "status": "done",
+   "note": "repo created under vjumbo264/sentinel-fx (PAT account login is vjumbo264, not sentinel-fx)"
+  },
+  {
+   "id": "engine",
+   "status": "done",
+   "note": "sentinel_engine 1.0.0: 66 causal DSL ops, indicators, rules, news, pipeline, sandbox (unshare --net, empty env, fail-closed), static scan; smoke-tested"
+  },
+  {
+   "id": "validator",
+   "status": "done",
+   "note": "tools/validate_pack.py + python -m sentinel_engine.validate; fast/full; 10 checks; exit non-zero on fail"
+  },
+  {
+   "id": "fixtures",
+   "status": "done",
+   "note": "leaky (negative shift), tampered checksum, malicious code fixtures + clean pack; validator rejects all three bad ones in fast mode"
+  },
+  {
+   "id": "worker_d1",
+   "status": "blocked",
+   "note": "Cloudflare API token returned HTTP 401 on /user/tokens/verify \u2014 cannot deploy until owner supplies a valid token"
+  },
+  {
+   "id": "site",
+   "status": "blocked",
+   "note": "Pages deploy blocked by invalid Cloudflare token"
+  },
+  {
+   "id": "bot_workflow",
+   "status": "doing",
+   "note": "bot.yml self-chaining, 3h50m runs, D1 lease/heartbeat, demo default"
+  },
+  {
+   "id": "validate_workflow",
+   "status": "doing",
+   "note": "validate-pack.yml on push to pairs/*/incoming/**, no secrets in job"
+  },
+  {
+   "id": "first_pair_train",
+   "status": "todo",
+   "note": "frxEURUSD per TRAIN_PROMPT.md, honest verdict"
+  },
+  {
+   "id": "first_pair_install",
+   "status": "todo",
+   "note": "install via upload/validate/promote path"
+  },
+  {
+   "id": "verify",
+   "status": "todo",
+   "note": "end-to-end checks from section 14"
+  },
+  {
+   "id": "docs",
+   "status": "doing",
+   "note": "PAIRPACK_SPEC.md, TRAIN_PROMPT.md, README complete"
+  }
+ ],
+ "deployed": {
+  "worker_url": "",
+  "pages_url": "",
+  "d1_id": ""
+ },
+ "pairs": {},
+ "blockers": [
+  "CLOUDFLARE_API_TOKEN invalid: HTTP 401 from https://api.cloudflare.com/client/v4/user/tokens/verify on 2026-10-10. Worker, D1 and Pages deployment are blocked. Owner must create a new Cloudflare API token (Account: Workers Scripts/Pages/D1 edit) and restart the builder with it.",
+  "Security: all credentials were transmitted in plaintext in the build prompt. Rotate GitHub PAT, Cloudflare token, Telegram bot token and Deriv token after deployment; update repo secrets (GH_PAT, DERIV_BEARER_TOKEN, DERIV_APP_ID, BOT_SHARED_SECRET, WORKER_URL) and Cloudflare Worker secrets accordingly."
+ ],
+ "updated_utc": "2026-10-10T02:27:39Z"
 }
