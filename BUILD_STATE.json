@@ -1,5 +1,5 @@
 {
- "phase": "bot",
+ "phase": "verify",
  "steps": [
   {
    "id": "repo_scaffold",
@@ -14,7 +14,7 @@
   {
    "id": "validator",
    "status": "done",
-   "note": "tools/validate_pack.py + python -m sentinel_engine.validate; fast/full; 10 checks; exit non-zero on fail"
+   "note": "CONFIRMED: clean pack VERDICT:PASS; tampered/malicious/leaky all rejected with non-zero exit. Fast+full modes, 10 checks."
   },
   {
    "id": "fixtures",
@@ -43,18 +43,18 @@
   },
   {
    "id": "first_pair_train",
-   "status": "todo",
-   "note": "frxEURUSD per TRAIN_PROMPT.md, honest verdict"
+   "status": "blocked",
+   "note": "frxEURUSD pack NOT trained: no Deriv market data could be pulled this session and no valid Deriv token; the training pipeline (engine+validator+TRAIN_PROMPT.md) is ready for any AI to run credential-free."
   },
   {
    "id": "first_pair_install",
-   "status": "todo",
-   "note": "install via upload/validate/promote path"
+   "status": "blocked",
+   "note": "blocked on first_pair_train + worker_d1"
   },
   {
    "id": "verify",
-   "status": "todo",
-   "note": "end-to-end checks from section 14"
+   "status": "blocked",
+   "note": "end-to-end verify blocked by two invalid credentials: Cloudflare token (401) and Deriv token (401). Engine/validator/fixtures/workflows/docs are verified locally."
   },
   {
    "id": "docs",
@@ -69,9 +69,9 @@
  },
  "pairs": {},
  "blockers": [
-  "CLOUDFLARE_API_TOKEN invalid: HTTP 401 from https://api.cloudflare.com/client/v4/user/tokens/verify on 2026-10-10. Worker, D1 and Pages deployment are blocked. Owner must create a new Cloudflare API token (Account: Workers Scripts/Pages/D1 edit) and restart the builder with it.",
-  "Security: all credentials were transmitted in plaintext in the build prompt. Rotate GitHub PAT, Cloudflare token, Telegram bot token and Deriv token after deployment; update repo secrets (GH_PAT, DERIV_BEARER_TOKEN, DERIV_APP_ID, BOT_SHARED_SECRET, WORKER_URL) and Cloudflare Worker secrets accordingly.",
-  "Deriv bearer token returned HTTP 401 on /trading/v1/options/accounts at 2026-10-10 (status-code check). Bot needs a valid token in repo secret DERIV_BEARER_TOKEN before live/demo runs."
+  "BLOCKER 1 - CLOUDFLARE_API_TOKEN invalid: HTTP 401 from /client/v4/user/tokens/verify on 2026-10-10. Worker, D1, Pages cannot deploy. Fix: Cloudflare dashboard -> My Profile -> API Tokens -> create token with Account: Workers Scripts/Pages/D1 edit -> restart builder with it.",
+  "BLOCKER 2 - DERIV_BEARER_TOKEN invalid: HTTP 401 from api.derivws.com/trading/v1/options/accounts on 2026-10-10 (status-code check, token never printed). Bot cannot authenticate or trade. Fix: generate a new Deriv API token with trading scope and save it to repo secret DERIV_BEARER_TOKEN.",
+  "SECURITY: all credentials were pasted in plaintext in the build prompt. Rotate GitHub PAT, Cloudflare token, Telegram bot token and Deriv token; update repo secrets (GH_PAT, DERIV_BEARER_TOKEN, DERIV_APP_ID, BOT_SHARED_SECRET, WORKER_URL) and Worker secrets accordingly."
  ],
- "updated_utc": "2026-10-10T02:31:19Z"
+ "updated_utc": "2026-10-10T02:31:51Z"
 }
