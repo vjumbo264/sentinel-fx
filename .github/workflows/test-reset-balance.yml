@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: pip install --quiet websockets
+      - run: pip install --quiet "websockets<13"
       - run: |
           python3 - <<'PYEOF'
           import asyncio, json, os, websockets
@@ -23,7 +23,7 @@ jobs:
           async def test():
               url = f"wss://ws.derivws.com/websockets/v3?app_id={app_id}"
               try:
-                  async with websockets.connect(url, extra_headers={"User-Agent": "Mozilla/5.0", "Origin": "https://deriv.com"}) as ws:
+                  async with websockets.connect(url) as ws:
                       # Authorize with token
                       await ws.send(json.dumps({"authorize": token}))
                       auth_res = json.loads(await ws.recv())
@@ -35,7 +35,7 @@ jobs:
                           topup_res = json.loads(await ws.recv())
                           print("Topup response:", topup_res)
               except Exception as e:
-                  print("WS error:", e)
+                  print("WS error:", type(e), e)
 
           asyncio.run(test())
           PYEOF
