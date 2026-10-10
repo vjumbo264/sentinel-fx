@@ -1,0 +1,197 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SENTINEL-FX</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.3/lightweight-charts.standalone.production.js"></script>
+<style>
+:root{--bg:#0b0f14;--card:#131a22;--acc:#4cc2ff;--ok:#34d399;--bad:#f87171;--warn:#fbbf24;--tx:#dbe4ee;--mut:#7b8a99}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui}
+header{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;background:var(--card);position:sticky;top:0}
+h1{font-size:17px;margin:0;letter-spacing:.5px}nav{display:flex;gap:2px;overflow-x:auto;background:var(--card);padding:0 8px}
+nav button{background:none;border:0;color:var(--mut);padding:12px 10px;font-size:14px;white-space:nowrap}
+nav button.on{color:var(--acc);border-bottom:2px solid var(--acc)}
+main{padding:14px;max-width:760px;margin:auto}.card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:12px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0}
+.badge{padding:2px 8px;border-radius:99px;font-size:12px}.ok{background:#0f3;background:#063;color:var(--ok);border:1px solid var(--ok)}
+.bad{color:var(--bad);border:1px solid var(--bad)}.warn{color:var(--warn);border:1px solid var(--warn)}
+button.act{background:var(--acc);color:#001;border:0;border-radius:8px;padding:10px 16px;font-weight:600}
+button.ghost{background:none;border:1px solid var(--mut);color:var(--tx);border-radius:8px;padding:8px 12px}
+button.kill{background:var(--bad);color:#000}
+input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #26313d;background:#0d131a;color:var(--tx);margin:4px 0}
+#chart{height:280px}.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tabs button{padding:6px 12px;border-radius:99px;border:1px solid var(--mut);background:none;color:var(--tx);font-size:13px}
+.tabs button.on{background:var(--acc);color:#001}
+.log{font:12px/1.4 ui-monospace,monospace;white-space:pre-wrap;max-height:340px;overflow:auto}
+.hidden{display:none}.banner{background:var(--bad);color:#000;padding:8px 12px;border-radius:8px;font-weight:700;text-align:center}
+.big{font-size:24px;font-weight:700}
+</style></head><body>
+<header><h1>SENTINEL-FX</h1><span id="status" class="badge warn">connecting…</span></header>
+<div id="realbanner" class="banner hidden">⚠ REAL MONEY MODE ACTIVE</div>
+<nav id="nav"></nav><main id="view"></main>
+<script>
+const WORKER = "PENDING_WORKER_URL";   // set after Worker deploy
+const REPO = "vjumbo264/sentinel-fx";
+let PAT = localStorage.getItem("gh_pat") || "";
+const $ = s => document.querySelector(s);
+const api = async (p, opt={}) => {
+  const r = await fetch(WORKER + p, {...opt, headers: {"Authorization": "Bearer " + PAT, "Content-Type": "application/json", ...(opt.headers||{})}});
+  if (r.status === 401) { localStorage.removeItem("gh_pat"); location.reload(); }
+  return r.json();
+};
+const gh = async (p, opt={}) => (await fetch("https://api.github.com" + p, {...opt,
+  headers: {"Authorization":"Bearer "+PAT, "Accept":"application/vnd.github+json", "Content-Type":"application/json"}})).json();
+
+const PAGES = ["Dashboard","Pairs","Add / Update","Risk","News","Logger","Trades","Settings"];
+function nav(){ $("#nav").innerHTML = PAGES.map(p=>`<button data-p="${p}">${p}</button>`).join("");
+  document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>show(b.dataset.p)); }
+
+async function firstRun(){
+  if (PAT) return;
+  $("#view").innerHTML = `<div class=card><h3>Welcome</h3><p>Paste your GitHub PAT (needs push access to ${REPO}). Stored only in this browser's localStorage.</p>
+  <input id=pat type=password placeholder="github_pat_…"><button class=act id=save>Save & verify</button><p id=msg></p></div>`;
+  $("#save").onclick = async () => {
+    PAT = $("#pat").value.trim();
+    const r = await gh(`/repos/${REPO}`);
+    if (r && r.permissions && r.permissions.push) { localStorage.setItem("gh_pat", PAT); boot(); }
+    else $("#msg").textContent = "PAT cannot push to " + REPO;
+  };
+}
+
+async function show(p){
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on", b.dataset.p===p));
+  ({Dashboard, "Pairs":Pairs, "Add / Update":Upload, "Risk":Risk, "News":News, "Logger":Logger, "Trades":Trades, "Settings":Settings}[p])();
+}
+async function Dashboard(){
+  const [st, settings, stats] = await Promise.all([api("/api/status"), api("/api/settings"), api("/api/daily-stats?date="+lagosDate())]);
+  $("#realbanner").classList.toggle("hidden", (settings.mode||"demo")!=="real");
+  $("#status").textContent = st.online ? "● online" : "○ offline";
+  $("#status").className = "badge " + (st.online ? "ok" : "bad");
+  $("#view").innerHTML = `
+   <div class=card><div class=row><span>Mode</span><b>${settings.mode||"demo"}</b></div>
+   <div class=row><span>Today's PnL (Lagos)</span><b class=big>${(stats.pnl||0).toFixed(2)}</b></div></div>
+   <div class=card><div class=row><button class="act" id=toggle>${st.online?"Stop bot":"Start bot"}</button>
+   <button class="act kill" id=kill>KILL SWITCH</button></div>
+   <div class=row><span>Kill switch</span><b>${settings.kill_switch?"ON":"off"}</b></div></div>
+   <div class=card><div class=tabs id=pairtabs></div><div id=chart></div></div>`;
+  $("#kill").onclick = async () => { await api("/api/settings",{method:"POST",body:JSON.stringify({kill_switch:!settings.kill_switch})}); Dashboard(); };
+  $("#toggle").onclick = async () => {
+    if (st.online) { await api("/api/settings",{method:"POST",body:JSON.stringify({kill_switch:true})}); }
+    else { await gh(`/repos/${REPO}/actions/workflows/bot.yml/dispatches`,{method:"POST",body:JSON.stringify({ref:"main"})}); }
+    setTimeout(Dashboard, 800);
+  };
+  const pairs = await api("/api/bot/pairs").catch(()=>[]);
+  $("#pairtabs").innerHTML = (pairs.length?pairs:[{symbol:"frxEURUSD"}]).map((p,i)=>`<button class="${i==0?"on":""}" data-s="${p.symbol}">${p.symbol.replace("frx","")}</button>`).join("");
+  document.querySelectorAll("#pairtabs button").forEach(b=>b.onclick=()=>loadChart(b.dataset.s));
+  loadChart((pairs[0]||{symbol:"frxEURUSD"}).symbol);
+}
+let chart, series, ws;
+async function loadChart(sym){
+  if (ws) ws.close();
+  $("#chart").innerHTML = "";
+  chart = LightweightCharts.createChart($("#chart"), {layout:{background:{color:"#131a22"},textColor:"#dbe4ee"},grid:{vertLines:{color:"#1c2630"},horzLines:{color:"#1c2630"}}});
+  series = chart.addCandlestickSeries({upColor:"#34d399",downColor:"#f87171",wickUpColor:"#34d399",wickDownColor:"#f87171"});
+  ws = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1089");
+  ws.onopen = () => ws.send(JSON.stringify({ticks_history:sym,adjust_start_time:1,count:300,end:"latest",granularity:60,style:"candles",subscribe:1}));
+  ws.onmessage = e => { const d = JSON.parse(e.data);
+    if (d.candles) series.setData(d.candles.map(c=>({time:c.epoch,open:+c.open,high:+c.high,low:+c.low,close:+c.close})));
+    if (d.ohlc) series.update({time:+d.ohlc.epoch - (+d.ohlc.epoch%60),open:+d.ohlc.open,high:+d.ohlc.high,low:+d.ohlc.low,close:+d.ohlc.close});
+  };
+}
+async function Pairs(){
+  const pairs = await api("/api/bot/pairs").catch(()=>[]);
+  $("#view").innerHTML = "<div class=card><h3>Pairs</h3>" + (pairs.length ? pairs.map(p=>`
+    <div class=row><div><b>${p.symbol}</b> <span class="badge ${p.status==="active"?"ok":"warn"}">${p.status}</span>
+    ${p.has_custom_code?'<span class="badge warn">custom code</span>':""}</div>
+    <label><input type=checkbox ${p.enabled?"checked":""} ${p.status!=="active"?"disabled title='locked: pack must pass validation'":""} data-s="${p.symbol}" class=en> enabled</label>
+    <label><input type=checkbox ${p.shadow_mode?"checked":""} data-s="${p.symbol}" class=sh> shadow</label></div>`).join("")
+    : "<p>No pairs installed yet. Use Add / Update.</p>") + "</div>";
+  document.querySelectorAll(".en").forEach(c=>c.onchange=async()=>{ await api("/api/pairs/"+c.dataset.s,{method:"POST",body:JSON.stringify({enabled:c.checked?1:0})}); });
+  document.querySelectorAll(".sh").forEach(c=>c.onchange=async()=>{ await api("/api/pairs/"+c.dataset.s,{method:"POST",body:JSON.stringify({shadow_mode:c.checked?1:0})}); });
+}
+async function Upload(){
+  $("#view").innerHTML = `<div class=card><h3>Add / Update Pair</h3>
+  <p>Upload a <code>.pairpack.json</code> (from TRAIN_PROMPT.md). Fast checks run in your browser; full validation runs in GitHub Actions.</p>
+  <input type=file id=f accept=".json"><div id=report></div></div>`;
+  $("#f").onchange = async e => {
+    const file = e.target.files[0], txt = await file.text();
+    let pack, errs = [];
+    try { pack = JSON.parse(txt); } catch { errs.push("not valid JSON"); }
+    if (pack) {
+      if (pack.schema_version !== 1) errs.push("schema_version must be 1");
+      if (!/^frx[A-Z]{6}$/.test(pack.symbol||"")) errs.push("symbol must match frxXXXXXX");
+      if (!pack.checksum_sha256) errs.push("missing checksum");
+      if (file.size > 25*1024*1024) errs.push("too large");
+    }
+    if (errs.length) { $("#report").innerHTML = `<p class="badge bad">${errs.join("; ")}</p>`; return; }
+    $("#report").innerHTML = `<p class="badge ok">fast checks passed for ${pack.symbol} v${pack.pack_version} — committing to incoming/…</p>`;
+    const path = `pairs/${pack.symbol}/incoming/v${pack.pack_version}.json`;
+    const sha = (await gh(`/repos/${REPO}/contents/${path}`)).sha;
+    await gh(`/repos/${REPO}/contents/${path}`, {method:"PUT", body: JSON.stringify({
+      message: `incoming pack ${pack.symbol} v${pack.pack_version}`, content: btoa(unescape(encodeURIComponent(txt))), ...(sha?{sha}:{})})});
+    $("#report").innerHTML += `<p>Committed. Full validation is running in Actions — check back shortly.</p>`;
+  };
+}
+async function Risk(){
+  const s = await api("/api/settings");
+  $("#view").innerHTML = `<div class=card><h3>Risk</h3>
+  ${["daily_loss","daily_target","goal"].map(k=>`<div class=row><span>${k.replace("_"," ")}</span>
+   <select id=${k}_m><option value=auto ${s[k]?.mode==="auto"?"selected":""}>auto</option><option value=manual ${s[k]?.mode==="manual"?"selected":""}>manual</option></select>
+   <input id=${k}_v type=number step=0.01 value="${s[k]?.value??""}" placeholder="value"></div>`).join("")}
+  <button class=act id=save>Save</button><p>Auto: loss cap 2–5% of balance, target ≈1.5× the cap. Resets at midnight Africa/Lagos.</p></div>`;
+  $("#save").onclick = async () => {
+    const body = {};
+    for (const k of ["daily_loss","daily_target","goal"]) body[k] = {mode: $("#"+k+"_m").value, value: parseFloat($("#"+k+"_v").value)||0};
+    await api("/api/settings",{method:"POST",body:JSON.stringify(body)}); Risk();
+  };
+}
+async function News(){
+  const ev = await api("/api/news").catch(()=>[]);
+  $("#view").innerHTML = `<div class=card><h3>News (Lagos time)</h3>` +
+    (ev.length ? ev.map(e=>`<div class=row><span>${new Date(e.utc_time*1000).toLocaleString("en-GB",{timeZone:"Africa/Lagos"})}</span>
+    <span class="badge ${e.impact==="High"?"bad":"warn"}">${e.impact}</span><span>${e.currency} ${e.title||""}</span></div>`).join("")
+    : "<p>No events loaded yet — the bot fetches the weekly calendar once per run.</p>") + "</div>";
+}
+async function Logger(){
+  const logs = await api("/api/logs?limit=200").catch(()=>[]);
+  $("#view").innerHTML = `<div class=card><h3>Live logger</h3>
+  <select id=lv><option value="">all levels</option><option>info</option><option>warn</option><option>error</option></select>
+  <div class=log id=lg></div></div>`;
+  const render = l => $("#lg").textContent = logs.filter(x=>!l||x.level===l).map(x=>`${x.ts} [${x.level}] ${x.pair||"-"} ${x.message}`).join("\n");
+  render(""); $("#lv").onchange = e => render(e.target.value);
+}
+async function Trades(){
+  const t = await api("/api/trades").catch(()=>[]);
+  $("#view").innerHTML = `<div class=card><h3>Trade history</h3>` +
+    (t.length ? t.map(x=>`<div class=row><span>${x.pair} ${x.side}</span><span>${x.stake}</span>
+    <span class="badge ${x.pnl>=0?"ok":"bad"}">${x.pnl?.toFixed(2)??"open"}</span></div>`).join("") : "<p>No trades yet.</p>") + "</div>";
+}
+async function Settings(){
+  $("#view").innerHTML = `<div class=card><h3>Settings</h3>
+  <div class=row><span>Account mode</span><select id=mode><option value=demo>demo (default)</option><option value=real>REAL</option></select></div>
+  <p>Deriv token (write-only; saved to the repo secret, never stored here):</p>
+  <input id=dtok type=password placeholder="new Deriv bearer token"><input id=dapp placeholder="Deriv app id">
+  <button class=act id=savetok>Save token</button><p id=tmsg></p></div>`;
+  const s = await api("/api/settings"); $("#mode").value = s.mode||"demo";
+  $("#mode").onchange = async e => {
+    if (e.target.value==="real" && !confirm("Switch to REAL money trading? Open trades are untouched.")) { e.target.value="demo"; return; }
+    await api("/api/settings",{method:"POST",body:JSON.stringify({mode:e.target.value})}); Dashboard();
+  };
+  $("#savetok").onclick = async () => {
+    // sealed-box encrypt with repo public key, write repo secrets
+    const key = await gh(`/repos/${REPO}/actions/secrets/public-key`);
+    const enc = async v => { const sodium = await loadSodium();
+      const bin = sodium.crypto_box_seal(new TextEncoder().encode(v), sodium.from_base64(key.key, sodium.base64_variants.ORIGINAL));
+      return sodium.to_base64(bin, sodium.base64_variants.ORIGINAL); };
+    if ($("#dtok").value) await gh(`/repos/${REPO}/actions/secrets/DERIV_BEARER_TOKEN`,{method:"PUT",body:JSON.stringify({encrypted_value: await enc($("#dtok").value), key_id: key.key_id})});
+    if ($("#dapp").value) await gh(`/repos/${REPO}/actions/secrets/DERIV_APP_ID`,{method:"PUT",body:JSON.stringify({encrypted_value: await enc($("#dapp").value), key_id: key.key_id})});
+    $("#tmsg").textContent = "token saved"; $("#dtok").value = "";
+  };
+}
+async function loadSodium(){
+  if (window.sodium) return window.sodium;
+  await new Promise(r=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/libsodium-wrappers/0.7.13/sodium.min.js";s.onload=r;document.head.appendChild(s);});
+  await window.sodium.ready; return window.sodium;
+}
+function lagosDate(){ return new Date(Date.now()+3600e3).toISOString().slice(0,10); }
+async function boot(){ nav(); Dashboard(); }
+(async () => { await firstRun(); if (localStorage.getItem("gh_pat")) boot(); })();
+</script></body></html>

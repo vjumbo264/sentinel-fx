@@ -1,5 +1,5 @@
 {
- "phase": "engine",
+ "phase": "bot",
  "steps": [
   {
    "id": "repo_scaffold",
@@ -24,22 +24,22 @@
   {
    "id": "worker_d1",
    "status": "blocked",
-   "note": "Cloudflare API token returned HTTP 401 on /user/tokens/verify \u2014 cannot deploy until owner supplies a valid token"
+   "note": "worker/index.js + schema.sql written, DEPLOY BLOCKED: Cloudflare API token HTTP 401"
   },
   {
    "id": "site",
    "status": "blocked",
-   "note": "Pages deploy blocked by invalid Cloudflare token"
+   "note": "site/index.html (mobile-first dark SPA, chart/news/logger/risk/upload) written, Pages deploy BLOCKED by CF token"
   },
   {
    "id": "bot_workflow",
-   "status": "doing",
-   "note": "bot.yml self-chaining, 3h50m runs, D1 lease/heartbeat, demo default"
+   "status": "done",
+   "note": "bot/bot.py: 3h50m self-chain, D1 lease+heartbeat, demo default, risk gates, news, shadow mode, Lagos day reset"
   },
   {
    "id": "validate_workflow",
-   "status": "doing",
-   "note": "validate-pack.yml on push to pairs/*/incoming/**, no secrets in job"
+   "status": "done",
+   "note": "validate-pack.yml on push to pairs/*/incoming/**, no secrets in job, artifacts report"
   },
   {
    "id": "first_pair_train",
@@ -58,8 +58,8 @@
   },
   {
    "id": "docs",
-   "status": "doing",
-   "note": "PAIRPACK_SPEC.md, TRAIN_PROMPT.md, README complete"
+   "status": "done",
+   "note": "PAIRPACK_SPEC.md + TRAIN_PROMPT.md (credential-free) complete"
   }
  ],
  "deployed": {
@@ -70,7 +70,8 @@
  "pairs": {},
  "blockers": [
   "CLOUDFLARE_API_TOKEN invalid: HTTP 401 from https://api.cloudflare.com/client/v4/user/tokens/verify on 2026-10-10. Worker, D1 and Pages deployment are blocked. Owner must create a new Cloudflare API token (Account: Workers Scripts/Pages/D1 edit) and restart the builder with it.",
-  "Security: all credentials were transmitted in plaintext in the build prompt. Rotate GitHub PAT, Cloudflare token, Telegram bot token and Deriv token after deployment; update repo secrets (GH_PAT, DERIV_BEARER_TOKEN, DERIV_APP_ID, BOT_SHARED_SECRET, WORKER_URL) and Cloudflare Worker secrets accordingly."
+  "Security: all credentials were transmitted in plaintext in the build prompt. Rotate GitHub PAT, Cloudflare token, Telegram bot token and Deriv token after deployment; update repo secrets (GH_PAT, DERIV_BEARER_TOKEN, DERIV_APP_ID, BOT_SHARED_SECRET, WORKER_URL) and Cloudflare Worker secrets accordingly.",
+  "Deriv bearer token returned HTTP 401 on /trading/v1/options/accounts at 2026-10-10 (status-code check). Bot needs a valid token in repo secret DERIV_BEARER_TOKEN before live/demo runs."
  ],
- "updated_utc": "2026-10-10T02:27:39Z"
+ "updated_utc": "2026-10-10T02:31:19Z"
 }
