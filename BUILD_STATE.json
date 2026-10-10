@@ -98,7 +98,7 @@
   {
    "id": "FIX-C",
    "status": "done",
-   "note": "news.py mirrors aurelia calendar.js (nfs host primary, cdn fallback, Accept-first headers, 2-per-5min guard, shape validation, real error text, stale-cache fallback); hourly in-loop refresh; reactions recorded + POSTed per event+pair; news_state/minutes_to_news wired into pack.decide",
+   "note": "news.py mirrors aurelia calendar.js (nfs host primary, cdn fallback, Accept-first headers, 2-per-5min guard, shape validation, real error text, stale-cache fallback); hourly in-loop refresh; reactions recorded + POSTed per event+pair; news_state/minutes_to_news wired into pack.decide | site News window widened from 'today 00:00 UTC' to rolling 24h+upcoming (weekend mornings showed an empty list)",
    "evidence": "LIVE fetch 83 events from nfs.faireconomy.media in Actions (news-archive run 38047668592 + 38047820128 success, archive asset published); hourly in-loop refresh + stale-cache fallback; reactions endpoint wired"
   },
   {
@@ -122,7 +122,7 @@
   {
    "id": "DATA",
    "status": "doing",
-   "note": "fetch_candles.py now accepts frx* AND synthetic indices (R_50/75/100, 1HZ75V/100V); weekend-gap check skipped for 24/7 synthetics; added 25-min hard deadline so a 520-loop can never spin 120min again; tracked_pairs.json extended with 5 synthetics"
+   "note": "fetch_candles.py now accepts frx* AND synthetic indices (R_50/75/100, 1HZ75V/100V); weekend-gap check skipped for 24/7 synthetics; added 25-min hard deadline so a 520-loop can never spin 120min again; tracked_pairs.json extended with 5 synthetics | follow-up: workflow symbol regex fixed (R_100/1HZ100V validate now); verify run dispatched"
   },
   {
    "id": "NEWS",
