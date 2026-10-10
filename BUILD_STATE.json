@@ -104,7 +104,7 @@
   {
    "id": "FIX-D",
    "status": "doing",
-   "note": "/api/candles route deployed and reachable (auth-gated), but Deriv WS rejects Workers outbound without browser headers - Origin/UA header fix pushed; verify next run. Site already has direct-Deriv fallback.",
+   "note": "/api/candles deployed + auth-gated. Workers outbound WS to Deriv rejected (bare and with header-init, which is invalid in Workers). Site chart has its own direct-Deriv fallback so chart still renders; Worker proxy remains a next-session item (fetch-upgrade form).",
    "evidence": "site/app.js chart rewritten per aurelia miniapp (status line, sorted candles, adjust_start_time, msg.error, reconnect backoff, market-closed state, trade markers, ResizeObserver)"
   },
   {
@@ -186,7 +186,7 @@
   {
    "id": "BUYTEST",
    "status": "doing",
-   "note": "Root cause fixed: OTP endpoint was 404 (wrong path); now mirrors fetch_candles.py accounts->POST /accounts/{loginid}/otp. Re-dispatched; evidence commits to docs/ on success."
+   "note": "Two runs failed. Run1: OTP 404 (fixed to accounts/{loginid}/otp). Run2 error pulled to repo notes; tooling committed, re-runnable: gh workflow run buy-test.yml. Next session: one more fix iteration then evidence lands in docs/."
   },
   {
    "id": "RESET",
@@ -213,5 +213,5 @@
   }
  },
  "blockers": [],
- "updated_utc": "2026-10-10T16:53:35Z"
+ "updated_utc": "2026-10-10T16:55:45Z"
 }
