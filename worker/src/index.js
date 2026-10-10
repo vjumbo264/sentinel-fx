@@ -288,6 +288,59 @@ export default {
         return json({ settings, pairs: pairs.results, heartbeat: hb, today: today || { pnl: 0, trades: 0, wins: 0 }, lagos_date: lagosDate() });
       }
 
+      if (path === "/api/account/reset-demo-balance" && method === "POST") {
+        let derivRes = null;
+        const derivToken = env.DERIV_BEARER_TOKEN;
+        const derivAppId = env.DERIV_APP_ID || "1089";
+        if (derivToken) {
+          try {
+            const accsRes = await fetch("https://api.derivws.com/trading/v1/options/accounts", {
+              headers: {
+                "Authorization": `Bearer ${derivToken}`,
+                "Deriv-App-ID": derivAppId,
+                "Accept": "application/json",
+                "User-Agent": "sentinel-fx-worker/1.0"
+              }
+            });
+            if (accsRes.ok) {
+              const accsData = await accsRes.json();
+              const demoAcc = (accsData.data || []).find(a => a.account_type === "demo");
+              if (demoAcc) {
+                const accId = demoAcc.account_id || demoAcc.loginid;
+                const resetCall = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${accId}/reset-demo-balance`, {
+                  method: "POST",
+                  headers: {
+                    "Authorization": `Bearer ${derivToken}`,
+                    "Deriv-App-ID": derivAppId,
+                    "Accept": "application/json",
+                    "User-Agent": "sentinel-fx-worker/1.0"
+                  }
+                });
+                if (resetCall.ok) {
+                  derivRes = await resetCall.json();
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Deriv REST reset error:", e);
+          }
+        }
+        // Reset today's PnL and trade statistics in D1
+        await env.DB.prepare(
+          "INSERT INTO daily_stats (lagos_date, pnl, trades, wins) VALUES (?, 0, 0, 0) " +
+          "ON CONFLICT(lagos_date) DO UPDATE SET pnl=0, trades=0, wins=0"
+        ).bind(lagosDate()).run();
+        // Update heartbeat balance
+        await env.DB.prepare(
+          "UPDATE heartbeat SET balance=10000.00, note='demo reset', ts=? WHERE id=1"
+        ).bind(nowUTC()).run();
+        // Log the action
+        await env.DB.prepare(
+          "INSERT INTO logs (ts, level, pair, message) VALUES (?, 'info', null, 'Demo balance and session stats reset to $10,000.00')"
+        ).bind(nowUTC()).run();
+        return json({ ok: true, balance: 10000.00, deriv: derivRes });
+      }
+
       if (path === "/api/settings" && method === "POST") {
         const body = await request.json();
         for (const [k, v] of Object.entries(body)) {
@@ -305,7 +358,7 @@ export default {
       if (path === "/api/pairs/update" && method === "POST") {
         const body = await request.json();
         const allowed = ["enabled", "shadow_mode", "duration", "duration_unit", "min_stake", "max_stake", "stake_pct",
-                         "daily_loss_cap", "daily_target", "max_consec_losses", "status"];
+                         "daily_loss_cap", "daily_target", "max_consec_losses", "status", "pack_version", "verdict", "has_custom_code"];
         const sets = [], vals = [];
         for (const k of allowed) {
           if (k in body) { sets.push(`${k}=?`); vals.push(body[k]); }

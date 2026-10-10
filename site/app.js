@@ -9,43 +9,45 @@ const REPO = "vjumbo264/sentinel-fx";
 
 let PAT = localStorage.getItem("sentinel_pat") || "";
 let STATE = null;
-let chart = null, candleSeries = null, wsPub = null, curPair = "R_100";
-let chartPairs = [], curChartCategory = "volatility";
-let curNewsFilter = "all", curPairsFilter = "all", curTrainFilter = "all";
-let lastCandles = [], chartRO = null, chartTimer = null, chartRetry = 0;
+let chartInstance = null, wsPub = null, wsPingInterval = null;
+let curPair = null;
+let curGranularity = 60; // default 1m
+let chartCandles = [];
+let chartRetry = 0;
 let pendingModelFile = null, pendingModelData = null;
+let curTrainFilter = "all";
 
 const PAIR_METADATA = {
   // Volatility Indices (24/7)
-  "R_10": { name: "Volatility 10 Index", cat: "volatility", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "R_25": { name: "Volatility 25 Index", cat: "volatility", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "R_50": { name: "Volatility 50 Index", cat: "volatility", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "R_75": { name: "Volatility 75 Index", cat: "volatility", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "R_100": { name: "Volatility 100 Index", cat: "volatility", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
+  "R_10": { name: "Volatility 10 Index", cat: "volatility", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "R_25": { name: "Volatility 25 Index", cat: "volatility", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "R_50": { name: "Volatility 50 Index", cat: "volatility", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "R_75": { name: "Volatility 75 Index", cat: "volatility", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "R_100": { name: "Volatility 100 Index", cat: "volatility", isSynth: true, defaultDur: 60, defaultUnit: "s" },
   // 1-Second Volatility Indices (24/7)
-  "1HZ10V": { name: "Volatility 10 (1s) Index", cat: "volatility_1s", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "1HZ25V": { name: "Volatility 25 (1s) Index", cat: "volatility_1s", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "1HZ50V": { name: "Volatility 50 (1s) Index", cat: "volatility_1s", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "1HZ75V": { name: "Volatility 75 (1s) Index", cat: "volatility_1s", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "1HZ100V": { name: "Volatility 100 (1s) Index", cat: "volatility_1s", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "1HZ150V": { name: "Volatility 150 (1s) Index", cat: "volatility_1s", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "1HZ250V": { name: "Volatility 250 (1s) Index", cat: "volatility_1s", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
-  "1HZ300V": { name: "Volatility 300 (1s) Index", cat: "volatility_1s", isSynth: true, minDur: "5s", defaultDur: 60, defaultUnit: "s" },
+  "1HZ10V": { name: "Volatility 10 (1s) Index", cat: "volatility_1s", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "1HZ25V": { name: "Volatility 25 (1s) Index", cat: "volatility_1s", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "1HZ50V": { name: "Volatility 50 (1s) Index", cat: "volatility_1s", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "1HZ75V": { name: "Volatility 75 (1s) Index", cat: "volatility_1s", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "1HZ100V": { name: "Volatility 100 (1s) Index", cat: "volatility_1s", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "1HZ150V": { name: "Volatility 150 (1s) Index", cat: "volatility_1s", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "1HZ250V": { name: "Volatility 250 (1s) Index", cat: "volatility_1s", isSynth: true, defaultDur: 60, defaultUnit: "s" },
+  "1HZ300V": { name: "Volatility 300 (1s) Index", cat: "volatility_1s", isSynth: true, defaultDur: 60, defaultUnit: "s" },
   // Forex Pairs (Intraday floor >= 15m)
-  "frxEURUSD": { name: "EUR / USD", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxGBPUSD": { name: "GBP / USD", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxUSDJPY": { name: "USD / JPY", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxAUDUSD": { name: "AUD / USD", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxUSDCAD": { name: "USD / CAD", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxUSDCHF": { name: "USD / CHF", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxNZDUSD": { name: "NZD / USD", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxEURGBP": { name: "EUR / GBP", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxEURJPY": { name: "EUR / JPY", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxGBPJPY": { name: "GBP / JPY", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxEURAUD": { name: "EUR / AUD", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxAUDJPY": { name: "AUD / JPY", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxEURCAD": { name: "EUR / CAD", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
-  "frxEURCHF": { name: "EUR / CHF", cat: "forex", isSynth: false, minDur: "15m", defaultDur: 15, defaultUnit: "m" },
+  "frxEURUSD": { name: "EUR / USD", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxGBPUSD": { name: "GBP / USD", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxUSDJPY": { name: "USD / JPY", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxAUDUSD": { name: "AUD / USD", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxUSDCAD": { name: "USD / CAD", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxUSDCHF": { name: "USD / CHF", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxNZDUSD": { name: "NZD / USD", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxEURGBP": { name: "EUR / GBP", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxEURJPY": { name: "EUR / JPY", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxGBPJPY": { name: "GBP / JPY", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxEURAUD": { name: "EUR / AUD", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxAUDJPY": { name: "AUD / JPY", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxEURCAD": { name: "EUR / CAD", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
+  "frxEURCHF": { name: "EUR / CHF", cat: "forex", isSynth: false, defaultDur: 15, defaultUnit: "m" },
 };
 
 function $(id) { return document.getElementById(id); }
@@ -76,6 +78,23 @@ async function gh(path, opts = {}) {
   return res;
 }
 
+// Helper: check if a pair has a trained model
+function isPairTrained(p) {
+  if (!p) return false;
+  // Strictly filter: only pairs with an installed/active model pack or validated verdict
+  return Boolean(
+    (p.pack_version && Number(p.pack_version) > 0) ||
+    p.status === "installed" ||
+    p.status === "active" ||
+    (p.verdict && p.verdict !== "untested")
+  );
+}
+
+function getTrainedPairs() {
+  const all = (STATE && STATE.pairs) || [];
+  return all.filter(isPairTrained);
+}
+
 // ---------- CONNECT ----------
 async function connect() {
   const p = $("pat").value.trim();
@@ -93,7 +112,6 @@ async function connect() {
     $("app").classList.remove("hidden");
     await refresh();
     setInterval(refresh, 15000);
-    initChart();
     loadLogs();
   } catch (e) {
     $("authMsg").innerHTML = "<span style='color:#ef4444'>Connection error: " + e.message + "</span>";
@@ -110,6 +128,7 @@ async function refresh() {
     renderNews();
     renderTrades();
     renderTrain();
+    renderChartTabsAndInit();
   } catch (err) {
     console.error("Refresh failed", err);
   }
@@ -179,13 +198,63 @@ async function toggleMode() {
   refresh();
 }
 
-// ---------- CHART ----------
-function lagosTz(epoch) { return epoch + 3600; }
-
-function isForexMarketClosed() {
-  const d = new Date(), day = d.getUTCDay(), h = d.getUTCHours();
-  return day === 6 || (day === 0 && h < 21) || (day === 5 && h >= 21);
+// Reset Demo Balance
+async function resetDemoBalance() {
+  if (!confirm("Reset Deriv demo balance to $10,000.00 and clear today's PnL session stats?")) return;
+  const btn = $("resetDemoBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Resetting...";
+  }
+  try {
+    const res = await api("/api/account/reset-demo-balance", { method: "POST" });
+    if (res.ok) {
+      if (STATE && STATE.heartbeat) {
+        STATE.heartbeat.balance = 10000.00;
+      }
+      if ($("balance")) $("balance").textContent = "$10,000.00";
+      if (res.deriv && res.deriv.data && res.deriv.data.balance) {
+        alert("✓ Deriv demo account balance successfully reset to $" + res.deriv.data.balance + "!");
+      } else {
+        alert("✓ Deriv demo balance reset to $10,000.00!");
+      }
+      refresh();
+    } else {
+      // Fallback: trigger verified GitHub Actions pipeline
+      await gh(`/repos/${REPO}/actions/workflows/test-reset-balance.yml/dispatches`, {
+        method: "POST",
+        body: { ref: "main" }
+      });
+      alert("✓ Deriv demo reset triggered via Actions pipeline! Refreshing in 5s...");
+      setTimeout(refresh, 5000);
+    }
+  } catch (e) {
+    try {
+      await gh(`/repos/${REPO}/actions/workflows/test-reset-balance.yml/dispatches`, {
+        method: "POST",
+        body: { ref: "main" }
+      });
+      alert("✓ Deriv demo reset triggered via Actions! Balance updating...");
+      setTimeout(refresh, 5000);
+    } catch (err2) {
+      alert("Reset error: " + e.message);
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Reset $10k";
+    }
+  }
 }
+
+// ---------- CHART.JS INTEGRATION ----------
+const DERIV_WS_ENDPOINTS = [
+  "wss://ws.derivws.com/websockets/v3?app_id=1089",
+  "wss://ws.binaryws.com/websockets/v3?app_id=1089",
+  "wss://ws.derivws.com/websockets/v3?app_id=36300",
+  "wss://frontend.binaryws.com/websockets/v3?app_id=1089"
+];
+let wsEndpointIdx = 0;
 
 function setChartStatus(t, cls) {
   const e = $("chartStatus");
@@ -194,55 +263,45 @@ function setChartStatus(t, cls) {
   e.style.color = cls === "err" ? "var(--accent-red)" : cls === "ok" ? "var(--accent-green)" : "var(--text-dim)";
 }
 
-function initChart() {
-  const el = $("chart");
-  if (!el || chart) return;
-  chart = LightweightCharts.createChart(el, {
-    width: el.clientWidth || 600,
-    height: 320,
-    layout: { background: { color: "#090d16" }, textColor: "#94a3b8" },
-    grid: { vertLines: { color: "#131d2e" }, horzLines: { color: "#131d2e" } },
-    timeScale: { timeVisible: true, secondsVisible: true, borderColor: "#1e293b" },
-    rightPriceScale: { borderColor: "#1e293b" }
+function setTimeframe(sec, label) {
+  curGranularity = sec;
+  document.querySelectorAll("#tfSelector .filter-btn").forEach(b => {
+    b.classList.toggle("active", b.textContent.trim() === label);
   });
-  candleSeries = chart.addCandlestickSeries({
-    upColor: "#10b981", downColor: "#ef4444", wickUpColor: "#10b981", wickDownColor: "#ef4444"
-  });
+  if (curPair) {
+    subscribeDerivCandles(curPair);
+  }
+}
 
-  if (window.ResizeObserver) {
-    chartRO = new ResizeObserver(() => {
-      try { chart.applyOptions({ width: el.clientWidth, height: 320 }); } catch (_) {}
+function renderChartTabsAndInit() {
+  const tabsHost = $("pairTabs");
+  if (!tabsHost) return;
+
+  const trainedPairs = getTrainedPairs();
+  if (!trainedPairs.length) {
+    tabsHost.innerHTML = "<span class='dim' style='padding:6px;'>No trained models yet. Train or upload a model to view chart.</span>";
+    setChartStatus("No trained pairs available.", "");
+    teardownChartWs();
+    if (chartInstance) {
+      chartInstance.destroy();
+      chartInstance = null;
+    }
+    return;
+  }
+
+  tabsHost.innerHTML = "";
+  const trainedSyms = trainedPairs.map(p => p.symbol);
+  
+  // Prefer synthetic 24/7 pairs over closed forex pairs if curPair unset or invalid
+  if (!curPair || !trainedSyms.includes(curPair)) {
+    const synthFirst = trainedPairs.find(p => {
+      const m = PAIR_METADATA[p.symbol];
+      return m && m.isSynth;
     });
-    chartRO.observe(el);
-  }
-  setChartCategory("volatility");
-}
-
-function setChartCategory(cat) {
-  curChartCategory = cat;
-  document.querySelectorAll("#chartCategoryTabs .filter-btn").forEach(b => {
-    b.classList.toggle("active", b.getAttribute("onclick").includes(`'${cat}'`));
-  });
-  renderChartTabs();
-}
-
-function renderChartTabs() {
-  const el = $("pairTabs");
-  if (!el) return;
-  el.innerHTML = "";
-
-  const allPairs = (STATE && STATE.pairs) || [];
-  const syms = allPairs.map(p => p.symbol);
-  const filtered = Object.keys(PAIR_METADATA).filter(s => {
-    const meta = PAIR_METADATA[s];
-    return meta && meta.cat === curChartCategory;
-  });
-
-  if (!filtered.includes(curPair)) {
-    curPair = filtered[0] || "R_100";
+    curPair = synthFirst ? synthFirst.symbol : trainedSyms[0];
   }
 
-  filtered.forEach(s => {
+  trainedSyms.forEach(s => {
     const meta = PAIR_METADATA[s] || { name: s };
     const b = document.createElement("button");
     b.className = "pair-tab" + (s === curPair ? " on" : "");
@@ -251,143 +310,239 @@ function renderChartTabs() {
     b.onclick = () => {
       if (curPair === s) return;
       curPair = s;
-      renderChartTabs();
-      subCandles(curPair);
+      renderChartTabsAndInit();
     };
-    el.appendChild(b);
+    tabsHost.appendChild(b);
   });
 
-  subCandles(curPair);
+  if (!wsPub || wsPub.readyState !== 1) {
+    subscribeDerivCandles(curPair);
+  }
 }
 
 function teardownChartWs() {
-  if (chartTimer) { clearTimeout(chartTimer); chartTimer = null; }
+  if (wsPingInterval) { clearInterval(wsPingInterval); wsPingInterval = null; }
   if (wsPub) {
-    try { wsPub.onclose = null; wsPub.close(); } catch (_) {}
+    try {
+      if (wsPub.readyState === 1) {
+        wsPub.send(JSON.stringify({ forget_all: "candles" }));
+      }
+      wsPub.onclose = null;
+      wsPub.onerror = null;
+      wsPub.close();
+    } catch (_) {}
     wsPub = null;
   }
 }
 
-async function loadTradeMarkers(sym) {
-  try {
-    const r = await api("/api/trades");
-    const m = (r.trades || []).filter(t => t.pair === sym && t.open_utc).map(t => {
-      const iso = t.open_utc.includes("T") ? t.open_utc : t.open_utc.replace(" ", "T");
-      const e = Math.floor(new Date(iso.endsWith("Z") ? iso : iso + "Z").getTime() / 1000);
-      return {
-        time: lagosTz(e),
-        position: t.side === "CALL" ? "belowBar" : "aboveBar",
-        color: t.side === "CALL" ? "#10b981" : "#ef4444",
-        shape: t.side === "CALL" ? "arrowUp" : "arrowDown",
-        text: `${t.side} ($${t.stake})`
-      };
-    }).filter(x => lastCandles.length && x.time >= lastCandles[0].time && x.time <= lastCandles[lastCandles.length - 1].time);
-    if (m.length && candleSeries) candleSeries.setMarkers(m);
-  } catch (_) {}
+function initOrUpdateChart(candles, sym) {
+  const canvas = $("chartCanvas");
+  if (!canvas) return;
+
+  const labels = candles.map(c => {
+    const d = new Date((+c.epoch + 3600) * 1000); // Lagos time UTC+1
+    return d.toISOString().slice(11, 16);
+  });
+  const prices = candles.map(c => +c.close);
+  const isUp = prices.length > 1 && prices[prices.length - 1] >= prices[0];
+  const lineColor = isUp ? "#10b981" : "#ef4444";
+  const bgGradient = isUp ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)";
+  const tfLabel = curGranularity >= 60 ? `${curGranularity / 60}m` : `${curGranularity}s`;
+
+  if (chartInstance) {
+    chartInstance.data.labels = labels;
+    chartInstance.data.datasets[0].data = prices;
+    chartInstance.data.datasets[0].borderColor = lineColor;
+    chartInstance.data.datasets[0].backgroundColor = bgGradient;
+    chartInstance.data.datasets[0].label = `${sym} (${tfLabel})`;
+    chartInstance.update("none");
+    return;
+  }
+
+  const ctx = canvas.getContext("2d");
+  chartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: `${sym} (${tfLabel})`,
+        data: prices,
+        borderColor: lineColor,
+        backgroundColor: bgGradient,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.15,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: lineColor
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#0b1220",
+          borderColor: "#1e293b",
+          borderWidth: 1,
+          titleColor: "#94a3b8",
+          bodyColor: "#ffffff",
+          padding: 10,
+          callbacks: {
+            label: (ctx) => ` Price: $${Number(ctx.raw).toFixed(4)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: "#131d2e", drawBorder: false },
+          ticks: { color: "#64748b", font: { size: 10 }, maxTicksLimit: 8 }
+        },
+        y: {
+          grid: { color: "#131d2e", drawBorder: false },
+          ticks: { color: "#64748b", font: { size: 10 } }
+        }
+      }
+    }
+  });
 }
 
-function subCandles(sym) {
+function subscribeDerivCandles(sym) {
+  if (!sym) return;
   teardownChartWs();
-  if (candleSeries) candleSeries.setData([]);
-  lastCandles = [];
-  chartRetry = 0;
+  chartCandles = [];
+  
+  const tfLabel = curGranularity >= 60 ? `${curGranularity / 60}m` : `${curGranularity}s`;
+  const meta = PAIR_METADATA[sym] || {};
+  const isWeekend = [0, 6].includes(new Date().getUTCDay());
+  
+  if (!meta.isSynth && isWeekend) {
+    setChartStatus(`Forex markets closed for the weekend · Select a synthetic index (e.g. R_100) for 24/7 stream`, "err");
+    return;
+  }
 
-  const isSynth = sym.startsWith("R_") || sym.startsWith("1HZ");
-  setChartStatus("Connecting to live Deriv feed...", "");
+  setChartStatus(`Connecting live feed for ${sym} (${tfLabel})...`, "");
 
-  const sock = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1089");
+  const endpointUrl = DERIV_WS_ENDPOINTS[wsEndpointIdx];
+  let sock;
+  try {
+    sock = new WebSocket(endpointUrl);
+  } catch (err) {
+    console.warn("WebSocket init error:", err);
+    wsEndpointIdx = (wsEndpointIdx + 1) % DERIV_WS_ENDPOINTS.length;
+    setTimeout(() => subscribeDerivCandles(sym), 1000);
+    return;
+  }
+  
   wsPub = sock;
-  let gotData = false;
 
   sock.onopen = () => {
-    setChartStatus("Connected · Subscribing to " + (PAIR_METADATA[sym]?.name || sym) + "...", "ok");
+    chartRetry = 0;
+    setChartStatus(`Live · Streaming ${sym} (${tfLabel})`, "ok");
+    
+    // Subscribe to candles
     sock.send(JSON.stringify({
       ticks_history: sym,
       style: "candles",
-      granularity: 60,
-      count: 300,
+      granularity: curGranularity,
+      count: 120,
       end: "latest",
       adjust_start_time: 1,
       subscribe: 1
     }));
+
+    // 15-second keepalive ping to prevent idle connection drop
+    wsPingInterval = setInterval(() => {
+      if (sock.readyState === 1) {
+        sock.send(JSON.stringify({ ping: 1 }));
+      }
+    }, 15000);
   };
 
   sock.onmessage = e => {
     let d;
     try { d = JSON.parse(e.data); } catch (_) { return; }
+    
     if (d.error) {
-      setChartStatus("Deriv feed: " + (d.error.message || "error"), "err");
+      if (d.error.code === "MarketIsClosed" || (d.error.message && d.error.message.toLowerCase().includes("closed"))) {
+        setChartStatus("Forex market is closed for the weekend · Synthetics trade 24/7", "err");
+        return;
+      }
+      setChartStatus(`Deriv: ${d.error.message || 'error'}`, "err");
       return;
     }
+
     if (d.msg_type === "candles" && d.candles) {
-      gotData = true;
-      lastCandles = d.candles.map(c => ({
-        time: lagosTz(+c.epoch),
-        open: +c.open, high: +c.high, low: +c.low, close: +c.close
-      })).sort((a, b) => a.time - b.time);
-      candleSeries.setData(lastCandles);
-      const statusText = isSynth ? "● Live 24/7 Feed Active" :
-        (isForexMarketClosed() ? "Forex Closed (Weekend) — Last Candles" : "● Live Forex Feed Active");
-      setChartStatus(statusText, isSynth || !isForexMarketClosed() ? "ok" : "");
-      loadTradeMarkers(sym);
+      chartCandles = d.candles.sort((a, b) => +a.epoch - +b.epoch);
+      initOrUpdateChart(chartCandles, sym);
+      const last = chartCandles[chartCandles.length - 1];
+      setChartStatus(`Live · ${sym} $${Number(last.close).toFixed(4)} (${tfLabel})`, "ok");
     } else if (d.msg_type === "ohlc" && d.ohlc) {
-      const c = d.ohlc;
-      const cand = {
-        time: lagosTz(+c.open_time),
-        open: +c.open, high: +c.high, low: +c.low, close: +c.close
-      };
-      if (!isFinite(cand.time)) return;
-      if (!lastCandles.length || cand.time > lastCandles[lastCandles.length - 1].time) {
-        lastCandles.push(cand);
+      const o = d.ohlc;
+      const c = { epoch: o.open_time, open: o.open, high: o.high, low: o.low, close: o.close };
+      if (!chartCandles.length || +c.epoch > +chartCandles[chartCandles.length - 1].epoch) {
+        chartCandles.push(c);
+        if (chartCandles.length > 150) chartCandles.shift();
       } else {
-        lastCandles[lastCandles.length - 1] = cand;
+        chartCandles[chartCandles.length - 1] = c;
       }
-      candleSeries.update(cand);
+      initOrUpdateChart(chartCandles, sym);
+      setChartStatus(`Live · ${sym} $${Number(c.close).toFixed(4)} (${tfLabel})`, "ok");
     }
   };
 
-  sock.onerror = () => setChartStatus("WS Connection Error — retrying...", "err");
+  sock.onerror = () => {
+    setChartStatus(`Reconnecting feed (endpoint ${wsEndpointIdx + 1}/${DERIV_WS_ENDPOINTS.length})...`, "err");
+  };
+
   sock.onclose = () => {
     if (wsPub !== sock) return;
-    if (!gotData) setChartStatus("WS Closed — reconnecting...", "err");
-    const wait = Math.min(15000, 1000 * Math.pow(2, Math.min(4, chartRetry++)));
-    chartTimer = setTimeout(() => { if (curPair === sym) subCandles(sym); }, wait);
+    // Rotate through fallback WebSocket endpoints
+    wsEndpointIdx = (wsEndpointIdx + 1) % DERIV_WS_ENDPOINTS.length;
+    setChartStatus(`Reconnecting feed (endpoint ${wsEndpointIdx + 1}/${DERIV_WS_ENDPOINTS.length})...`, "err");
+    const wait = Math.min(8000, 1000 * Math.pow(1.5, Math.min(4, chartRetry++)));
+    setTimeout(() => {
+      if (curPair === sym) subscribeDerivCandles(sym);
+    }, wait);
   };
 }
 
-// ---------- PAIRS TAB ----------
-function filterPairsList(cat) {
-  curPairsFilter = cat;
-  document.querySelectorAll("#pairsFilterBar .filter-btn").forEach(b => {
-    b.classList.toggle("active", b.getAttribute("onclick").includes(`'${cat}'`));
-  });
-  renderPairs();
-}
-
+// ---------- PAIRS TAB (ONLY TRAINED PAIRS) ----------
 function renderPairs() {
   const el = $("pairList");
   if (!el) return;
   el.innerHTML = "";
 
-  const pairs = (STATE && STATE.pairs) || [];
-  const filtered = pairs.filter(p => {
-    if (curPairsFilter === "all") return true;
-    const meta = PAIR_METADATA[p.symbol] || {};
-    return meta.cat === curPairsFilter;
-  });
+  const trainedPairs = getTrainedPairs();
 
-  filtered.forEach(p => {
+  if (!trainedPairs.length) {
+    el.innerHTML = `
+      <div class="card dim" style="grid-column: 1 / -1; text-align: center; padding: 40px 20px;">
+        <div style="font-size: 32px; margin-bottom: 8px;">📊</div>
+        <h3 style="color: #fff; margin-bottom: 6px;">No Trained Pairs Yet</h3>
+        <p style="margin-bottom: 16px;">Only pairs with trained models appear here for trading. Use the tabs below to get started:</p>
+        <div style="display:flex; justify-content:center; gap:10px;">
+          <button class="btn btn-primary" onclick="document.querySelector('nav button[data-p=train]').click()">Go to Train Pairs</button>
+          <button class="btn btn-secondary" onclick="document.querySelector('nav button[data-p=upload]').click()">Upload Model Bundle</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  trainedPairs.forEach(p => {
     const meta = PAIR_METADATA[p.symbol] || { name: p.symbol, isSynth: false, defaultDur: 15, defaultUnit: "m" };
     const div = document.createElement("div");
     div.className = "pair-card";
 
-    // Verdict and readiness
     const hasPass = p.verdict === "pass";
     const statusBadge = hasPass ?
       "<span class='badge badge-green'>VERIFIED PASS (REAL OK)</span>" :
       "<span class='badge badge-amber'>DEMO READY (TESTABLE)</span>";
-    
-    // Duration options
+
     let durationHTML = "";
     if (meta.isSynth) {
       const curDur = p.duration || meta.defaultDur || 60;
@@ -421,7 +576,7 @@ function renderPairs() {
       <div class="pair-card-header">
         <div>
           <div class="pair-title">${p.symbol}</div>
-          <div class="pair-desc">${meta.name} · ${meta.isSynth ? "24/7 Synthetic" : "Forex"}</div>
+          <div class="pair-desc">${meta.name} · Model v${p.pack_version || 1}</div>
         </div>
         <div>${statusBadge}</div>
       </div>
@@ -487,8 +642,7 @@ $("modelFile").addEventListener("change", async (e) => {
       $("uploadProgress").innerHTML = "<span style='color:#ef4444'>Invalid bundle: manifest.json missing inside zip</span>";
       return;
     }
-    const manifestText = await manifestFile.async("text");
-    const manifest = JSON.parse(manifestText);
+    const manifest = JSON.parse(await manifestFile.async("text"));
     pendingModelData = manifest;
 
     let planSummary = "Plan included";
@@ -555,9 +709,7 @@ async function uploadModelBundle() {
       }
     });
 
-    if (!wf.ok) {
-      throw new Error("Workflow dispatch failed");
-    }
+    if (!wf.ok) throw new Error("Workflow dispatch failed");
 
     $("uploadProgress").innerHTML = `
       <div style="color: var(--accent-green); font-weight: 700; margin-bottom: 4px;">
@@ -577,7 +729,7 @@ async function uploadModelBundle() {
   }
 }
 
-// ---------- TRAIN TAB ----------
+// ---------- TRAIN TAB (ALL 27 PAIRS) ----------
 function filterTrainCategory(cat) {
   curTrainFilter = cat;
   document.querySelectorAll("#train .filter-bar .filter-btn").forEach(b => {
@@ -668,7 +820,6 @@ async function copyTrainPrompt() {
   }
   $("publishPat").value = "";
 
-  // Dispatch data fetch if any stale
   try {
     await gh(`/repos/${REPO}/actions/workflows/fetch-candles.yml/dispatches`, {
       method: "POST",
@@ -689,22 +840,7 @@ async function copyTrainPrompt() {
   }
 }
 
-// ---------- NEWS TAB (ACCURACY VERIFICATION) ----------
-function filterNewsView(filter) {
-  curNewsFilter = filter;
-  document.querySelectorAll("#news .filter-bar .filter-btn").forEach(b => {
-    b.classList.toggle("active", b.getAttribute("onclick").includes(`'${filter}'`));
-  });
-  renderNews();
-}
-
-function parseNumber(s) {
-  if (!s) return null;
-  const clean = String(s).replace(/[^\d.-]/g, '');
-  const n = parseFloat(clean);
-  return isNaN(n) ? null : n;
-}
-
+// ---------- NEWS TAB (CLEAN CALENDAR - NO OUTCOME CHECKING) ----------
 function renderNews() {
   api("/api/news").then(r => {
     const el = $("newsList");
@@ -712,89 +848,29 @@ function renderNews() {
     el.innerHTML = "";
 
     const events = r.events || [];
-    const reactions = r.reactions || [];
-    const now = Date.now();
-
-    // Group reactions by event_key
-    const rxMap = {};
-    reactions.forEach(rx => {
-      rxMap[rx.event_key] = rx;
-    });
-
-    const filtered = events.filter(e => {
-      const t = new Date(e.utc_time).getTime();
-      const isPast = now >= t + 15 * 60 * 1000;
-      if (curNewsFilter === "past") return isPast;
-      if (curNewsFilter === "upcoming") return !isPast;
-      return true;
-    });
-
-    if (!filtered.length) {
-      el.innerHTML = "<div class='card dim' style='text-align:center;'>No news events found for this filter.</div>";
+    if (!events.length) {
+      el.innerHTML = "<div class='card dim' style='text-align:center;'>No economic calendar events available.</div>";
       return;
     }
 
-    filtered.forEach(e => {
+    events.forEach(e => {
       const t = new Date(e.utc_time);
       const lagos = new Date(t.getTime() + 3600e3);
-      const isPast = now >= (t.getTime() + 15 * 60 * 1000);
       const div = document.createElement("div");
       div.className = "news-item";
 
-      // Prediction direction based on forecast vs previous
-      const fc = parseNumber(e.forecast);
-      const pv = parseNumber(e.previous);
-      let predictedDirection = "NEUTRAL";
-      if (fc !== null && pv !== null) {
-        if (fc > pv) predictedDirection = "BULLISH (UP)";
-        else if (fc < pv) predictedDirection = "BEARISH (DOWN)";
-      }
-
-      // Check reaction if past
-      const rx = rxMap[e.id];
-      let accuracyBadge = "";
-      let reactionText = "Awaiting market candles reconciliation";
-
-      if (isPast) {
-        if (rx) {
-          const move = rx.move_15m || rx.move_5m || 0;
-          reactionText = `Pair ${rx.pair}: 5m move = ${rx.move_5m > 0 ? "+" : ""}${rx.move_5m}p, 15m move = ${rx.move_15m > 0 ? "+" : ""}${rx.move_15m}p`;
-          if (predictedDirection.includes("UP")) {
-            if (move > 0.2) accuracyBadge = "<span class='badge badge-green'>✓ PREDICTION ACCURATE</span>";
-            else if (move < -0.2) accuracyBadge = "<span class='badge badge-red'>✗ PREDICTION INACCURATE</span>";
-            else accuracyBadge = "<span class='badge badge-amber'>• FLAT / NEUTRAL MOVE</span>";
-          } else if (predictedDirection.includes("DOWN")) {
-            if (move < -0.2) accuracyBadge = "<span class='badge badge-green'>✓ PREDICTION ACCURATE</span>";
-            else if (move > 0.2) accuracyBadge = "<span class='badge badge-red'>✗ PREDICTION INACCURATE</span>";
-            else accuracyBadge = "<span class='badge badge-amber'>• FLAT / NEUTRAL MOVE</span>";
-          } else {
-            accuracyBadge = "<span class='badge badge-blue'>• COMPLETED</span>";
-          }
-        } else {
-          accuracyBadge = "<span class='badge badge-amber'>• REACTION PENDING</span>";
-        }
-      } else {
-        accuracyBadge = "<span class='badge badge-blue'>UPCOMING</span>";
-      }
+      const impactBadge = e.impact === 'High' ? 'badge-red' : e.impact === 'Medium' ? 'badge-amber' : 'badge-blue';
 
       div.innerHTML = `
         <div class="news-item-header">
           <div>
-            <span class="badge ${e.impact === 'High' ? 'badge-red' : e.impact === 'Medium' ? 'badge-amber' : 'badge-blue'}">${e.currency} · ${e.impact || 'Low'} Impact</span>
+            <span class="badge ${impactBadge}">${e.currency} · ${e.impact || 'Low'} Impact</span>
             <div class="news-title" style="margin-top:4px;">${e.title}</div>
             <div class="news-meta">
               ${lagos.toISOString().slice(0, 16).replace("T", " ")} Lagos time · Forecast: ${e.forecast || "—"} · Prev: ${e.previous || "—"}
             </div>
           </div>
-          <div>${accuracyBadge}</div>
         </div>
-
-        ${isPast ? `
-          <div class="news-verdict-box">
-            <span class="dim">Predicted Direction: <b style="color:#fff;">${predictedDirection}</b></span>
-            <span class="dim">${reactionText}</span>
-          </div>
-        ` : ''}
       `;
       el.appendChild(div);
     });

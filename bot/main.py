@@ -390,60 +390,14 @@ class Bot:
             log("warn", None, f"news fetch failed: {e}")
 
     async def record_reactions(self):
-        """For each high-impact event past by 15+ minutes, compute the pair's
-        +5/+15 minute move from candles and POST it once per event+pair."""
-        now = datetime.now(timezone.utc)
-        symbols = [p["symbol"] for p in self.state.get("pairs", [])]
-        for ev in self.events:
-            if ev.get("impact") != "high":
-                continue
-            t = datetime.strptime(ev["utc_time"], "%Y-%m-%dT%H:%M:%SZ").replace(
-                tzinfo=timezone.utc)
-            if (now - t).total_seconds() < 15 * 60:
-                continue
-            for sym in ev.get("affected_pairs") or newsmod.affected_pairs(
-                    ev["currency"], symbols):
-                key = (ev["id"], sym)
-                if key in self.reactions_done:
-                    continue
-                self.reactions_done.add(key)
-                try:
-                    df = await self.sess.fetch_candles(sym, count=500)
-                    if df.empty:
-                        continue
-                    df = df.sort_values("epoch").reset_index(drop=True)
-                    idx = df.index[df["epoch"] >= int(t.timestamp())]
-                    if len(idx) == 0 or idx[0] + 15 >= len(df):
-                        continue
-                    i = int(idx[0])
-                    base = float(df["close"].iloc[i])
-                    m5 = (float(df["close"].iloc[i + 5]) - base) / base * 1e4
-                    m15 = (float(df["close"].iloc[i + 15]) - base) / base * 1e4
-                    http("POST", "/api/bot/news/reaction",
-                         {"event_key": ev["id"], "pair": sym,
-                          "move_5m": round(m5, 1), "move_15m": round(m15, 1)})
-                    log("info", sym, f"news reaction recorded: {ev['title'][:30]} "
-                                     f"5m={m5:+.1f}p 15m={m15:+.1f}p")
-                except Exception as e:
-                    log("warn", sym, f"reaction record failed: {e}")
-
+        pass
     def news_ctx_for(self, sym, side):
         ctx = {}
         now = datetime.now(timezone.utc)
         curs = newsmod.pair_currencies(sym)
         nxt = newsmod.minutes_to_event(self.events, now, curs)
         ctx["minutes_to_news"] = nxt if nxt is not None else 9999.0
-        last = newsmod.last_event_minutes(self.events, now, curs)
-        reaction = None
-        if last and last[0] <= 240:  # reaction window: 4h after release
-            try:
-                r = http("GET", f"/api/bot/news/reactions?pair={sym}")
-                for rec in r.get("reactions", []):
-                    if rec.get("event_key") == last[1]["id"]:
-                        reaction = rec.get("move_15m")
-            except Exception:
-                pass
-        ctx["news_state"] = newsmod.news_state(side, reaction)
+        ctx["news_state"] = "clear"
         ctx["hour_utc"] = now.hour
         return ctx
 
@@ -542,7 +496,6 @@ class Bot:
         if time.time() - self.news_ts > NEWS_REFRESH_S:
             self.refresh_news()
         await self.ensure_session()
-        await self.record_reactions()
         bal = await self.sess.balance()
         heartbeat(self.sess.mode, bal, "loop",
                   self.sess.masked(), self.sess.currency)
