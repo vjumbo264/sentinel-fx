@@ -95,26 +95,28 @@ def run_spike(args) -> Dict[str, Any]:
         results["errors"].append(err)
         return results
 
-    # Initialize terminal with retry loop across candidate paths
-    candidate_paths = [
-        "C:\MT5\terminal64.exe",
-        "C:\Program Files\Deriv - MetaTrader 5\terminal64.exe",
-        "C:\Program Files\MetaTrader 5\terminal64.exe",
-        None
+    # Initialize terminal with portable=True per issue #55 resolution
+    candidate_configs = [
+        {"path": r"C:\MT5	erminal64.exe", "portable": True},
+        {"path": r"C:\MT5	erminal64.exe", "portable": False},
+        {"path": r"C:\Program Files\Deriv - MetaTrader 5	erminal64.exe", "portable": True},
+        {"path": r"C:\Program Files\MetaTrader 5	erminal64.exe", "portable": False},
+        {"portable": True},
+        {}
     ]
     init_ok = False
     last_err = None
     chosen_path = None
     start_init = time.time()
-    print("Polling mt5.initialize() across candidate paths...")
+    print("Polling mt5.initialize() across portable and path configurations...")
     while time.time() - start_init < 90:
-        for p in candidate_paths:
+        for cfg in candidate_configs:
             try:
-                ok = mt5.initialize(path=p) if p else mt5.initialize()
+                ok = mt5.initialize(**cfg, timeout=60000)
                 if ok:
                     init_ok = True
-                    chosen_path = p or 'default'
-                    print(f"[OK] mt5.initialize() succeeded with path: {chosen_path}")
+                    chosen_path = str(cfg)
+                    print(f"[OK] mt5.initialize() succeeded with {chosen_path}")
                     break
                 else:
                     last_err = mt5.last_error()
