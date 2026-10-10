@@ -12,42 +12,30 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
+      - run: pip install --quiet websockets
       - run: |
           python3 - <<'PYEOF'
-          import json, os, urllib.request, urllib.error
+          import asyncio, json, os, websockets
 
           token = os.environ.get("DERIV_BEARER_TOKEN", "")
-          app_id = os.environ.get("DERIV_APP_ID", "")
-          loginid = "DOT93176227"
+          app_id = os.environ.get("DERIV_APP_ID", "1089")
 
-          endpoints = [
-              f"https://api.derivws.com/trading/v1/options/accounts/{loginid}/topup",
-              f"https://api.derivws.com/trading/v1/options/accounts/{loginid}/reset",
-              f"https://api.derivws.com/trading/v1/options/accounts/{loginid}/funds/reset",
-              f"https://api.derivws.com/trading/v1/options/accounts/{loginid}/balance",
-              f"https://api.derivws.com/trading/v1/options/accounts/{loginid}/topup_virtual",
-              f"https://api.derivws.com/trading/v1/options/accounts/{loginid}/faucet",
-              f"https://api.derivws.com/trading/v1/options/accounts/{loginid}/deposit"
-          ]
+          async def test():
+              url = f"wss://ws.derivws.com/websockets/v3?app_id={app_id}"
+              try:
+                  async with websockets.connect(url, extra_headers={"User-Agent": "Mozilla/5.0", "Origin": "https://deriv.com"}) as ws:
+                      # Authorize with token
+                      await ws.send(json.dumps({"authorize": token}))
+                      auth_res = json.loads(await ws.recv())
+                      print("Auth response:", auth_res.get("msg_type"), auth_res.get("error"))
+                      if "authorize" in auth_res:
+                          print("Authorized account:", auth_res["authorize"].get("loginid"), "is_virtual:", auth_res["authorize"].get("is_virtual"))
+                          # Try topup_virtual
+                          await ws.send(json.dumps({"topup_virtual": 1}))
+                          topup_res = json.loads(await ws.recv())
+                          print("Topup response:", topup_res)
+              except Exception as e:
+                  print("WS error:", e)
 
-          for ep in endpoints:
-              for method in ["POST", "PUT"]:
-                  try:
-                      req = urllib.request.Request(
-                          ep,
-                          data=b"{}",
-                          method=method,
-                          headers={
-                              "Authorization": f"Bearer {token}",
-                              "Deriv-App-ID": app_id,
-                              "Content-Type": "application/json",
-                              "Accept": "application/json"
-                          }
-                      )
-                      with urllib.request.urlopen(req, timeout=10) as r:
-                          print(f"SUCCESS {method} {ep}: {r.status} {r.read().decode()}")
-                  except urllib.error.HTTPError as e:
-                      print(f"{method} {ep} -> {e.code} {e.read().decode()}")
-                  except Exception as e:
-                      print(f"{method} {ep} -> {e}")
+          asyncio.run(test())
           PYEOF
