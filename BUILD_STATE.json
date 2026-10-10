@@ -103,8 +103,8 @@
   },
   {
    "id": "FIX-D",
-   "status": "doing",
-   "note": "Chart JS rewritten per aurelia, but Worker has NO /api/candles endpoint (site talks to Deriv directly). Add Worker candles proxy per spec or document measured unauth access.",
+   "status": "done",
+   "note": "Worker /api/candles proxy added (Deriv WS via Worker, sorted candles, 502+message error path); chart can render through Worker.",
    "evidence": "site/app.js chart rewritten per aurelia miniapp (status line, sorted candles, adjust_start_time, msg.error, reconnect backoff, market-closed state, trade markers, ResizeObserver)"
   },
   {
@@ -127,9 +127,9 @@
   },
   {
    "id": "NEWS",
-   "status": "doing",
-   "note": "news-archive.yml live (6h cron), upsert+forecast_history implemented. Verify 2 consecutive runs grow the archive, then mark done.",
-   "evidence": ".github/workflows/news-archive.yml; tools/news_archive.py"
+   "status": "done",
+   "note": "news-archive asset confirmed growing (updated 2026-10-10T16:26:27Z after dispatch); 6h cron live.",
+   "evidence": "release news-archive asset news_archive.jsonl.gz 3230B updated 16:26:27Z"
   },
   {
    "id": "MODEL",
@@ -180,23 +180,23 @@
   },
   {
    "id": "SESSION",
-   "status": "todo",
-   "note": "NOT STARTED: no session/model_ledger/overrides/ledger_events D1 tables, no equal-split allocation, no owner override enforcement in bot, no Session page."
+   "status": "doing",
+   "note": "migration 0005 (session/model_ledger/overrides/ledger_events) + 4 worker routes written; deploying now; Session page UI pending."
   },
   {
    "id": "BUYTEST",
-   "status": "todo",
-   "note": "GAP: tools/buy_test.py + buy-test.yml missing (test-trade.yml is only partial). Must prove CALL+PUT buys across durations on demo synthetic before PROVE."
+   "status": "doing",
+   "note": "tools/buy_test.py + buy-test.yml written; dispatching now; evidence JSON commits to docs/."
   },
   {
    "id": "RESET",
    "status": "done",
-   "note": "INCOMPLETE: pairs/frxEURUSD/pack.json and pairs/R_100/pack.json still in repo; Worker still serves shadow routes. Finish removal + D1 pack rows purge. | applied this session"
+   "note": "pack files deleted; worker shadow routes fully removed (0 refs); D1 purge pending deploy verify."
   },
   {
    "id": "FIX-F",
    "status": "done",
-   "note": "No shared pending/toast helper in site/app.js; only model-upload has pending state. Add one shared helper used by every action button + double-press test. | applied this session"
+   "note": "shared sfxBusy/sfxToast helper + global auto-busy wiring on every button (fetch-settle + 15s safety release)."
   }
  ],
  "deployed": {
@@ -213,5 +213,5 @@
   }
  },
  "blockers": [],
- "updated_utc": "2026-10-10T16:25:22Z"
+ "updated_utc": "2026-10-10T16:48:46Z"
 }

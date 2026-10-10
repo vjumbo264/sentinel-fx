@@ -187,30 +187,6 @@ export default {
           return json({ ok: true });
         }
 
-        if (path === "/api/bot/shadow" && method === "POST") {
-          await env.DB.prepare(
-            `INSERT INTO shadow_signals (pair, side, stake, open_utc, entry_price, model_prob, reason)
-             VALUES (?,?,?,?,?,?,?)`
-          ).bind(body.pair, body.side, body.stake ?? null, nowUTC(),
-                 body.entry_price ?? null, body.model_prob ?? null, body.reason || null).run();
-          return json({ ok: true });
-        }
-
-        if (path === "/api/bot/shadow/settle" && method === "POST") {
-          await env.DB.prepare(
-            "UPDATE shadow_signals SET close_utc=?, exit_price=?, result=?, pnl=? WHERE id=?"
-          ).bind(nowUTC(), body.exit_price ?? null, body.result, body.pnl ?? 0, body.id).run();
-          return json({ ok: true });
-        }
-
-        if (path === "/api/bot/shadow/open" && method === "GET") {
-          const pair = url.searchParams.get("pair");
-          const r = await env.DB.prepare(
-            "SELECT * FROM shadow_signals WHERE pair=? AND close_utc IS NULL"
-          ).bind(pair).all();
-          return json({ open: r.results });
-        }
-
         if (path === "/api/bot/news" && method === "POST") {
           const ev = body.events || [];
           const stmt = env.DB.prepare(
@@ -261,6 +237,105 @@ export default {
       // ============================ SITE ENDPOINTS ===========================
       const site = await verifySiteAuth(request);
       if (!site) return err("unauthorized", 401);
+
+      // FIX-D: candle proxy so the site chart always renders through the Worker.
+      if (path === "/api/candles" && method === "GET") {
+        const symbol = url.searchParams.get("symbol") || "R_100";
+        const gran = Math.max(60, parseInt(url.searchParams.get("granularity") || "60", 10) || 60);
+        const count = Math.min(5000, Math.max(50, parseInt(url.searchParams.get("count") || "500", 10) || 500));
+        try {
+          const candles = await new Promise((resolve, reject) => {
+            const to = setTimeout(() => reject(new Error("deriv ws timeout")), 9000);
+            let sock;
+            try { sock = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1089"); }
+            catch (e) { clearTimeout(to); return reject(e); }
+            sock.addEventListener("open", () => sock.send(JSON.stringify({
+              ticks_history: symbol, adjust_start_time: 1, count, end: "latest",
+              granularity: gran, style: "candles"
+            })));
+            sock.addEventListener("message", (ev) => {
+              try {
+                const m = JSON.parse(ev.data);
+                if (m.error) { clearTimeout(to); sock.close(); return reject(new Error(m.error.message)); }
+                if (m.candles) { clearTimeout(to); sock.close(); resolve(m.candles); }
+              } catch (e) { /* keep waiting */ }
+            });
+            sock.addEventListener("error", () => { clearTimeout(to); reject(new Error("deriv ws error")); });
+          });
+          candles.sort((a, b) => a.epoch - b.epoch);
+          return json({ ok: true, symbol, granularity: gran, count: candles.length, candles });
+        } catch (e) {
+          return err("candles unavailable: " + (e && e.message || e), 502);
+        }
+      }
+
+      // SESSION: per-model bankroll ledger + owner overrides
+      if (path === "/api/session" && method === "GET") {
+        const s = await env.DB.prepare("SELECT * FROM session ORDER BY id DESC LIMIT 1").all();
+        const led = await env.DB.prepare("SELECT * FROM model_ledger ORDER BY symbol").all();
+        const ov = await env.DB.prepare("SELECT * FROM overrides ORDER BY symbol").all();
+        return json({ session: s.results[0] || null, ledger: led.results, overrides: ov.results });
+      }
+
+      if (path === "/api/session/allocate" && method === "POST") {
+        // Equal-split allocation of the demo balance across active models.
+        if (!(await verifySiteAuth(request))) return err("unauthorized", 401);
+        const bal = Number(body.balance ?? 0);
+        if (!(bal > 0)) return err("balance required", 400);
+        const active = await env.DB.prepare(
+          "SELECT symbol FROM model_ledger WHERE active=1"
+        ).all();
+        const syms = active.results.map(r => r.symbol);
+        if (!syms.length) return err("no active models", 400);
+        const share = Math.floor((bal / syms.length) * 100) / 100;
+        const ts = nowUTC();
+        for (const s2 of syms) {
+          await env.DB.prepare(
+            `INSERT INTO model_ledger (symbol, allocated, balance, active, updated_utc)
+             VALUES (?,?,?,1,?)
+             ON CONFLICT(symbol) DO UPDATE SET allocated=excluded.allocated, updated_utc=excluded.updated_utc`
+          ).bind(s2, share, share, ts).run();
+          await env.DB.prepare(
+            "INSERT INTO ledger_events (ts, symbol, kind, amount, note) VALUES (?,?,?,?,?)"
+          ).bind(ts, s2, "allocate", share, "equal-split of " + bal).run();
+        }
+        await env.DB.prepare(
+          "INSERT INTO session (started_utc, mode, starting_balance, note) VALUES (?,?,?,?)"
+        ).bind(ts, body.mode || "demo", bal, "allocated " + share + " x " + syms.length).run();
+        return json({ ok: true, share, symbols: syms });
+      }
+
+      if (path === "/api/session/override" && method === "POST") {
+        // Owner override: pause/resume a model or force stop-all. Bot must honor.
+        if (!(await verifySiteAuth(request))) return err("unauthorized", 401);
+        const symbol = body.symbol || "*";
+        const action = body.action; // pause | resume | stop_all
+        if (!["pause", "resume", "stop_all"].includes(action)) return err("bad action", 400);
+        const ts = nowUTC();
+        await env.DB.prepare(
+          `INSERT INTO overrides (symbol, action, updated_utc) VALUES (?,?,?)
+           ON CONFLICT(symbol) DO UPDATE SET action=excluded.action, updated_utc=excluded.updated_utc`
+        ).bind(symbol, action, ts).run();
+        await env.DB.prepare(
+          "INSERT INTO ledger_events (ts, symbol, kind, amount, note) VALUES (?,?,?,?,?)"
+        ).bind(ts, symbol, "override:" + action, 0, body.note || "owner override").run();
+        return json({ ok: true });
+      }
+
+      if (path === "/api/session/ledger/event" && method === "POST") {
+        // Bot posts realized PnL per trade here; ledger tracks each model's balance.
+        if (request.headers.get("X-Bot-Secret") !== env.BOT_SHARED_SECRET) return err("unauthorized", 401);
+        const ts = nowUTC();
+        await env.DB.prepare(
+          "INSERT INTO ledger_events (ts, symbol, kind, amount, note) VALUES (?,?,?,?,?)"
+        ).bind(ts, body.symbol, body.kind || "trade", Number(body.amount ?? 0), body.note || null).run();
+        await env.DB.prepare(
+          `INSERT INTO model_ledger (symbol, allocated, balance, active, updated_utc)
+           VALUES (?,0,?,1,?)
+           ON CONFLICT(symbol) DO UPDATE SET balance=balance+excluded.balance, updated_utc=excluded.updated_utc`
+        ).bind(body.symbol, Number(body.amount ?? 0), ts).run();
+        return json({ ok: true });
+      }
 
       if (path === "/api/state" && method === "GET") {
         const settings = {};

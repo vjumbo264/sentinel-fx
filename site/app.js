@@ -1039,3 +1039,20 @@ if (PAT) {
   $("pat").value = PAT;
   connect();
 }
+
+/* FIX-F global wiring: every button shows pending state; clears when network settles. */
+(function sfxGlobalBusy(){
+  let pending = 0;
+  const of = window.fetch.bind(window);
+  window.fetch = function(...args){
+    pending++;
+    return of(...args).finally(()=>{ pending = Math.max(0, pending-1); if(!pending) document.querySelectorAll('button[data-sfx-auto-busy]').forEach(b=>{ b.disabled=false; b.classList.remove('sfx-auto-busy'); delete b.dataset.sfxAutoBusy; }); });
+  };
+  document.addEventListener('click', (e)=>{
+    const b = e.target.closest('button');
+    if(!b || b.disabled || b.dataset.noBusy || b.dataset.sfxAutoBusy) return;
+    b.dataset.sfxAutoBusy = '1'; b.disabled = true; b.classList.add('sfx-auto-busy');
+    setTimeout(()=>{ if(b.dataset.sfxAutoBusy){ b.disabled=false; delete b.dataset.sfxAutoBusy; b.classList.remove('sfx-auto-busy'); } }, 15000);
+  }, true);
+})();
+/* sfx-global-busy */

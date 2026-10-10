@@ -1,0 +1,30 @@
+name: buy-test
+on:
+  workflow_dispatch:
+    inputs:
+      symbol: { description: "synthetic symbol", default: "R_10" }
+      durations: { description: "comma list seconds", default: "5,15,60" }
+permissions:
+  contents: write
+jobs:
+  buy-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DERIV_BEARER_TOKEN: ${{ secrets.DERIV_BEARER_TOKEN }}
+      DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install --quiet websocket-client
+      - name: Run demo buy test (CALL+PUT x durations)
+        run: python3 tools/buy_test.py --symbol "${{ inputs.symbol || 'R_10' }}" --durations "${{ inputs.durations || '5,15,60' }}"
+      - name: Commit evidence
+        if: always()
+        run: |
+          git config user.email "builder@sentinel-fx.local"
+          git config user.name "sentinel-builder"
+          git add docs/buy_test_*.json || true
+          git commit -m "buytest: evidence [skip ci]" || echo "nothing to commit"
+          git push
