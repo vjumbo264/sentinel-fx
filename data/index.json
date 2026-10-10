@@ -1,0 +1,12 @@
+{
+ "R_100": {
+  "asset": "R_100_60s.csv.gz",
+  "first_epoch": 1760101593,
+  "last_checked_utc": "2026-10-10T13:06:39Z",
+  "last_epoch": 1791637560,
+  "release_tag": "data-01",
+  "rows": 525600,
+  "sha256": "15669d2f571a5be57da07d8fbff7f92daac623941e713daf390f1a6859fa3c78",
+  "source": "auth-otp"
+ }
+}
