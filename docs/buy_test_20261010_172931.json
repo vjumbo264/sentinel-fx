@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "run_utc": "2026-10-10T17:29:31Z",
+    "account": "DOT93176227",
+    "mode": "demo",
+    "symbol": "R_10",
+    "durations": "5,15",
+    "call_ok": false,
+    "put_ok": false,
+    "start_balance": 10000.0,
+    "end_balance": 10000.0
+  },
+  "results": [
+    {
+      "symbol": "R_10",
+      "side": "CALL",
+      "duration": 5,
+      "duration_unit": "s",
+      "stake": 0.35,
+      "open_utc": "2026-10-10T17:29:30Z",
+      "status": "proposal_error",
+      "error": "Trading is not offered for this duration."
+    },
+    {
+      "symbol": "R_10",
+      "side": "CALL",
+      "duration": 15,
+      "duration_unit": "s",
+      "stake": 0.35,
+      "open_utc": "2026-10-10T17:29:30Z",
+      "status": "buy_error",
+      "proposal_id": "2f620e90-ca97-41bd-a219-43e86457d746",
+      "ask_price": 0.35,
+      "payout": 0.62,
+      "error": "Unknown contract proposal"
+    },
+    {
+      "symbol": "R_10",
+      "side": "PUT",
+      "duration": 5,
+      "duration_unit": "s",
+      "stake": 0.35,
+      "open_utc": "2026-10-10T17:29:30Z",
+      "status": "proposal_error",
+      "error": "Trading is not offered for this duration."
+    },
+    {
+      "symbol": "R_10",
+      "side": "PUT",
+      "duration": 15,
+      "duration_unit": "s",
+      "stake": 0.35,
+      "open_utc": "2026-10-10T17:29:30Z",
+      "status": "buy_error",
+      "proposal_id": "d8a0f047-958d-4dc9-8f2f-e5934aa24d20",
+      "ask_price": 0.35,
+      "payout": 0.62,
+      "error": "Unknown contract proposal"
+    }
+  ]
+}
