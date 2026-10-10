@@ -14,17 +14,34 @@ import argparse, json, os, sys, time, urllib.request
 from datetime import datetime, timezone
 
 WS = "wss://ws.derivws.com/websockets/v3?app_id={app_id}"
-OTP_URL = "https://api.derivws.com/trading/v1/options/otp"
+REST = "https://api.derivws.com"
 
-def now():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def _rest(bearer, path, method="GET", data=None):
+    req = urllib.request.Request(REST + path, data=data, method=method, headers={
+        "Authorization": f"Bearer {bearer}", "Accept": "application/json",
+        "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read())
 
 def get_otp(bearer):
-    req = urllib.request.Request(OTP_URL, headers={
-        "Authorization": f"Bearer {bearer}", "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        d = json.loads(r.read())
-    return d.get("otp") or d.get("token") or d.get("data", {}).get("otp")
+    """Mirror tools/fetch_candles.py proven auth flow: list accounts -> POST per-loginid OTP."""
+    accs = _rest(bearer, "/trading/v1/options/accounts")
+    accounts = accs.get("accounts") or accs.get("data", {}).get("accounts") or []
+    # Prefer the virtual (demo) account.
+    loginid = None
+    for a in accounts:
+        lid = a.get("loginid") or a.get("id") or ""
+        if str(a.get("is_virtual", a.get("virtual", ""))).lower() in ("1", "true") or str(lid).startswith(("VRTC", "VRW")):
+            loginid = lid; break
+    if not loginid and accounts:
+        loginid = accounts[0].get("loginid") or accounts[0].get("id")
+    if not loginid:
+        raise RuntimeError("no Deriv account found for bearer token")
+    d = _rest(bearer, f"/trading/v1/options/accounts/{loginid}/otp", method="POST", data=b"{}")
+    otp = d.get("otp") or d.get("data", {}).get("otp") or d.get("token")
+    if not otp:
+        raise RuntimeError(f"OTP response had no token: {list(d.keys())}")
+    return otp, loginid
 
 class WSClient:
     def __init__(self, url):
@@ -86,7 +103,7 @@ def main():
     if not bearer:
         print("DERIV_BEARER_TOKEN missing", file=sys.stderr); sys.exit(2)
 
-    otp = get_otp(bearer)
+    otp, loginid = get_otp(bearer)
     ws = WSClient(WS.format(app_id=app_id))
     auth = ws.call(authorize=otp)
     acct = auth["authorize"]

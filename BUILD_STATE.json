@@ -186,7 +186,7 @@
   {
    "id": "BUYTEST",
    "status": "doing",
-   "note": "buy-test.yml ran (id 38069169795) but the buy step failed; log pulled this session; script + workflow committed and re-runnable: gh workflow run buy-test.yml. Root cause in log; likely Deriv OTP/buy params - one fix iteration allowed next session."
+   "note": "Root cause fixed: OTP endpoint was 404 (wrong path); now mirrors fetch_candles.py accounts->POST /accounts/{loginid}/otp. Re-dispatched; evidence commits to docs/ on success."
   },
   {
    "id": "RESET",
@@ -213,5 +213,5 @@
   }
  },
  "blockers": [],
- "updated_utc": "2026-10-10T16:52:46Z"
+ "updated_utc": "2026-10-10T16:53:35Z"
 }
