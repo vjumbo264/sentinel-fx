@@ -41,7 +41,7 @@ jobs:
           if req and req != "all":
               syms = [s.strip() for s in req.split(",") if s.strip()]
               for s in syms:
-                  if not re.match(r"^(frx[A-Z]{6}|R_\\d+|1HZ\\d+V)$", s):
+                  if not re.match(r"^(frx[A-Z]{6}|R_\d+|1HZ\d+V)$", s):
                       raise SystemExit(f"invalid symbol {s!r}")
           else:
               syms = tracked

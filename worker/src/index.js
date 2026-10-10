@@ -368,7 +368,7 @@ export default {
       if (path === "/api/news" && method === "GET") {
         const r = await env.DB.prepare(
           "SELECT * FROM news_events WHERE utc_time >= ? ORDER BY utc_time"
-        ).bind(nowUTC().slice(0, 10) + "T00:00:00Z").all();
+        ).bind(new Date(Date.now() - 86400e3).toISOString().slice(0, 10) + "T00:00:00Z").all();
         const cache = await env.DB.prepare("SELECT value FROM settings WHERE key='news_cache'").first();
         let newsMeta = null;
         if (cache) {
