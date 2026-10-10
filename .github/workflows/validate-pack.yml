@@ -1,26 +1,56 @@
-name: validate-pair-pack
+name: validate-pack
 on:
   push:
-    paths: ["pairs/*/incoming/**"]
-permissions: { contents: read }   # NO secrets in this job. Custom code runs only in the sandbox.
+    paths:
+      - "pairs/*/incoming/**"
+  workflow_dispatch:
+    inputs:
+      path:
+        description: "Pack path (pairs/<symbol>/incoming/<v>.json)"
+        required: true
+permissions:
+  contents: write
 jobs:
   validate:
+    # SECURITY: this job has NO deriv token, NO bot secret, NO repo PAT.
+    # Only GITHUB_TOKEN (automatic, scoped to this repo) is available.
     runs-on: ubuntu-latest
+    env: {}
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 2 }
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - run: pip install -e ./engine
-      - name: full validation of incoming packs (sandbox enforced)
+        with: {python-version: "3.11"}
+      - name: Install engine (public)
         run: |
-          status=0
-          for f in $(git diff --name-only HEAD~1 HEAD -- 'pairs/*/incoming/*.json'); do
-            echo "=== validating $f ==="
-            python tools/validate_pack.py "$f" --mode full > "${f%.json}.report.json" || status=1
+          pip install --quiet numpy pandas lightgbm
+          pip install --quiet ./engine
+      - name: Discover pack files
+        id: files
+        run: |
+          if [ -n "${{ github.event.inputs.path }}" ]; then
+            echo "list=${{ github.event.inputs.path }}" >> $GITHUB_OUTPUT
+          else
+            FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '^pairs/.*/incoming/.*\.json$' || true)
+            echo "list<<EOF" >> $GITHUB_OUTPUT
+            echo "$FILES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+      - name: Validate each pack
+        if: steps.files.outputs.list != ''
+        run: |
+          set -e
+          for f in ${{ steps.files.outputs.list }}; do
+            [ -z "$f" ] && continue
+            echo "=== Validating $f ==="
+            python -m sentinel_engine.validate "$f" --mode full | tee "${f%.json}.report.txt" || true
+            # Store machine report alongside the pack
+            python -m sentinel_engine.validate "$f" --mode full > "${f%.json}.report.json" 2>/dev/null || true
           done
-          exit 0   # report files carry the verdict; site/worker reads them
-      - name: upload reports as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with: { name: validation-reports, path: "pairs/**/incoming/*.report.json" }
+      - name: Commit reports
+        if: steps.files.outputs.list != ''
+        run: |
+          git config user.name "sentinel-validator"
+          git config user.email "validator@sentinel-fx.local"
+          git add pairs/*/incoming/*.report.* 2>/dev/null || true
+          git commit -m "validator: reports [skip ci]" || true
+          git push || true

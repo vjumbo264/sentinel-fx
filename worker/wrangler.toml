@@ -1,8 +1,11 @@
 name = "sentinel-fx-worker"
-main = "index.js"
-compatibility_date = "2026-01-01"
+main = "src/index.js"
+compatibility_date = "2026-10-10"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "sentinel-fx"
-database_id = "PENDING_OWNER_TOKEN"
+database_name = "sentinel-fx-db"
+database_id = "5e272a6b-ad11-4bd6-bd61-70569c9f74f6"
+
+# Secrets set via: wrangler secret put BOT_SHARED_SECRET
+# (BOT_SHARED_SECRET authorizes the GitHub-Actions bot to read/write state.)

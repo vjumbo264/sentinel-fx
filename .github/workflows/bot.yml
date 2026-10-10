@@ -1,25 +1,40 @@
-name: sentinel-fx-bot
+name: bot
 on:
   workflow_dispatch:
-  schedule: [{ cron: "17 */4 * * *" }]   # backup only; bot self-chains
+    inputs:
+      mode:
+        description: "demo|real (demo default)"
+        required: false
+        default: "demo"
+  schedule:
+    - cron: "0 */4 * * *"  # backup every 4h; main driver is self-chain
 concurrency:
   group: bot
   cancel-in-progress: false
-permissions: { contents: read }
+permissions:
+  contents: read
+  actions: write
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 245
+    timeout-minutes: 235   # ~3h55m; stops opening ~2min before end
+    env:
+      WORKER_URL: ${{ secrets.WORKER_URL }}
+      BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
+      DERIV_BEARER_TOKEN: ${{ secrets.DERIV_BEARER_TOKEN }}
+      DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
+      GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT }}
+      BOT_MODE: ${{ github.event.inputs.mode || 'demo' }}
+      BOT_WALL_SECONDS: "13800"      # 3h50m total loop
+      BOT_HANDOFF_LEAD_S: "300"      # dispatch next run 5min before stop
+      BOT_STOP_OPEN_LEAD_S: "120"    # stop opening 2min before end
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - run: pip install -e ./engine websockets requests
-      - name: run bot (~3h50m, self-chains via GH_PAT)
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-          DERIV_BEARER_TOKEN: ${{ secrets.DERIV_BEARER_TOKEN }}
-          DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
-          BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
-          WORKER_URL: ${{ secrets.WORKER_URL }}
-        run: python bot/bot.py
+        with: {python-version: "3.11"}
+      - name: Install
+        run: |
+          pip install --quiet numpy pandas websockets requests lightgbm
+          pip install --quiet ./engine
+      - name: Run bot
+        run: python -m bot.main

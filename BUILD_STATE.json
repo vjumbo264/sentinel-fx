@@ -1,5 +1,5 @@
 {
- "phase": "engine",
+ "phase": "worker",
  "steps": [
   {
    "id": "repo_scaffold",
@@ -33,23 +33,23 @@
   },
   {
    "id": "validator",
-   "status": "doing",
-   "note": "validator written; fixtures next"
+   "status": "done",
+   "note": "fast+full implemented; fixtures pass rejection"
   },
   {
    "id": "fixtures",
-   "status": "todo",
-   "note": "leaky/tampered/malicious packs must be rejected"
+   "status": "done",
+   "note": "leaky/tampered/malicious all rejected"
   },
   {
    "id": "worker_d1",
-   "status": "todo",
-   "note": "Cloudflare Worker + D1 schema + endpoints"
+   "status": "doing",
+   "note": "worker deployed; schema apply pending (PRAGMA fix)"
   },
   {
    "id": "site_pages",
-   "status": "todo",
-   "note": "mobile-first control site on Pages"
+   "status": "doing",
+   "note": "site written; Pages deploy pending"
   },
   {
    "id": "bot_workflow",
@@ -63,7 +63,7 @@
   },
   {
    "id": "train_prompt",
-   "status": "todo",
+   "status": "done",
    "note": "TRAIN_PROMPT.md credential-free"
   },
   {
@@ -78,16 +78,16 @@
   },
   {
    "id": "docs_readme",
-   "status": "todo",
-   "note": "PAIRPACK_SPEC.md + README setup"
+   "status": "doing",
+   "note": "PAIRPACK_SPEC done; README final pending"
   }
  ],
  "deployed": {
-  "worker_url": "",
+  "worker_url": "https://sentinel-fx-worker.vjumbo264.workers.dev",
   "pages_url": "",
-  "d1_id": ""
+  "d1_id": "5e272a6b-ad11-4bd6-bd61-70569c9f74f6"
  },
  "pairs": {},
  "blockers": [],
- "updated_utc": "2026-10-10T03:12:40Z"
+ "updated_utc": "2026-10-10T03:31:25Z"
 }

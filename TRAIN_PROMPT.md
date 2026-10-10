@@ -1,43 +1,50 @@
-# TRAIN A SENTINEL-FX PAIR — hand this whole file to any capable AI
+# TRAIN_PROMPT — train a SENTINEL-FX pair (NO credentials needed)
 
-You are training ONE forex pair for SENTINEL-FX. You need NO credentials: all market data
-comes from Deriv's PUBLIC WebSocket, and the engine + validator come from the public repo.
+You are a stateless AI asked to train (or update) a trading pair pack for
+SENTINEL-FX. Everything you need is public. You need NO credentials: market
+data comes from Deriv's public WebSocket and the engine/validator come from
+the public repo.
 
-## Inputs (the owner fills these in)
-- PAIR_SYMBOL: `frxEURUSD`   <!-- owner edits -->
-- PAYOUT_ASSUMPTION: 0.85    <!-- optional; the live bot re-checks the real payout anyway -->
-- UPDATE_EXISTING: no        <!-- or: yes — fetch current pack from the public repo as parent -->
+Inputs the owner gives you:
+- PAIR_SYMBOL (e.g. frxGBPUSD)
+- optional PAYOUT_ASSUMPTION (default 0.85 — the live bot re-checks the real payout)
+- optional "update existing": fetch the current pack from
+  https://raw.githubusercontent.com/vjumbo264/sentinel-fx/main/pairs/<SYMBOL>/pack.json
+  as parent (or the owner attaches it).
 
-## Setup
-```bash
-pip install "git+https://github.com/vjumbo264/sentinel-fx#subdirectory=engine"
-```
-Read `docs/PAIRPACK_SPEC.md` in that repo (github.com/vjumbo264/sentinel-fx) and the
-`SUPPORTED_OPS` list in `engine/sentinel_engine/dsl.py`.
+## Facts you must respect
+- Deriv forex (frx*) binaries: 15-minute minimum duration. We trade CALL/PUT, +15m horizon.
+- Break-even win rate = 1/(1+payout). At payout 0.85 it is 0.5405.
+- Minimum stake 0.35; stake_pct in (0, 0.10]. Honesty: a failing backtest is
+  reported "fail", never massaged. If you have no network/compute, SAY SO —
+  never invent numbers.
 
 ## Steps
-1. **Pull candles.** Public, no token: `wss://ws.derivws.com/websockets/v3?app_id=1089`,
-   `ticks_history` with `style: "candles"`, `granularity: 60`, paginate backwards with
-   `end`/`start` as far as Deriv allows. Report honestly how far back it really goes.
-2. **Design features** with the engine library and DSL. The DSL is STRICTLY CAUSAL — no
-   negative shifts, no centered windows, no whole-series stats. Use custom code ONLY if the
-   DSL truly cannot express the logic, and justify it in `trainer.notes`.
-3. **Train a model** for the +15 minute direction (binary up/down at horizon). Walk-forward
-   validation on unseen data, no look-ahead. Break-even win rate = 1/(1+PAYOUT_ASSUMPTION)
-   = ~0.5405 at 0.85. Export the model as `tree_json` or `logreg_json` (data-only; never pickle).
-4. **Design the rule layer, news rules, session filter and risk profile** from the evidence
-   (e.g. block when ranging with ADX<18; blackout ±N minutes around high-impact releases of
-   either currency in the pair; stake_pct/daily caps conservative).
-5. **Build the pack** per PAIRPACK_SPEC.md including embedded `tests` vectors (a slice of
-   real candles + features/probs computed with the engine) and the canonical `checksum_sha256`.
-6. **RUN THE VALIDATOR in full mode** and fix EVERY failure until it passes:
+1. Install the engine:
+   `pip install "git+https://github.com/vjumbo264/sentinel-fx#subdirectory=engine"`
+   Read docs/PAIRPACK_SPEC.md and the module docstrings in sentinel_engine
+   (indicators, dsl, rules, models, news).
+2. Pull public 1-minute candles from
+   `wss://ws.derivws.com/websockets/v3?app_id=1089` using `ticks_history`
+   with `style:"candles"`, `granularity:60`, `count:5000`, `end:"latest"`,
+   then paginate backwards with `end` = oldest epoch-1. Report how far back
+   the data really goes.
+3. Design features with the engine library/DSL (custom code ONLY if the DSL
+   truly cannot express it — justify in trainer.notes). Train a model for the
+   +15 minute direction (P(close[t+15] > close[t])). Use walk-forward
+   validation on unseen data — no look-ahead anywhere.
+4. Design the rule layer (JSON), news rules, session filter and risk profile
+   from evidence. News events come from the ForexFactory weekly JSON; a USD
+   event affects every pair containing USD; consider blocking trades against
+   high-impact news with a history of large reactions.
+5. Build the pack per docs/PAIRPACK_SPEC.md, embedding test candles (the last
+   ~300 rows you used), expected features at a few indices, and expected
+   probabilities, then compute the canonical checksum.
+6. RUN THE VALIDATOR in FULL mode:
    `python -m sentinel_engine.validate <symbol>.pairpack.json --mode full`
-   Never hand over a pack that has not passed.
-7. **Honesty rule:** a failing backtest is labelled `"fail"`, never massaged. If you have no
-   network or cannot compute, say so instead of inventing numbers.
-
-## Deliverable back to the owner
-- The single file `<symbol>.pairpack.json`
-- A short plain-language summary: data range, OOS win rate vs break-even, verdict, risk
-  profile, validator result, whether custom code is used.
-The owner uploads it on the SENTINEL-FX site. Nothing else is needed.
+   Fix every failure and re-run until it passes. NEVER hand over a pack that
+   has not been validated.
+7. Deliver to the owner: the single file `<symbol>.pairpack.json` plus a short
+   plain-language summary: data range, OOS win rate vs break-even, verdict,
+   risk profile, validator result, whether custom code is used.
+The owner uploads the file on the SENTINEL-FX site. Nothing else is needed.

@@ -1,23 +1,126 @@
-CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
-CREATE TABLE IF NOT EXISTS pairs (symbol TEXT PRIMARY KEY, enabled INTEGER DEFAULT 0,
-  shadow_mode INTEGER DEFAULT 1, status TEXT DEFAULT 'locked', min_stake REAL DEFAULT 0.35,
-  max_stake REAL DEFAULT 5.0, stake_pct REAL, pack_version INTEGER DEFAULT 0);
-CREATE TABLE IF NOT EXISTS pair_packs (symbol TEXT, version INTEGER, sha256 TEXT,
-  status TEXT CHECK(status IN ('incoming','validating','validated','rejected','active','retired')),
-  has_custom_code INTEGER DEFAULT 0, verdict TEXT, metrics TEXT, validation_report TEXT,
-  installed_utc TEXT, PRIMARY KEY (symbol, version));
-CREATE TABLE IF NOT EXISTS trades (contract_id TEXT PRIMARY KEY, pair TEXT, side TEXT,
-  stake REAL, payout REAL, open_utc TEXT, close_utc TEXT, result TEXT, pnl REAL,
-  mode TEXT, model_prob REAL, news_flag TEXT, reason TEXT);
-CREATE TABLE IF NOT EXISTS shadow_signals (id INTEGER PRIMARY KEY AUTOINCREMENT, pair TEXT,
-  side TEXT, prob REAL, open_utc TEXT, close_utc TEXT, virtual_result TEXT, virtual_pnl REAL);
-CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, level TEXT,
-  pair TEXT, message TEXT, data TEXT);
-CREATE TABLE IF NOT EXISTS news_events (id TEXT PRIMARY KEY, utc_time INTEGER, currency TEXT,
-  title TEXT, impact TEXT, forecast TEXT, previous TEXT, affected_pairs TEXT);
-CREATE TABLE IF NOT EXISTS news_reactions (event_key TEXT, pair TEXT, move_pips_5m REAL,
-  move_pips_15m REAL, PRIMARY KEY (event_key, pair));
-CREATE TABLE IF NOT EXISTS daily_stats (lagos_date TEXT PRIMARY KEY, pnl REAL DEFAULT 0,
-  trades INTEGER DEFAULT 0, wins INTEGER DEFAULT 0);
-CREATE TABLE IF NOT EXISTS heartbeat (owner TEXT PRIMARY KEY, ts INTEGER);
-CREATE TABLE IF NOT EXISTS run_lock (id INTEGER PRIMARY KEY CHECK(id=1), owner TEXT, expires_at INTEGER);
+-- SENTINEL-FX D1 schema
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_utc TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS pairs (
+  symbol TEXT PRIMARY KEY,
+  enabled INTEGER NOT NULL DEFAULT 0,
+  shadow_mode INTEGER NOT NULL DEFAULT 1,
+  status TEXT NOT NULL DEFAULT 'locked',
+  min_stake REAL NOT NULL DEFAULT 0.35,
+  max_stake REAL NOT NULL DEFAULT 10.0,
+  stake_pct REAL NOT NULL DEFAULT 0.01,
+  daily_loss_cap REAL,
+  daily_target REAL,
+  max_consec_losses INTEGER NOT NULL DEFAULT 3,
+  pack_version INTEGER NOT NULL DEFAULT 0,
+  verdict TEXT,
+  has_custom_code INTEGER NOT NULL DEFAULT 0,
+  updated_utc TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS pair_packs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  symbol TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  sha256 TEXT,
+  status TEXT NOT NULL,              -- incoming|validating|validated|rejected|active|retired
+  has_custom_code INTEGER NOT NULL DEFAULT 0,
+  verdict TEXT,
+  metrics TEXT,                       -- json
+  validation_report TEXT,             -- json
+  installed_utc TEXT,
+  created_utc TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS trades (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  contract_id TEXT UNIQUE,
+  pair TEXT NOT NULL,
+  side TEXT NOT NULL,
+  stake REAL NOT NULL,
+  payout REAL,
+  open_utc TEXT,
+  close_utc TEXT,
+  result TEXT,
+  pnl REAL DEFAULT 0,
+  mode TEXT NOT NULL DEFAULT 'demo',
+  model_prob REAL,
+  news_flag TEXT,
+  reason TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_trades_pair ON trades(pair, open_utc);
+
+CREATE TABLE IF NOT EXISTS shadow_signals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pair TEXT NOT NULL,
+  side TEXT NOT NULL,
+  stake REAL,
+  open_utc TEXT NOT NULL,
+  close_utc TEXT,
+  entry_price REAL,
+  exit_price REAL,
+  result TEXT,
+  pnl REAL DEFAULT 0,
+  model_prob REAL,
+  reason TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_shadow_pair ON shadow_signals(pair, open_utc);
+
+CREATE TABLE IF NOT EXISTS logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts TEXT NOT NULL,
+  level TEXT NOT NULL,
+  pair TEXT,
+  message TEXT NOT NULL,
+  data TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_logs_ts ON logs(ts DESC);
+
+CREATE TABLE IF NOT EXISTS news_events (
+  id TEXT PRIMARY KEY,
+  utc_time TEXT NOT NULL,
+  currency TEXT NOT NULL,
+  title TEXT NOT NULL,
+  impact TEXT,
+  forecast TEXT,
+  previous TEXT,
+  affected_pairs TEXT                  -- json array
+);
+CREATE INDEX IF NOT EXISTS idx_news_time ON news_events(utc_time);
+
+CREATE TABLE IF NOT EXISTS news_reactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_key TEXT NOT NULL,
+  pair TEXT NOT NULL,
+  move_5m REAL,
+  move_15m REAL,
+  recorded_utc TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS daily_stats (
+  lagos_date TEXT NOT NULL,
+  pnl REAL NOT NULL DEFAULT 0,
+  trades INTEGER NOT NULL DEFAULT 0,
+  wins INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (lagos_date)
+);
+
+CREATE TABLE IF NOT EXISTS heartbeat (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  ts TEXT NOT NULL,
+  mode TEXT,
+  balance REAL,
+  note TEXT
+);
+
+CREATE TABLE IF NOT EXISTS run_lock (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  owner TEXT,
+  lease_until TEXT,
+  updated_utc TEXT
+);

@@ -1,0 +1,20 @@
+*{box-sizing:border-box}body{margin:0;background:#0b0e14;color:#dbe2ef;font-family:system-ui,sans-serif}
+header{display:flex;gap:10px;align-items:center;padding:12px 16px;background:#121826;position:sticky;top:0}
+#botDot{width:10px;height:10px;border-radius:50%;background:#555}
+#botDot.on{background:#2ecc71}#modeBadge.red{background:#c0392b;color:#fff;padding:2px 8px;border-radius:6px}
+.card{background:#121826;margin:10px;padding:14px;border-radius:12px}
+.row{display:flex;gap:10px}.row .card{flex:1}
+.big{font-size:26px;font-weight:700}.dim{color:#8b94a7;font-size:12px}
+nav{display:flex;gap:4px;overflow-x:auto;padding:6px;background:#0b0e14;position:sticky;top:48px}
+nav button{flex:1;padding:10px;background:#121826;border:0;color:#8b94a7;border-radius:8px}
+nav button.on{background:#1f6feb;color:#fff}
+.page{display:none;padding-bottom:40px}.page.on{display:block}
+button{padding:10px 14px;border:0;border-radius:8px;background:#1f6feb;color:#fff;margin:4px 2px}
+button.danger{background:#c0392b}button:disabled{background:#333;color:#777}
+input,select{width:100%;padding:10px;margin:6px 0;background:#0b0e14;border:1px solid #2a3244;color:#dbe2ef;border-radius:8px}
+.hidden{display:none}.logbox{font-family:monospace;font-size:11px;max-height:60vh;overflow-y:auto}
+.logbox .warn{color:#f1c40f}.logbox .error{color:#e74c3c}
+.badge{font-size:10px;background:#8e44ad;padding:2px 6px;border-radius:6px}
+.pair{border-top:1px solid #2a3244;padding:10px 0}
+table{width:100%;font-size:12px;border-collapse:collapse}td,th{padding:4px;border-bottom:1px solid #2a3244;text-align:left}
+#pairTabs button.on{background:#2ecc71;color:#000}
