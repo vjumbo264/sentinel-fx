@@ -1,0 +1,95 @@
+name: forward-eval
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "5 1 * * *"    # daily, after the 00:30 data refresh
+permissions:
+  contents: read
+concurrency:
+  group: forward-eval
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      WORKER_URL: ${{ secrets.WORKER_URL }}
+      BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install engine
+        run: |
+          pip install --quiet numpy pandas lightgbm onnxruntime
+          pip install --quiet ./engine
+      - name: Simulate active models on post-training candles
+        run: |
+          python3 - <<'EOF'
+          import gzip, io, json, os, urllib.request
+          from datetime import datetime, timezone
+          from sentinel_engine import sim
+          from sentinel_engine.bundle import load_bundle
+
+          REPO = os.environ["GITHUB_REPOSITORY"]
+          W, S = os.environ["WORKER_URL"].rstrip("/"), os.environ["BOT_SHARED_SECRET"]
+
+          def dl(tag, asset):
+              u = f"https://github.com/{REPO}/releases/download/{tag}/{asset}"
+              return urllib.request.urlopen(u, timeout=120).read()
+
+          idx = {}
+          if os.path.exists("models/index.json"):
+              idx = json.load(open("models/index.json"))
+          report = {}
+          for sym, ent in idx.items():
+              ver = ent.get("active_version")
+              if ver is None:
+                  continue
+              v = next(v for v in ent["versions"] if v["N"] == ver)
+              b = dl(v["release_tag"], v["asset"])
+              open(f"/tmp/{v['asset']}", "wb").write(b)
+              bundle = load_bundle(f"/tmp/{v['asset']}")
+              tts = v.get("trained_through_utc")
+              di = json.load(open("data/index.json")) if os.path.exists("data/index.json") else {}
+              if sym not in di:
+                  continue
+              raw = dl(di[sym]["release_tag"], di[sym]["asset"])
+              rows = [json.loads(l) if l.strip().startswith("{") else None
+                      for l in []]  # csv parse below
+              import csv
+              candles = []
+              with gzip.open(io.BytesIO(raw), "rt") as f:
+                  for r in csv.DictReader(f):
+                      if tts is None or datetime.fromtimestamp(int(r["epoch"]), timezone.utc) > \
+                              datetime.strptime(tts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc):
+                          candles.append({"epoch": int(r["epoch"]), "open": float(r["open"]),
+                                          "high": float(r["high"]), "low": float(r["low"]),
+                                          "close": float(r["close"])})
+              if len(candles) < 200:
+                  report[sym] = {"skipped": "not enough post-training candles",
+                                 "candles": len(candles)}
+                  continue
+              m = sim.replay(bundle, candles, payout=0.85, decision_every=15)
+              m["candles"] = len(candles)
+              report[sym] = m
+              req = urllib.request.Request(
+                  W + "/api/bot/forward", method="POST",
+                  data=json.dumps({"symbol": sym, "version": ver, "metrics": m}).encode(),
+                  headers={"X-Bot-Secret": S, "Content-Type": "application/json"})
+              try:
+                  urllib.request.urlopen(req, timeout=20).read()
+              except Exception as e:
+                  print("worker store failed:", e)
+          print(json.dumps(report, indent=1))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write("## Forward evaluation\n\n")
+              for sym, m in report.items():
+                  if "skipped" in m:
+                      f.write(f"- {sym}: {m['skipped']} ({m['candles']} candles)\n")
+                  else:
+                      f.write(f"- {sym}: {m['trades']} trades, win {m['win_rate']*100:.1f}% "
+                              f"vs be {m['break_even']*100:.1f}% "
+                              f"(wilson {m['wilson95'][0]*100:.1f}-{m['wilson95'][1]*100:.1f}%) -> {m['verdict']}\n")
+          EOF

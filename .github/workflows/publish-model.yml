@@ -1,0 +1,99 @@
+name: publish-model
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: "frxXXXYYY"
+        required: true
+      version:
+        description: "integer model version"
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: publish-model
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SYMBOL: ${{ github.event.inputs.symbol }}
+      VERSION: ${{ github.event.inputs.version }}
+    steps:
+      - name: Validate inputs (env only, never interpolated)
+        run: |
+          python3 - <<'EOF'
+          import os, re
+          assert re.match(r"^frx[A-Z]{6}$", os.environ["SYMBOL"]), "bad symbol"
+          assert os.environ["VERSION"].isdigit(), "bad version"
+          EOF
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install engine
+        run: |
+          pip install --quiet numpy pandas lightgbm
+          pip install --quiet ./engine
+      - name: Download staged bundle (NO secrets beyond GITHUB_TOKEN)
+        run: |
+          ASSET="${SYMBOL}_v${VERSION}.sfxmodel.zip"
+          gh release download staging -p "$ASSET" -R "$GITHUB_REPOSITORY" \
+            -D . --clobber
+          ls -la "$ASSET"
+      - name: VALIDATOR (full mode)
+        run: |
+          ASSET="${SYMBOL}_v${VERSION}.sfxmodel.zip"
+          echo "VALIDATOR: running full mode on $ASSET"
+          python3 -m sentinel_engine.validate "$ASSET" --mode full | tee validator.report.txt
+      - name: Publish into shared models release
+        if: success()
+        run: |
+          ASSET="${SYMBOL}_v${VERSION}.sfxmodel.zip"
+          gh release view models-01 -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create models-01 -R "$GITHUB_REPOSITORY" --title "models-01" \
+              --notes "SENTINEL-FX trained model bundles (shared release 01)."
+          gh release upload models-01 -R "$GITHUB_REPOSITORY" "$ASSET" --clobber
+      - name: Update models/index.json
+        if: success()
+        run: |
+          python3 - <<'EOF'
+          import hashlib, json, os
+          from datetime import datetime, timezone
+          sym, ver = os.environ["SYMBOL"], int(os.environ["VERSION"])
+          fn = f"{sym}_v{ver}.sfxmodel.zip"
+          idx = {}
+          if os.path.exists("models/index.json"):
+              idx = json.load(open("models/index.json"))
+          os.makedirs("models", exist_ok=True)
+          ent = idx.setdefault(sym, {"active_version": None, "versions": []})
+          ent["versions"] = [v for v in ent["versions"] if v["N"] != ver]
+          ent["versions"].append({
+              "N": ver, "release_tag": "models-01", "asset": fn,
+              "sha256": hashlib.sha256(open(fn, "rb").read()).hexdigest(),
+              "size": os.path.getsize(fn),
+              "created_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "verdict": None})
+          ent["active_version"] = ver
+          json.dump(idx, open("models/index.json", "w"), indent=1, sort_keys=True)
+          EOF
+          git config user.name "sentinel-publish"
+          git config user.email "publish@sentinel-fx.local"
+          git add models/index.json validator.report.txt
+          git commit -m "models: publish ${SYMBOL} v${VERSION} (validated) [skip ci]" || true
+          git push || true
+      - name: Register in D1 as SHADOW (secret used only here, after validation)
+        if: success()
+        env:
+          BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
+          WORKER_URL: ${{ secrets.WORKER_URL }}
+        run: |
+          curl -sS -X POST "$WORKER_URL/api/packs/register" \
+            -H "X-Bot-Secret: $BOT_SHARED_SECRET" -H "Content-Type: application/json" \
+            -d "{\"symbol\":\"$SYMBOL\",\"version\":$VERSION,\"status\":\"validated\",\"verdict\":\"shadow\"}"
+      - name: On failure leave staging file for inspection
+        if: failure()
+        run: |
+          echo "VALIDATOR failed; staged bundle left in 'staging' release for inspection."
+          cat validator.report.txt || true
