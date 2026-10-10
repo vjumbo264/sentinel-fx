@@ -21,11 +21,11 @@ import sys
 import time
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("file")
     ap.add_argument("--mode", choices=["fast", "full"], default="fast")
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
 
     import pandas as pd
     from .bundle import verify_bundle, load_bundle
