@@ -12,15 +12,13 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: pip install --quiet websockets
       - run: |
           python3 - <<'PYEOF'
-          import asyncio, json, os, urllib.request, websockets
+          import json, os, urllib.request
 
           token = os.environ.get("DERIV_BEARER_TOKEN", "")
           app_id = os.environ.get("DERIV_APP_ID", "")
 
-          # 1. Fetch demo account
           req = urllib.request.Request(
               "https://api.derivws.com/trading/v1/options/accounts",
               headers={
@@ -30,44 +28,6 @@ jobs:
               }
           )
           with urllib.request.urlopen(req, timeout=20) as r:
-              accs = json.loads(r.read().decode()).get("data", [])
-          demo_acc = next((a for a in accs if a.get("account_type") == "demo"), None)
-          if not demo_acc:
-              raise SystemExit("No demo account found")
-          loginid = demo_acc.get("account_id") or demo_acc.get("loginid")
-          print(f"Connected to demo account: {loginid}")
-
-          # 2. Request OTP
-          req_otp = urllib.request.Request(
-              f"https://api.derivws.com/trading/v1/options/accounts/{loginid}/otp",
-              data=b"{}",
-              method="POST",
-              headers={
-                  "Authorization": f"Bearer {token}",
-                  "Deriv-App-ID": app_id,
-                  "Content-Type": "application/json"
-              }
-          )
-          with urllib.request.urlopen(req_otp, timeout=20) as r:
-              otp_url = json.loads(r.read().decode())["data"]["url"]
-
-          async def run():
-              async with websockets.connect(otp_url) as ws:
-                  # Get initial balance
-                  await ws.send(json.dumps({"balance": 1, "req_id": 1}))
-                  bal = json.loads(await ws.recv())
-                  print("Current balance:", bal.get("balance", {}).get("balance"))
-
-                  # Call topup_virtual
-                  print("Calling topup_virtual...")
-                  await ws.send(json.dumps({"topup_virtual": 1, "req_id": 2}))
-                  res = json.loads(await ws.recv())
-                  print("Topup response:", res)
-
-                  # Get final balance
-                  await ws.send(json.dumps({"balance": 1, "req_id": 3}))
-                  bal2 = json.loads(await ws.recv())
-                  print("Final balance:", bal2.get("balance", {}).get("balance"))
-
-          asyncio.run(run())
+              accs = json.loads(r.read().decode())
+          print("Accounts:", json.dumps(accs, indent=2))
           PYEOF
