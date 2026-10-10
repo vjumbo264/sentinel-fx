@@ -231,20 +231,20 @@ def session_features(df: pd.DataFrame) -> pd.DataFrame:
     """From a candle df with utc epoch column, emit hour sin/cos, dow sin/cos,
     and boolean session flags (asia/london/ny in UTC). Strictly causal."""
     if "epoch" in df.columns:
-        ts = pd.to_datetime(df["epoch"], unit="s", utc=True)
+        ts = pd.to_datetime(pd.Series(df["epoch"].values), unit="s", utc=True)
     else:
-        ts = pd.to_datetime(df.index, utc=True)
-    hour = ts.hour + ts.minute / 60.0
-    dow = ts.dayofweek
+        ts = pd.Series(pd.to_datetime(df.index, utc=True))
+    hour = ts.dt.hour + ts.dt.minute / 60.0
+    dow = ts.dt.dayofweek
     out = pd.DataFrame(index=df.index)
     out["hour_sin"] = np.sin(2 * np.pi * hour / 24.0)
     out["hour_cos"] = np.cos(2 * np.pi * hour / 24.0)
     out["dow_sin"] = np.sin(2 * np.pi * dow / 7.0)
     out["dow_cos"] = np.cos(2 * np.pi * dow / 7.0)
-    out["sess_asia"] = ((ts.hour >= 0) & (ts.hour < 7)).astype(float)
-    out["sess_london"] = ((ts.hour >= 7) & (ts.hour < 16)).astype(float)
-    out["sess_ny"] = ((ts.hour >= 13) & (ts.hour < 22)).astype(float)
-    out["hour_utc"] = ts.hour.astype(float)
+    out["sess_asia"] = ((ts.dt.hour >= 0) & (ts.dt.hour < 7)).astype(float)
+    out["sess_london"] = ((ts.dt.hour >= 7) & (ts.dt.hour < 16)).astype(float)
+    out["sess_ny"] = ((ts.dt.hour >= 13) & (ts.dt.hour < 22)).astype(float)
+    out["hour_utc"] = ts.dt.hour.astype(float)
     return out
 
 
