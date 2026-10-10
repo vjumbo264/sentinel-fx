@@ -103,8 +103,8 @@
   },
   {
    "id": "FIX-D",
-   "status": "done",
-   "note": "Worker /api/candles proxy added (Deriv WS via Worker, sorted candles, 502+message error path); chart can render through Worker.",
+   "status": "doing",
+   "note": "/api/candles route deployed and reachable (auth-gated), but Deriv WS rejects Workers outbound without browser headers - Origin/UA header fix pushed; verify next run. Site already has direct-Deriv fallback.",
    "evidence": "site/app.js chart rewritten per aurelia miniapp (status line, sorted candles, adjust_start_time, msg.error, reconnect backoff, market-closed state, trade markers, ResizeObserver)"
   },
   {
@@ -181,12 +181,12 @@
   {
    "id": "SESSION",
    "status": "doing",
-   "note": "migration 0005 (session/model_ledger/overrides/ledger_events) + 4 worker routes written; deploying now; Session page UI pending."
+   "note": "migration 0005 APPLIED to D1 (success=true); /api/session live (returns session/ledger/overrides). Remaining: Session page UI + bot honoring overrides + ledger posting from bot trades."
   },
   {
    "id": "BUYTEST",
    "status": "doing",
-   "note": "tools/buy_test.py + buy-test.yml written; dispatching now; evidence JSON commits to docs/."
+   "note": "buy-test.yml ran (id 38069169795) but the buy step failed; log pulled this session; script + workflow committed and re-runnable: gh workflow run buy-test.yml. Root cause in log; likely Deriv OTP/buy params - one fix iteration allowed next session."
   },
   {
    "id": "RESET",
@@ -213,5 +213,5 @@
   }
  },
  "blockers": [],
- "updated_utc": "2026-10-10T16:48:46Z"
+ "updated_utc": "2026-10-10T16:52:17Z"
 }

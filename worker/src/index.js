@@ -247,8 +247,11 @@ export default {
           const candles = await new Promise((resolve, reject) => {
             const to = setTimeout(() => reject(new Error("deriv ws timeout")), 9000);
             let sock;
-            try { sock = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1089"); }
-            catch (e) { clearTimeout(to); return reject(e); }
+            try {
+              sock = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1089", {
+                headers: { "Origin": "https://app.deriv.com", "User-Agent": "Mozilla/5.0 (Linux; Android 13)" }
+              });
+            } catch (e) { clearTimeout(to); return reject(e); }
             sock.addEventListener("open", () => sock.send(JSON.stringify({
               ticks_history: symbol, adjust_start_time: 1, count, end: "latest",
               granularity: gran, style: "candles"
