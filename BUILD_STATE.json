@@ -91,9 +91,10 @@
   "frxEURUSD": {
    "pack_version": 1,
    "verdict": "fail",
-   "note": "synthetic-data pipeline proof"
+   "note": "synthetic-data pipeline proof",
+   "installed": true
   }
  },
  "blockers": [],
- "updated_utc": "2026-10-10T03:38:29Z"
+ "updated_utc": "2026-10-10T03:39:50Z"
 }
