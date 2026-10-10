@@ -47,7 +47,7 @@ def http(method, path, body=None):
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(
         f"{WORKER}{path}", data=data, method=method,
-        headers={"X-Bot-Secret": BOT_SECRET, "Content-Type": "application/json"})
+        headers={"X-Bot-Secret": BOT_SECRET, "Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36", "Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.loads(r.read().decode() or "{}")
 
@@ -83,7 +83,7 @@ def deriv_rest(path, method="GET", body=None):
     req = urllib.request.Request(
         f"https://api.derivws.com{path}", data=data, method=method,
         headers={"Authorization": f"Bearer {DERIV_TOKEN}", "Deriv-App-ID": DERIV_APP_ID,
-                 "Content-Type": "application/json"})
+                 "Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"})
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.loads(r.read().decode())
 
@@ -153,7 +153,7 @@ def chain_next_run():
             data=json.dumps({"ref": "main", "inputs": {"mode": BOT_MODE_DEFAULT}}).encode(),
             method="POST",
             headers={"Authorization": f"token {GH_PAT}", "Accept": "application/vnd.github+json",
-                     "User-Agent": "sentinel-fx-bot", "Content-Type": "application/json"})
+                     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36", "Content-Type": "application/json"})
         urllib.request.urlopen(req, timeout=20).read()
         log("info", None, "self-chain dispatched next run")
     except Exception as e:
