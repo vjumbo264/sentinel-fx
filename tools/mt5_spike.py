@@ -95,11 +95,39 @@ def run_spike(args) -> Dict[str, Any]:
         results["errors"].append(err)
         return results
 
-    # Initialize terminal
-    init_ok = mt5.initialize()
+    # Initialize terminal with retry loop across candidate paths
+    candidate_paths = [
+        "C:\MT5\terminal64.exe",
+        "C:\Program Files\Deriv - MetaTrader 5\terminal64.exe",
+        "C:\Program Files\MetaTrader 5\terminal64.exe",
+        None
+    ]
+    init_ok = False
+    last_err = None
+    chosen_path = None
+    start_init = time.time()
+    print("Polling mt5.initialize() across candidate paths...")
+    while time.time() - start_init < 90:
+        for p in candidate_paths:
+            try:
+                ok = mt5.initialize(path=p) if p else mt5.initialize()
+                if ok:
+                    init_ok = True
+                    chosen_path = p or 'default'
+                    print(f"[OK] mt5.initialize() succeeded with path: {chosen_path}")
+                    break
+                else:
+                    last_err = mt5.last_error()
+            except Exception as e:
+                last_err = e
+        if init_ok:
+            break
+        print(f"Waiting for MT5 IPC (elapsed: {int(time.time() - start_init)}s, last_err: {last_err})...")
+        time.sleep(3)
+
+    results["terminal_path"] = chosen_path
     if not init_ok:
-        last_err = mt5.last_error()
-        err = f"CRITICAL: mt5.initialize() failed: {last_err}"
+        err = f"CRITICAL: mt5.initialize() failed after retry: {last_err}"
         print(f"[FAIL] {err}")
         results["status"] = "blocked"
         results["errors"].append(err)
