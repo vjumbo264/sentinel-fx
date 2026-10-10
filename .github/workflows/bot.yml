@@ -38,3 +38,27 @@ jobs:
           pip install --quiet ./engine
       - name: Run bot
         run: python -m bot.main
+      # FIX-A: crash-proof chaining. If the run ended before its planned wall
+      # time (crash, cancel, error), dispatch a replacement run after a short
+      # delay. The D1 lease + concurrency group guarantee two runs can never
+      # trade at once. Normal mid-run handoff is handled by the bot itself.
+      - name: Crash-proof chain (safety dispatch)
+        if: always()
+        env:
+          GH_TOKEN_FOR_CHAIN: ${{ secrets.GH_CHAIN_PAT }}
+          JOB_STATUS: ${{ job.status }}
+          DISPATCH_MODE: ${{ github.event.inputs.mode || 'demo' }}
+        run: |
+          if [ "$JOB_STATUS" != "success" ]; then
+            echo "run ended early (status=$JOB_STATUS); dispatching replacement run in 60s"
+            sleep 60
+            curl -sS -X POST \
+              -H "Authorization: token $GH_TOKEN_FOR_CHAIN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "Content-Type: application/json" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/bot.yml/dispatches" \
+              -d "{\"ref\":\"main\",\"inputs\":{\"mode\":\"$DISPATCH_MODE\"}}" \
+              && echo "replacement run dispatched"
+          else
+            echo "normal completion; next run already dispatched by the bot itself"
+          fi

@@ -1,67 +1,102 @@
-"""SENTINEL-FX live bot.
+"""SENTINEL-FX live bot — resilient supervisor (FIX-A/FIX-B/FIX-C).
 
-Design (per spec):
 - One ~3h50m run per Actions job; dispatches the next run ~5min before end;
-  stops opening new trades ~2min before end.
-- All state in D1 via the Worker. On start, reconciles any open contracts.
-- Deriv auth: /trading/v1/options/accounts -> pick DOT (demo) or ROT (real) ->
-  POST /otp -> open pre-authenticated WebSocket (no `authorize` call).
-- Live payout re-check before every buy; break-even recomputed from the live
-  payout; trade only if prob >= be + pack.margin.
-- News fetched once per run; price reactions logged for past events.
-- 15-minute CALL/PUT contracts; min stake 0.35; stake rounded to 2 dp.
-- Shadow-mode pairs: compute signal, log virtual trade, settle later.
-- Global kill switch overrides everything.
+  stops opening new trades ~2min before end; the workflow has an if:always()
+  safety dispatch for crashed/cancelled runs.
+- SUPERVISOR: every websocket/network error triggers exponential backoff
+  (2s..60s + jitter), a FRESH account list + NEW OTP, reconnect, balance
+  re-fetch and open-contract reconciliation. The D1 lease is renewed while
+  reconnecting so a second runner can never trade concurrently.
+- MODE SWITCHING: the connected account type is tracked. When settings.mode
+  differs from the connected account, the bot switches (fresh OTP) once no
+  open contracts remain; heartbeat reports the CONNECTED account type,
+  masked loginid, currency and balance — never just the requested mode.
+- Worker/network outages never crash the bot: log/heartbeat swallow errors
+  and the state fetch falls back to the last known settings.
+- NEWS: refreshed hourly in-loop via sentinel_engine.news (Aurelia-style
+  host/headers, 2-per-5min guard, stale-cache fallback), reactions recorded
+  per high-impact event+pair, and news_state wired into pack.decide().
+- SAFETY: 15-minute CALL/PUT only, min stake 0.35 (2dp), one open trade per
+  pair, global kill switch, owner enable/shadow state, fail-closed errors.
 """
 from __future__ import annotations
 import asyncio
 import json
 import os
+import random
 import time
 import urllib.request
-import websockets
-import numpy as np
-import pandas as pd
 from datetime import datetime, timezone
 
-from sentinel_engine import load_pack
-from sentinel_engine.news import fetch_calendar, normalize, affected_pairs, pair_currencies, minutes_to_event
+import pandas as pd
+import websockets
 
-WORKER = os.environ["WORKER_URL"].rstrip("/")
-BOT_SECRET = os.environ["BOT_SHARED_SECRET"]
-DERIV_TOKEN = os.environ["DERIV_BEARER_TOKEN"]
-DERIV_APP_ID = os.environ["DERIV_APP_ID"]
+from sentinel_engine import load_pack
+from sentinel_engine import news as newsmod
+
+WORKER = os.environ.get("WORKER_URL", "").rstrip("/")
+BOT_SECRET = os.environ.get("BOT_SHARED_SECRET", "")
+DERIV_TOKEN = os.environ.get("DERIV_BEARER_TOKEN", "")
+DERIV_APP_ID = os.environ.get("DERIV_APP_ID", "")
 GH_PAT = os.environ.get("GH_CHAIN_PAT", "")
 BOT_MODE_DEFAULT = os.environ.get("BOT_MODE", "demo")
 
 WALL_S = int(os.environ.get("BOT_WALL_SECONDS", "13800"))
 HANDOFF_LEAD_S = int(os.environ.get("BOT_HANDOFF_LEAD_S", "300"))
 STOP_OPEN_LEAD_S = int(os.environ.get("BOT_STOP_OPEN_LEAD_S", "120"))
+POLL_S = float(os.environ.get("BOT_POLL_SECONDS", "20"))
+NEWS_REFRESH_S = int(os.environ.get("NEWS_REFRESH_SECONDS", "3600"))
 
-PUBLIC_WS = "wss://ws.derivws.com/websockets/v3?app_id=1089"
-ACCOUNTS_URL = "https://api.derivws.com/trading/v1/options/accounts"
-OWNER_TAG = f"actions-{int(time.time())}"
+DERIV_REST = os.environ.get("DERIV_REST_BASE", "https://api.derivws.com")
+ACCOUNTS_URL = f"{DERIV_REST}/trading/v1/options/accounts"
+REPO = os.environ.get("GITHUB_REPOSITORY", "vjumbo264/sentinel-fx")
+OWNER_TAG = f"actions-{int(time.time())}-{os.getpid()}"
+MIN_STAKE = 0.35
+
+HDRS = {"Content-Type": "application/json", "Accept": "application/json",
+        "User-Agent": "sentinel-fx-bot/2.0"}
 
 
-def http(method, path, body=None):
-    data = None if body is None else json.dumps(body).encode()
-    req = urllib.request.Request(
-        f"{WORKER}{path}", data=data, method=method,
-        headers={"X-Bot-Secret": BOT_SECRET, "Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36", "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.loads(r.read().decode() or "{}")
+class KillSwitch(Exception):
+    pass
+
+
+class NoAccountError(Exception):
+    pass
+
+
+# ---------------- Worker HTTP (retried; callers decide to swallow) ----------
+
+def http(method, path, body=None, timeout=20, retries=1):
+    last = None
+    for i in range(retries + 1):
+        try:
+            data = None if body is None else json.dumps(body).encode()
+            req = urllib.request.Request(
+                f"{WORKER}{path}", data=data, method=method,
+                headers={**HDRS, "X-Bot-Secret": BOT_SECRET})
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode() or "{}")
+        except Exception as e:
+            last = e
+            if i < retries:
+                time.sleep(0.6 * (i + 1))
+    raise last
 
 
 def log(level, pair, message, data=None):
     try:
-        http("POST", "/api/bot/log", {"level": level, "pair": pair, "message": message, "data": data})
+        http("POST", "/api/bot/log",
+             {"level": level, "pair": pair, "message": message, "data": data})
     except Exception as e:
         print(f"[log-fail] {e}: {level} {pair} {message}")
 
 
-def heartbeat(mode, balance, note=""):
+def heartbeat(mode, balance, note="", loginid=None, currency=None):
     try:
-        http("POST", "/api/bot/heartbeat", {"mode": mode, "balance": balance, "note": note})
+        http("POST", "/api/bot/heartbeat",
+             {"mode": mode, "balance": balance, "note": note,
+              "loginid": loginid, "currency": currency})
     except Exception:
         pass
 
@@ -71,6 +106,13 @@ def acquire_lock():
     return bool(r.get("acquired"))
 
 
+def renew_lock():
+    try:
+        http("POST", "/api/bot/lock", {"owner": OWNER_TAG})
+    except Exception:
+        pass
+
+
 def release_lock():
     try:
         http("POST", "/api/bot/unlock", {"owner": OWNER_TAG})
@@ -78,84 +120,128 @@ def release_lock():
         pass
 
 
+# ---------------- Deriv REST auth -------------------------------------------
+
 def deriv_rest(path, method="GET", body=None):
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(
-        f"https://api.derivws.com{path}", data=data, method=method,
-        headers={"Authorization": f"Bearer {DERIV_TOKEN}", "Deriv-App-ID": DERIV_APP_ID,
-                 "Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"})
+        f"{DERIV_REST}{path}", data=data, method=method,
+        headers={**HDRS, "Authorization": f"Bearer {DERIV_TOKEN}",
+                 "Deriv-App-ID": DERIV_APP_ID})
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.loads(r.read().decode())
 
 
-def pick_account(mode: str) -> str:
-    accs = deriv_rest("/trading/v1/options/accounts")["data"]
-    want = "demo" if mode == "demo" else "real"
-    for a in accs:
-        if a["account_type"] == want:
-            return a["account_id"]
-    raise RuntimeError(f"no {want} account on this Deriv token")
+def list_accounts():
+    return deriv_rest("/trading/v1/options/accounts")["data"]
 
 
-def otp_ws_url(loginid: str) -> str:
-    r = deriv_rest(f"/trading/v1/options/accounts/{loginid}/otp", method="POST", body={})
+def request_otp_url(loginid: str) -> str:
+    r = deriv_rest(f"/trading/v1/options/accounts/{loginid}/otp",
+                   method="POST", body={})
     return r["data"]["url"]
 
 
-async def ws_rpc(ws, payload, timeout=20):
-    req_id = int(time.time() * 1000) & 0x7fffffff
-    payload = dict(payload); payload["req_id"] = req_id
-    await ws.send(json.dumps(payload))
-    end = time.time() + timeout
-    while time.time() < end:
-        msg = await asyncio.wait_for(ws.recv(), timeout=max(0.1, end - time.time()))
-        d = json.loads(msg)
-        if d.get("req_id") == req_id:
-            return d
-    raise asyncio.TimeoutError("ws rpc timeout")
+# ---------------- Deriv websocket session -----------------------------------
+
+class DerivSession:
+    """One authenticated websocket. OTP URLs are single-use, so every
+    (re)connect requests a fresh account list and a NEW otp."""
+
+    def __init__(self):
+        self.ws = None
+        self.mode = None        # account_type actually connected: demo|real
+        self.loginid = None
+        self.currency = None
+
+    def masked(self):
+        return (self.loginid[:3] + "***") if self.loginid else None
+
+    @property
+    def closed(self):
+        return self.ws is None
+
+    async def connect(self, mode: str):
+        await self.close()
+        accs = list_accounts()
+        want = "demo" if mode == "demo" else "real"
+        acc = next((a for a in accs if a.get("account_type") == want), None)
+        if acc is None:
+            raise NoAccountError(f"no {want} account on this Deriv token")
+        self.loginid = acc["account_id"]
+        self.currency = acc.get("currency", "USD")
+        url = request_otp_url(self.loginid)
+        self.ws = await websockets.connect(
+            url, ping_interval=20, ping_timeout=20, close_timeout=10,
+            max_queue=64)
+        self.mode = want
+        log("info", None,
+            f"deriv connected: acct={want} loginid={self.masked()} cur={self.currency}")
+
+    async def close(self):
+        if self.ws is not None:
+            try:
+                await self.ws.close()
+            except Exception:
+                pass
+        self.ws = None
+
+    async def rpc(self, payload, timeout=20):
+        req_id = int(time.time() * 1000) & 0x7fffffff
+        payload = dict(payload)
+        payload["req_id"] = req_id
+        await self.ws.send(json.dumps(payload))
+        end = time.time() + timeout
+        while time.time() < end:
+            msg = await asyncio.wait_for(self.ws.recv(),
+                                         timeout=max(0.1, end - time.time()))
+            d = json.loads(msg)
+            if d.get("req_id") == req_id:
+                return d
+        raise asyncio.TimeoutError("ws rpc timeout")
+
+    async def balance(self):
+        r = await self.rpc({"balance": 1})
+        b = r.get("balance", {})
+        return float(b.get("balance", 0.0))
+
+    async def fetch_candles(self, symbol, count=600):
+        r = await self.rpc({"ticks_history": symbol, "style": "candles",
+                            "granularity": 60, "count": count, "end": "latest"})
+        cs = r.get("candles", [])
+        return pd.DataFrame(cs) if cs else pd.DataFrame()
+
+    async def propose_and_buy(self, symbol, side, stake):
+        prop = await self.rpc({
+            "proposal": 1, "amount": round(stake, 2), "basis": "stake",
+            "contract_type": side, "currency": "USD", "duration": 15,
+            "duration_unit": "m", "symbol": symbol})
+        if "error" in prop:
+            return {"error": prop["error"].get("message", "proposal error")}
+        pid = prop["proposal"]["id"]
+        payout = float(prop["proposal"]["payout"])
+        buy = await self.rpc({"buy": pid, "price": round(stake, 2)}, timeout=30)
+        if "error" in buy:
+            return {"error": buy["error"].get("message", "buy error")}
+        return {"contract_id": str(buy["buy"]["contract_id"]),
+                "payout": payout, "stake": round(stake, 2)}
 
 
-async def fetch_candles(ws, symbol, count=600):
-    r = await ws_rpc(ws, {"ticks_history": symbol, "style": "candles",
-                          "granularity": 60, "count": count, "end": "latest"})
-    cs = r.get("candles", [])
-    return pd.DataFrame(cs) if cs else pd.DataFrame()
+# ---------------- chaining ---------------------------------------------------
 
-
-async def get_balance(ws):
-    r = await ws_rpc(ws, {"balance": 1})
-    return float(r.get("balance", {}).get("balance", 0.0))
-
-
-async def propose_and_buy(ws, symbol, side, stake):
-    prop = await ws_rpc(ws, {
-        "proposal": 1, "amount": round(stake, 2), "basis": "stake",
-        "contract_type": side, "currency": "USD", "duration": 15,
-        "duration_unit": "m", "symbol": symbol})
-    if "error" in prop:
-        return {"error": prop["error"].get("message", "proposal error")}
-    pid = prop["proposal"]["id"]
-    payout = float(prop["proposal"]["payout"])
-    buy = await ws_rpc(ws, {"buy": pid, "price": round(stake, 2)}, timeout=30)
-    if "error" in buy:
-        return {"error": buy["error"].get("message", "buy error")}
-    return {"contract_id": str(buy["buy"]["contract_id"]), "payout": payout,
-            "stake": round(stake, 2)}
-
-
-def chain_next_run():
-    """Self-chain: dispatch the next bot.yml run via the GitHub REST API."""
+def chain_next_run(note="handoff"):
     if not GH_PAT:
         return
     try:
         req = urllib.request.Request(
-            "https://api.github.com/repos/vjumbo264/sentinel-fx/actions/workflows/bot.yml/dispatches",
-            data=json.dumps({"ref": "main", "inputs": {"mode": BOT_MODE_DEFAULT}}).encode(),
+            f"https://api.github.com/repos/{REPO}/actions/workflows/bot.yml/dispatches",
+            data=json.dumps({"ref": "main",
+                             "inputs": {"mode": BOT_MODE_DEFAULT}}).encode(),
             method="POST",
-            headers={"Authorization": f"token {GH_PAT}", "Accept": "application/vnd.github+json",
-                     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36", "Content-Type": "application/json"})
+            headers={**HDRS, "Authorization": f"token {GH_PAT}",
+                     "Accept": "application/vnd.github+json"})
         urllib.request.urlopen(req, timeout=20).read()
-        log("info", None, "self-chain dispatched next run")
+        log("info", None, f"self-chain dispatched next run ({note})")
     except Exception as e:
         log("warn", None, f"self-chain failed: {e}")
 
@@ -167,167 +253,358 @@ def load_pack_for(symbol):
     return load_pack(path)
 
 
-async def main():
-    t0 = time.time()
-    deadline = t0 + WALL_S
-    stop_open_at = deadline - STOP_OPEN_LEAD_S
-    handoff_at = deadline - HANDOFF_LEAD_S
-    chained = False
+# ---------------- bot --------------------------------------------------------
 
-    # grab D1 lease
-    if not acquire_lock():
-        log("warn", None, "run_lock held by another runner; exiting")
-        return
+class Bot:
+    def __init__(self):
+        self.sess = DerivSession()
+        self.state = {"settings": {}, "pairs": []}   # last-known-good
+        self.events = []                              # normalized news events
+        self.news_ts = 0.0
+        self.reactions_done = set()
+        self.chained = False
 
-    state = http("GET", "/api/bot/state")
-    settings = state.get("settings", {})
-    mode = settings.get("mode", BOT_MODE_DEFAULT)
-    if settings.get("kill", False):
-        log("warn", None, "kill switch on; exiting")
-        release_lock(); return
+    # -- state ---------------------------------------------------------------
+    def refresh_state(self):
+        try:
+            self.state = http("GET", "/api/bot/state")
+        except Exception as e:
+            log("warn", None, f"state fetch failed ({e}); using last known")
 
-    loginid = pick_account(mode)
-    log("info", None, f"deriv account picked: {loginid[:3]}***")
-    ws_url = otp_ws_url(loginid)
+    @property
+    def settings(self):
+        return self.state.get("settings", {})
 
-    # News (once per run)
-    try:
-        events = normalize(fetch_calendar())
-        symbols = [p["symbol"] for p in state.get("pairs", [])]
-        for e in events:
-            e["affected_pairs"] = affected_pairs(e["currency"], symbols)
-        http("POST", "/api/bot/news", {"events": events})
-        log("info", None, f"news upserted ({len(events)})")
-    except Exception as e:
-        events = []
-        log("warn", None, f"news fetch failed: {e}")
+    def wanted_mode(self):
+        return self.settings.get("mode", BOT_MODE_DEFAULT)
 
-    # Load pair packs
-    packs = {}
-    for p in state.get("pairs", []):
-        pk = load_pack_for(p["symbol"])
-        if pk is not None:
-            packs[p["symbol"]] = (pk, p)
-            log("info", p["symbol"], f"pack v{p['pack_version']} loaded")
-        else:
-            log("warn", p["symbol"], "no pack.json found; skipping")
+    # -- news ----------------------------------------------------------------
+    def _news_cache_get(self):
+        return self.settings.get("news_cache")
 
-    async with websockets.connect(ws_url, ping_interval=25) as ws:
-        bal = await get_balance(ws)
-        heartbeat(mode, bal, "ready")
-        log("info", None, f"balance={bal} mode={mode}")
+    def _news_cache_set(self, payload):
+        try:
+            http("POST", "/api/bot/settings", {"news_cache": payload})
+        except Exception:
+            pass
 
-        # Reconcile open trades
+    def refresh_news(self):
+        try:
+            raw, meta = newsmod.fetch_weeks(
+                cache_get=self._news_cache_get,
+                cache_set=self._news_cache_set,
+                refresh_s=NEWS_REFRESH_S)
+            self.events = newsmod.normalize(raw)
+            symbols = [p["symbol"] for p in self.state.get("pairs", [])]
+            for e in self.events:
+                e["affected_pairs"] = newsmod.affected_pairs(e["currency"], symbols)
+            http("POST", "/api/bot/news", {"events": self.events})
+            self.news_ts = time.time()
+            log("info", None,
+                f"news refreshed ({len(self.events)} events, src={meta['source']}"
+                f"{' STALE-CACHE' if meta['stale'] else ''})")
+        except Exception as e:
+            self.news_ts = time.time()  # do not hammer; retry next hour
+            log("warn", None, f"news fetch failed: {e}")
+
+    async def record_reactions(self):
+        """For each high-impact event past by 15+ minutes, compute the pair's
+        +5/+15 minute move from candles and POST it once per event+pair."""
+        now = datetime.now(timezone.utc)
+        symbols = [p["symbol"] for p in self.state.get("pairs", [])]
+        for ev in self.events:
+            if ev.get("impact") != "high":
+                continue
+            t = datetime.strptime(ev["utc_time"], "%Y-%m-%dT%H:%M:%SZ").replace(
+                tzinfo=timezone.utc)
+            if (now - t).total_seconds() < 15 * 60:
+                continue
+            for sym in ev.get("affected_pairs") or newsmod.affected_pairs(
+                    ev["currency"], symbols):
+                key = (ev["id"], sym)
+                if key in self.reactions_done:
+                    continue
+                self.reactions_done.add(key)
+                try:
+                    df = await self.sess.fetch_candles(sym, count=500)
+                    if df.empty:
+                        continue
+                    df = df.sort_values("epoch").reset_index(drop=True)
+                    idx = df.index[df["epoch"] >= int(t.timestamp())]
+                    if len(idx) == 0 or idx[0] + 15 >= len(df):
+                        continue
+                    i = int(idx[0])
+                    base = float(df["close"].iloc[i])
+                    m5 = (float(df["close"].iloc[i + 5]) - base) / base * 1e4
+                    m15 = (float(df["close"].iloc[i + 15]) - base) / base * 1e4
+                    http("POST", "/api/bot/news/reaction",
+                         {"event_key": ev["id"], "pair": sym,
+                          "move_5m": round(m5, 1), "move_15m": round(m15, 1)})
+                    log("info", sym, f"news reaction recorded: {ev['title'][:30]} "
+                                     f"5m={m5:+.1f}p 15m={m15:+.1f}p")
+                except Exception as e:
+                    log("warn", sym, f"reaction record failed: {e}")
+
+    def news_ctx_for(self, sym, side):
+        ctx = {}
+        now = datetime.now(timezone.utc)
+        curs = newsmod.pair_currencies(sym)
+        nxt = newsmod.minutes_to_event(self.events, now, curs)
+        ctx["minutes_to_news"] = nxt if nxt is not None else 9999.0
+        last = newsmod.last_event_minutes(self.events, now, curs)
+        reaction = None
+        if last and last[0] <= 240:  # reaction window: 4h after release
+            try:
+                r = http("GET", f"/api/bot/news/reactions?pair={sym}")
+                for rec in r.get("reactions", []):
+                    if rec.get("event_key") == last[1]["id"]:
+                        reaction = rec.get("move_15m")
+            except Exception:
+                pass
+        ctx["news_state"] = newsmod.news_state(side, reaction)
+        ctx["hour_utc"] = now.hour
+        return ctx
+
+    # -- session management (FIX-A + FIX-B) -----------------------------------
+    async def ensure_session(self):
+        want = self.wanted_mode()
+        s = self.sess
+        if s.ws is not None and s.mode == want:
+            return
+        if s.ws is not None and s.mode != want:
+            open_trades = []
+            try:
+                open_trades = http("GET", "/api/bot/trades/open").get("open", [])
+            except Exception:
+                pass
+            if open_trades:
+                heartbeat(s.mode, None, "switch pending: open contracts",
+                          s.masked(), s.currency)
+                log("info", None, f"mode switch {s.mode}->{want} pending: "
+                                  f"{len(open_trades)} open contract(s)")
+                await self.reconcile_open()
+                return  # stay on the old account this iteration
+            log("info", None, f"switching account {s.mode} -> {want}")
+            await s.close()
+        try:
+            await s.connect(want)
+        except NoAccountError:
+            if want != "demo":
+                log("error", None, f"token has no {want} account; staying on demo")
+                try:
+                    http("POST", "/api/bot/settings", {"mode": "demo"})
+                except Exception:
+                    pass
+                if s.ws is None:
+                    await s.connect("demo")
+            else:
+                raise
+        bal = await s.balance()
+        heartbeat(s.mode, bal, "connected", s.masked(), s.currency)
+        await self.reconcile_open()
+
+    async def reconcile_open(self):
         try:
             open_r = http("GET", "/api/bot/trades/open")
             for t in open_r.get("open", []):
                 cid = t["contract_id"]
-                st = await ws_rpc(ws, {"proposal_open_contract": 1, "contract_id": int(cid)})
+                st = await self.sess.rpc({"proposal_open_contract": 1,
+                                          "contract_id": int(cid)})
                 poc = st.get("proposal_open_contract", {})
                 if poc.get("is_sold"):
                     pnl = float(poc.get("profit", 0.0))
                     result = "win" if pnl > 0 else "loss"
                     http("POST", "/api/bot/trade/settle",
                          {"contract_id": cid, "result": result, "pnl": pnl})
-                    log("info", t["pair"], f"reconciled contract {cid}: {result} {pnl:+.2f}")
+                    log("info", t["pair"],
+                        f"reconciled contract {cid}: {result} {pnl:+.2f}")
         except Exception as e:
             log("warn", None, f"reconcile failed: {e}")
 
-        while time.time() < deadline:
-            if time.time() >= handoff_at and not chained:
-                chain_next_run(); chained = True
-
-            # refresh runtime state
+    async def settle_shadow(self, packs):
+        for p in self.state.get("pairs", []):
+            sym = p["symbol"]
             try:
-                state = http("GET", "/api/bot/state")
-                settings = state.get("settings", {})
-                if settings.get("kill"):
-                    log("warn", None, "kill switch triggered; stopping")
-                    break
-                mode = settings.get("mode", mode)
-            except Exception:
-                pass
-
-            bal = await get_balance(ws)
-            heartbeat(mode, bal, "loop")
-
-            for p in state.get("pairs", []):
-                sym = p["symbol"]
-                if not p.get("enabled") and not p.get("shadow_mode", 1):
+                r = http("GET", f"/api/bot/shadow/open?pair={sym}")
+                opens = r.get("open", [])
+                if not opens:
                     continue
-                if sym not in packs:
+                df = await self.sess.fetch_candles(sym, count=30)
+                if df.empty:
                     continue
-                pack, prow = packs[sym]
-                try:
-                    df = await fetch_candles(ws, sym, count=500)
-                    if df.empty or len(df) < 100:
+                df = df.sort_values("epoch")
+                last_close = float(df["close"].iloc[-1])
+                now_epoch = int(time.time())
+                for sg in opens:
+                    opened = datetime.fromisoformat(
+                        sg["open_utc"].replace("Z", "+00:00")).timestamp()
+                    if now_epoch - opened < 15 * 60:
                         continue
-                    news_ctx = {}
-                    nxt = minutes_to_event(events, datetime.now(timezone.utc), pair_currencies(sym))
-                    if nxt is not None:
-                        news_ctx["minutes_to_news"] = nxt
-                    dec = pack.decide(df, news_ctx)
-                    if not dec["allow"] or dec["side"] is None:
-                        log("info", sym, "skipped: " + "; ".join(dec["reasons"]) or "rule-block",
-                            {"prob": dec["prob"]})
-                        continue
-                    # payout check + break-even
-                    stake_pct = float(p.get("stake_pct", 0.01))
-                    raw_stake = max(0.35, min(float(p.get("max_stake", 10)), bal * stake_pct))
-                    stake = round(raw_stake, 2)
-                    if bal < 0.35 or stake < 0.35:
-                        log("warn", sym, f"balance {bal:.2f} too low; pausing")
-                        continue
-                    # dry proposal to read live payout
-                    prop_pre = await ws_rpc(ws, {"proposal": 1, "amount": stake, "basis": "stake",
-                                                 "contract_type": dec["side"], "currency": "USD",
-                                                 "duration": 15, "duration_unit": "m", "symbol": sym})
-                    if "error" in prop_pre:
-                        log("warn", sym, f"proposal error: {prop_pre['error'].get('message')}")
-                        continue
-                    live_payout_ratio = float(prop_pre["proposal"]["payout"]) / stake - 1.0
-                    be = 1.0 / (1.0 + live_payout_ratio)
-                    needed = be + float(dec.get("margin", 0))
-                    if dec["edge"] < needed:
-                        log("info", sym, f"skipped: edge {dec['edge']:.3f} < required {needed:.3f}",
-                            {"live_payout": live_payout_ratio})
-                        continue
+                    entry = float(sg["entry_price"])
+                    win = (sg["side"] == "CALL" and last_close > entry) or \
+                          (sg["side"] == "PUT" and last_close < entry)
+                    stake = float(sg["stake"] or MIN_STAKE)
+                    pnl = stake * 0.85 if win else -stake
+                    http("POST", "/api/bot/shadow/settle",
+                         {"id": sg["id"], "exit_price": last_close,
+                          "result": "win" if win else "loss", "pnl": round(pnl, 2)})
+            except Exception as e:
+                log("warn", sym, f"shadow settle failed: {e}")
 
-                    if p.get("shadow_mode", 1) or not p.get("enabled"):
-                        http("POST", "/api/bot/shadow", {
-                            "pair": sym, "side": dec["side"], "stake": stake,
-                            "entry_price": float(df["close"].iloc[-1]),
-                            "model_prob": dec["prob"],
-                            "reason": "; ".join(dec["reasons"]) or "ok"})
-                        log("info", sym, f"shadow {dec['side']} @ {df['close'].iloc[-1]} prob={dec['prob']:.3f}")
-                        continue
-                    if time.time() >= stop_open_at:
-                        log("info", sym, "near end-of-run; not opening")
-                        continue
+    # -- one supervised iteration ---------------------------------------------
+    async def iteration(self, packs, stop_open_at):
+        self.refresh_state()
+        if self.settings.get("kill"):
+            raise KillSwitch()
+        renew_lock()
+        if time.time() - self.news_ts > NEWS_REFRESH_S:
+            self.refresh_news()
+        await self.ensure_session()
+        await self.record_reactions()
+        bal = await self.sess.balance()
+        heartbeat(self.sess.mode, bal, "loop",
+                  self.sess.masked(), self.sess.currency)
+        await self.settle_shadow(packs)
 
-                    buy = await propose_and_buy(ws, sym, dec["side"], stake)
-                    if "error" in buy:
-                        log("warn", sym, f"buy failed: {buy['error']}")
-                        continue
-                    http("POST", "/api/bot/trade", {
-                        "contract_id": buy["contract_id"], "pair": sym, "side": dec["side"],
-                        "stake": buy["stake"], "payout": buy["payout"], "mode": mode,
-                        "model_prob": dec["prob"],
-                        "news_flag": news_ctx.get("news_state"),
-                        "reason": "; ".join(dec["reasons"]) or "ok"})
-                    log("info", sym, f"LIVE {dec['side']} stake={buy['stake']} contract={buy['contract_id']}")
-                except Exception as e:
-                    log("error", sym, f"loop exception: {e}")
-            await asyncio.sleep(20)
+        for p in self.state.get("pairs", []):
+            sym = p["symbol"]
+            if not p.get("enabled") and not p.get("shadow_mode", 1):
+                continue
+            if sym not in packs:
+                continue
+            pack, _ = packs[sym]
+            try:
+                df = await self.sess.fetch_candles(sym, count=500)
+                if df.empty or len(df) < 100:
+                    continue
+                news_ctx = self.news_ctx_for(sym, "CALL")
+                dec = pack.decide(df, news_ctx)
+                # recompute news_state for the ACTUAL side
+                news_ctx2 = self.news_ctx_for(sym, dec["side"] or "CALL")
+                if news_ctx2["news_state"] != news_ctx["news_state"]:
+                    dec = pack.decide(df, news_ctx2)
+                    news_ctx = news_ctx2
+                reasons = "; ".join(dec["reasons"]) or "rule-block"
+                if not dec["allow"] or dec["side"] is None:
+                    log("info", sym, f"skipped: {reasons}", {"prob": dec["prob"]})
+                    continue
+                stake_pct = float(p.get("stake_pct", 0.01))
+                raw = max(MIN_STAKE,
+                          min(float(p.get("max_stake", 10)), bal * stake_pct))
+                stake = round(raw, 2)
+                if bal < MIN_STAKE or stake < MIN_STAKE:
+                    log("warn", sym, f"balance {bal:.2f} too low; pausing")
+                    continue
+                prop = await self.sess.rpc({
+                    "proposal": 1, "amount": stake, "basis": "stake",
+                    "contract_type": dec["side"], "currency": "USD",
+                    "duration": 15, "duration_unit": "m", "symbol": sym})
+                if "error" in prop:
+                    log("warn", sym,
+                        f"proposal error: {prop['error'].get('message')}")
+                    continue
+                live_payout = float(prop["proposal"]["payout"]) / stake - 1.0
+                be = 1.0 / (1.0 + live_payout)
+                needed = be + float(dec.get("margin", 0))
+                if dec["edge"] < needed:
+                    log("info", sym,
+                        f"skipped: edge {dec['edge']:.3f} < required {needed:.3f}",
+                        {"live_payout": live_payout})
+                    continue
 
-    release_lock()
-    heartbeat(mode, bal if 'bal' in locals() else None, "end-of-run")
+                if p.get("shadow_mode", 1) or not p.get("enabled"):
+                    http("POST", "/api/bot/shadow", {
+                        "pair": sym, "side": dec["side"], "stake": stake,
+                        "entry_price": float(df["close"].iloc[-1]),
+                        "model_prob": dec["prob"], "reason": reasons})
+                    log("info", sym,
+                        f"shadow {dec['side']} @ {df['close'].iloc[-1]} "
+                        f"prob={dec['prob']:.3f}")
+                    continue
+                if time.time() >= stop_open_at:
+                    log("info", sym, "near end-of-run; not opening")
+                    continue
+                buy = await self.sess.propose_and_buy(sym, dec["side"], stake)
+                if "error" in buy:
+                    log("warn", sym, f"buy failed: {buy['error']}")
+                    continue
+                http("POST", "/api/bot/trade", {
+                    "contract_id": buy["contract_id"], "pair": sym,
+                    "side": dec["side"], "stake": buy["stake"],
+                    "payout": buy["payout"], "mode": self.sess.mode,
+                    "model_prob": dec["prob"],
+                    "news_flag": news_ctx.get("news_state"), "reason": reasons})
+                log("info", sym, f"LIVE {dec['side']} stake={buy['stake']} "
+                                 f"contract={buy['contract_id']}")
+            except (websockets.exceptions.WebSocketException, OSError,
+                    asyncio.TimeoutError):
+                raise  # supervisor handles reconnects
+            except Exception as e:
+                log("error", sym, f"loop exception: {e}")
+        await asyncio.sleep(POLL_S)
+
+
+async def main():
+    t0 = time.time()
+    deadline = t0 + WALL_S
+    stop_open_at = deadline - STOP_OPEN_LEAD_S
+    handoff_at = deadline - HANDOFF_LEAD_S
+
+    if not acquire_lock():
+        log("warn", None, "run_lock held by another runner; exiting")
+        return
+
+    bot = Bot()
+    try:
+        bot.refresh_state()
+        if bot.settings.get("kill"):
+            log("warn", None, "kill switch on; exiting")
+            return
+        packs = {}
+        for p in bot.state.get("pairs", []):
+            pk = load_pack_for(p["symbol"])
+            if pk is not None:
+                packs[p["symbol"]] = (pk, p)
+                log("info", p["symbol"], f"pack v{p['pack_version']} loaded")
+            else:
+                log("warn", p["symbol"], "no pack.json found; skipping")
+
+        backoff = 2.0
+        while time.time() < deadline:
+            if time.time() >= handoff_at and not bot.chained:
+                chain_next_run("handoff")
+                bot.chained = True
+            try:
+                await bot.iteration(packs, stop_open_at)
+                backoff = 2.0
+            except KillSwitch:
+                log("warn", None, "kill switch triggered; stopping")
+                break
+            except Exception as e:
+                log("warn", None, f"connection lost: {type(e).__name__}: {e}")
+                heartbeat(bot.sess.mode, None, "reconnecting",
+                          bot.sess.masked(), bot.sess.currency)
+                await bot.sess.close()
+                renew_lock()  # keep the D1 lease during reconnects
+                await asyncio.sleep(backoff + random.uniform(0, backoff * 0.5))
+                backoff = min(60.0, backoff * 2)
+    finally:
+        await bot.sess.close()
+        release_lock()
+        heartbeat(bot.sess.mode or BOT_MODE_DEFAULT, None, "end-of-run",
+                  bot.sess.masked(), bot.sess.currency)
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except Exception as e:
-        try: log("error", None, f"fatal: {e}")
-        except Exception: pass
+        try:
+            log("error", None, f"fatal: {e}")
+        except Exception:
+            pass
+        try:
+            release_lock()
+        except Exception:
+            pass
         raise

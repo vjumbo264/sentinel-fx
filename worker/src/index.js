@@ -101,10 +101,30 @@ export default {
         }
 
         if (path === "/api/bot/heartbeat" && method === "POST") {
+          // FIX-B: also persist the CONNECTED account identity when supplied
+          const cur = await env.DB.prepare("SELECT loginid, currency FROM heartbeat WHERE id=1").first();
+          const loginid = body.loginid !== undefined ? body.loginid : (cur ? cur.loginid : null);
+          const currency = body.currency !== undefined ? body.currency : (cur ? cur.currency : null);
           await env.DB.prepare(
-            "INSERT INTO heartbeat (id, ts, mode, balance, note) VALUES (1,?,?,?,?) " +
-            "ON CONFLICT(id) DO UPDATE SET ts=excluded.ts, mode=excluded.mode, balance=excluded.balance, note=excluded.note"
-          ).bind(nowUTC(), body.mode || null, body.balance ?? null, body.note || null).run();
+            "INSERT INTO heartbeat (id, ts, mode, balance, note, loginid, currency) VALUES (1,?,?,?,?,?,?) " +
+            "ON CONFLICT(id) DO UPDATE SET ts=excluded.ts, mode=excluded.mode, balance=excluded.balance, " +
+            "note=excluded.note, loginid=excluded.loginid, currency=excluded.currency"
+          ).bind(nowUTC(), body.mode || null, body.balance ?? null, body.note || null, loginid, currency).run();
+          return json({ ok: true });
+        }
+
+        if (path === "/api/bot/settings" && method === "POST") {
+          // bot-side settings writes (e.g. news cache, mode fallback)
+          const b = body;
+          for (const [k, v] of Object.entries(b)) {
+            if (k.toLowerCase().includes("token") || k.toLowerCase().includes("secret")) {
+              return err("refusing to store secrets in D1", 400);
+            }
+            await env.DB.prepare(
+              "INSERT INTO settings (key, value, updated_utc) VALUES (?,?,?) " +
+              "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_utc=excluded.updated_utc"
+            ).bind(k, JSON.stringify(v), nowUTC()).run();
+          }
           return json({ ok: true });
         }
 
@@ -201,6 +221,15 @@ export default {
             "INSERT INTO news_reactions (event_key, pair, move_5m, move_15m, recorded_utc) VALUES (?,?,?,?,?)"
           ).bind(body.event_key, body.pair, body.move_5m ?? null, body.move_15m ?? null, nowUTC()).run();
           return json({ ok: true });
+        }
+
+        if (path === "/api/bot/news/reactions" && method === "GET") {
+          const pair = url.searchParams.get("pair");
+          const q = pair
+            ? env.DB.prepare("SELECT * FROM news_reactions WHERE pair=? ORDER BY id DESC LIMIT 200").bind(pair)
+            : env.DB.prepare("SELECT * FROM news_reactions ORDER BY id DESC LIMIT 200");
+          const r = await q.all();
+          return json({ reactions: r.results });
         }
 
         if (path === "/api/bot/trades/open" && method === "GET") {
@@ -329,7 +358,18 @@ export default {
         const r = await env.DB.prepare(
           "SELECT * FROM news_events WHERE utc_time >= ? ORDER BY utc_time"
         ).bind(nowUTC().slice(0, 10) + "T00:00:00Z").all();
-        return json({ events: r.results });
+        const cache = await env.DB.prepare("SELECT value FROM settings WHERE key='news_cache'").first();
+        let newsMeta = null;
+        if (cache) {
+          try {
+            const c = JSON.parse(cache.value);
+            const ageH = (Date.now() - Date.parse(c.fetched_utc || 0)) / 3600e3;
+            newsMeta = { fetched_utc: c.fetched_utc || null, stale: !(ageH < 2) };
+          } catch (_) { newsMeta = { fetched_utc: null, stale: true }; }
+        } else {
+          newsMeta = { fetched_utc: null, stale: true };
+        }
+        return json({ events: r.results, meta: newsMeta });
       }
 
       if (path === "/api/stats/daily" && method === "GET") {
