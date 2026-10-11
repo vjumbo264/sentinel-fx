@@ -87,7 +87,7 @@ interface OverridesState {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dash' | 'models' | 'desk' | 'risk' | 'train' | 'news' | 'logs'>('dash');
+  const [activeTab, setActiveTab] = useState<'dash' | 'models' | 'desk' | 'risk' | 'news' | 'logs'>('dash');
   const [mode, setMode] = useState<'demo' | 'real'>('demo');
   const [botRunning, setBotRunning] = useState<boolean>(true);
   const [killSwitch, setKillSwitch] = useState<boolean>(false);
@@ -243,10 +243,7 @@ export default function App() {
     }
   ]);
 
-  // Train tab state
-  const [selectedTrainSymbols, setSelectedTrainSymbols] = useState<string[]>(['EURUSD', 'USDJPY']);
-  const [publishPat, setPublishPat] = useState<string>('');
-  const [promptCopied, setPromptCopied] = useState<boolean>(false);
+
 
   // News items
   const [newsEvents] = useState<NewsItem[]>([
@@ -399,33 +396,7 @@ export default function App() {
     );
   };
 
-  // Generate Training Prompt
-  const generatePrompt = () => {
-    const symList = selectedTrainSymbols.join(', ');
-    return `# SENTINEL-FX AUTONOMOUS CFD MODEL TRAINING MISSION
-Target Pairs: [${symList}]
-Objective: GROW THE BALANCE (Compounding Capital Growth)
-Platform: MetaTrader 5 (MT5) CFD via bot/mt5_broker.py
-Account Margin Mode: Retail Hedging (concurrent multi-position support)
 
-STRICT MANDATORY SAFETY RULE:
-Every opened position MUST carry a server-side Stop Loss (sl > 0).
-
-1. Data Source: Dukascopy (forex) / Deriv ticks_history (synthetics) from data/index.json.
-2. News Confluence: news_archive.jsonl.gz (widen stops / stand down around high-impact news).
-3. Strategy: Hybrid Committee (Trend, Momentum, Key Levels, Volatility ATR, Regime).
-4. Freedom: Open multiple positions, scale in/out, trailing stop, break-even moves, early exit, or STAY_OUT.
-5. Export: ONNX or pure JSON plan (analysis_plan.json, policy.json, risk_brain.json, manifest.json). NO PICKLE.
-6. Verify: python3 -m sentinel_engine.check <bundle>.sfxmodel.zip
-${publishPat ? `\nPUBLISH ACCESS:\nToken: ${publishPat}\nCommand: python3 tools/publish_model.py <bundle>.sfxmodel.zip --symbol <PAIR> --version 1 --token <PAT>` : ''}`;
-  };
-
-  const copyPromptToClipboard = () => {
-    navigator.clipboard.writeText(generatePrompt());
-    setPromptCopied(true);
-    showToast('Playbook training prompt copied to clipboard!');
-    setTimeout(() => setPromptCopied(false), 3000);
-  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
@@ -1114,90 +1085,6 @@ ${publishPat ? `\nPUBLISH ACCESS:\nToken: ${publishPat}\nCommand: python3 tools/
                 >
                   Save &amp; Apply Overrides
                 </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB: TRAIN AI PLAYBOOK (TRAINUI) */}
-        {activeTab === 'train' && (
-          <div className="space-y-6">
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-white">CFD AI Training Playbook Generator</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Generate the self-contained prompt to paste into any LLM or AI trainer. Single purpose: GROW THE BALANCE.
-                  </p>
-                </div>
-              </div>
-
-              {/* Pair Multi-Select */}
-              <div className="mb-5">
-                <label className="text-xs font-semibold text-slate-300 block mb-2">
-                  Select Instruments to Train:
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF', 'Volatility 10 Index', 'Volatility 100 Index'].map(sym => {
-                    const sel = selectedTrainSymbols.includes(sym);
-                    return (
-                      <button
-                        key={sym}
-                        onClick={() => {
-                          if (sel) {
-                            setSelectedTrainSymbols(selectedTrainSymbols.filter(s => s !== sym));
-                          } else {
-                            setSelectedTrainSymbols([...selectedTrainSymbols, sym]);
-                          }
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition ${
-                          sel
-                            ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40'
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                        }`}
-                      >
-                        {sym}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Optional PAT */}
-              <div className="mb-5">
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
-                  Fine-Grained GitHub PAT (Optional - In Memory Only):
-                </label>
-                <input
-                  type="password"
-                  placeholder="github_pat_... (Only if AI should publish directly)"
-                  value={publishPat}
-                  onChange={e => setPublishPat(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-purple-500"
-                />
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Kept in memory only. Allows the training AI to upload the validated .sfxmodel.zip bundle directly.
-                </p>
-              </div>
-
-              {/* Generated Prompt Preview */}
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-300 relative group">
-                <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-800 text-slate-400 text-[11px]">
-                  <span>GENERATED PLAYBOOK PROMPT</span>
-                  <button
-                    onClick={copyPromptToClipboard}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded bg-purple-600 hover:bg-purple-500 text-white font-medium transition"
-                  >
-                    {promptCopied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{promptCopied ? 'Copied!' : 'Copy Prompt'}</span>
-                  </button>
-                </div>
-                <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap text-[11px] text-slate-400 scrollbar-thin">
-                  {generatePrompt()}
-                </pre>
               </div>
             </div>
           </div>

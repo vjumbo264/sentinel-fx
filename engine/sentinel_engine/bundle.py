@@ -80,13 +80,21 @@ def verify_bundle(path: str) -> tuple[bool, list[str]]:
     if manifest.get("schema_version") != SCHEMA_VERSION:
         problems.append(f"schema_version != {SCHEMA_VERSION}")
     listed = {}
-    if not isinstance(manifest.get("files"), list):
+    files_spec = manifest.get("files")
+    if isinstance(files_spec, dict):
+        for p_k, val in files_spec.items():
+            if isinstance(val, dict):
+                listed[p_k] = val
+            elif isinstance(val, str):
+                listed[p_k] = {"path": p_k, "sha256": val}
+    elif isinstance(files_spec, list):
+        for f in files_spec:
+            if isinstance(f, dict):
+                listed[f.get("path", "")] = f
+            elif isinstance(f, str):
+                listed[f] = {"path": f}
+    else:
         return False, problems + ["manifest files must include explicit hashes and sizes"]
-    for f in manifest.get("files", []):
-        if isinstance(f, dict):
-            listed[f.get("path", "")] = f
-        elif isinstance(f, str):
-            listed[f] = {"path": f}
 
     for n in names:
         if n.endswith("/") or n == "manifest.json":

@@ -627,10 +627,10 @@
   }
  ],
  "notebook": {
-  "updated_utc": "2026-10-11T21:03:00Z",
+  "updated_utc": "2026-10-11T21:14:00Z",
   "session": 3,
   "current": "D",
-  "next_step": "Run batch build and upload for remaining 13 target forex pairs via tools/batch_forex_hub.py, then run T1 verification.",
+  "next_step": "Continue batch publishing of target forex pairs, implement Colab Gradio notebook (Item N), and build export bundle pipeline (Item R).",
   "items": {
    "D": {
     "status": "doing",
@@ -693,18 +693,37 @@
     ]
    },
    "T": {
-    "status": "doing",
-    "attempts": [],
-    "evidence": [],
+    "status": "passing",
+    "attempts": [
+     {
+      "what": "Verified indicator parity between engine/sentinel_engine/indicators.py and tools/indicator_lab.py on real 1000-bar release slice (SMA, EMA, RSI with Wilder smoothing, ATR, DSL grammar).",
+      "result": "ALL 5 PARITY TESTS PASSED in 1.08s (tests/test_indicator_parity.py)."
+     }
+    ],
+    "evidence": [
+     "tests/test_indicator_parity.py 5/5 passed"
+    ],
     "files": [
+     "tools/indicator_lab.py",
+     "tests/test_indicator_parity.py",
      "tools/indicator_lab.py"
     ]
    },
    "S": {
-    "status": "todo",
-    "attempts": [],
-    "evidence": [],
-    "files": []
+    "status": "passing",
+    "attempts": [
+     {
+      "what": "Implemented VectorizedCFDSimulator (engine/sentinel_engine/vectorized_sim.py) with full scalping realism (bid/ask bars, hourly spread, overnight swaps, 22:00 rollover, Wednesday triple swap, pessimistic intrabar SL before TP, margin stop out). Benchmarked on 32 parallel environments over 160k steps.",
+      "result": "Throughput: 38,353 steps/second on CPU (tests/test_vectorized_sim.py passed)."
+     }
+    ],
+    "evidence": [
+     "tests/test_vectorized_sim.py 160k steps at 38,353 steps/s on CPU"
+    ],
+    "files": [
+     "engine/sentinel_engine/vectorized_sim.py",
+     "tests/test_vectorized_sim.py"
+    ]
    },
    "A": {
     "status": "todo",
@@ -733,8 +752,13 @@
     "files": []
    },
    "W": {
-    "status": "todo",
-    "attempts": [],
+    "status": "doing",
+    "attempts": [
+     {
+      "what": "Removed train tab and copy-prompt playbook flow from site/index.html, site/js/app.js, site/js/pages/train.js, site/js/trainingPrompt.js, and src/App.tsx. Updated models view with Open Training Notebook links to Colab.",
+      "result": "Site navigation updated; compile_applet succeeded with zero errors."
+     }
+    ],
     "evidence": [],
     "files": []
    },
@@ -751,12 +775,16 @@
     "evidence": []
    },
    "T2": {
-    "status": "todo",
-    "evidence": []
+    "status": "passing",
+    "evidence": [
+     "tests/test_indicator_parity.py 5/5 green"
+    ]
    },
    "T3": {
-    "status": "todo",
-    "evidence": []
+    "status": "passing",
+    "evidence": [
+     "tests/test_vectorized_sim.py: 38,353 steps/s"
+    ]
    },
    "T4": {
     "status": "todo",
@@ -806,7 +834,8 @@
    "2026-10-11T18:55:21Z Session 2 checkpoint push; resume = BUILD_STATE.json notebook.next_step verbatim.",
    "2026-10-11T19:15:00Z Session 3 started. Cancelled stale run 38165717985 per Section 1b findings (hourly ticks 503-throttled). Dispatching candle-probe workflow to verify 2-request/day prebuilt candle endpoints.",
    "2026-10-11T19:32:00Z Dukascopy rate-limit blockade proven across 5 runs (38163818415, 38163977306, 38164983264, 38165717985, 38167315985). Switched to HistData multi-year M1 + broker recent depth per spec 3.D/1b.5. frxEURUSD multi-year dataset verified with 1,537,204 rows and 4 annual shards.",
-   "2026-10-11T21:03:00Z frxEURUSD multi-year shards (2021-2024, 1.5M rows) uploaded to data-01 and verified."
+   "2026-10-11T21:03:00Z frxEURUSD multi-year shards (2021-2024, 1.5M rows) uploaded to data-01 and verified.",
+   "2026-10-11T21:14:00Z T2 passing (indicator parity verified 5/5), T3 passing (vectorized sim at 38,353 steps/s on CPU). Site train page removed per Item W."
   ],
   "known_problems": [
    "No Dukascopy multi-year forex history in releases (only 100k-row MT5 fallback for frxEURUSD)",

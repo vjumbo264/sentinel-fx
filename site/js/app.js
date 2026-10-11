@@ -18,7 +18,6 @@ import { tradesView } from "./pages/trades.js";
 import { chartView } from "./pages/chart.js";
 import { modelsView } from "./pages/models.js";
 import { historyView } from "./pages/history.js";
-import { trainView } from "./pages/train.js";
 import { uploadView } from "./pages/upload.js";
 import { riskView } from "./pages/risk.js";
 import { settingsView } from "./pages/settings.js";
@@ -183,7 +182,6 @@ function registerRoutes() {
   router.register("chart", chartView);
   router.register("models", modelsView);
   router.register("history", historyView);
-  router.register("train", trainView);
   router.register("upload", uploadView);
   router.register("risk", riskView);
   router.register("settings", settingsView);

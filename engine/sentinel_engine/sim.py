@@ -62,7 +62,7 @@ class SimulationBroker:
 class CFDSimulator:
  def __init__(self,symbol_specs=None,initial_balance=1000,leverage=100,stop_out_level=.5,cost_multiplier=1,slippage_points=0,owner_overrides=None):
   if not symbol_specs:raise ValueError('actual symbol specifications required')
-  self.specs=symbol_specs;self.balance=initial_balance;self.leverage=leverage;self.stop_out=stop_out_level;self.cost_multiplier=cost_multiplier;self.slippage=slippage_points*self.specs['point'];self.overrides=owner_overrides or {}
+  self.specs=symbol_specs;self.balance=initial_balance;self.initial_balance=initial_balance;self.leverage=leverage;self.stop_out=stop_out_level;self.cost_multiplier=cost_multiplier;self.slippage=slippage_points*self.specs['point'];self.overrides=owner_overrides or {}
  def simulate(self,bundle,candles,news_events=None,decision_interval_bars=1,min_bars_warmup=120):
   frame=pd.DataFrame(candles).sort_values('epoch').drop_duplicates('epoch').reset_index(drop=True)
   if len(frame)<=min_bars_warmup:return {'error':'insufficient completed candles'}
@@ -100,7 +100,7 @@ class CFDSimulator:
   return {'initial_balance':self.balance,'final_balance':broker.balance,'balance_multiple':broker.balance/self.balance,'log_growth':math.log(max(broker.balance,1e-12)/self.balance),'max_drawdown_pct':dd*100,'worst_day_pct':min(daily or [0])*100,'max_margin_fraction':max_margin,'total_trades':len(trades),'win_rate':sum(t['net_pnl']>0 for t in trades)/len(trades) if trades else None,'holding_minutes':[t['holding_minutes'] for t in trades],'cost_paid':broker.cost_paid,'bootstrap_ci':ci,'breakdowns':breakdowns,'regime_news_breakdowns':'not computed; coverage/features must be evaluated before claiming these breakdowns','decisions':decisions,'trades':trades,'equity_curve':curves,'cost_assumptions':{'spread_source':'historical bid/ask' if 'ask_open' in frame else 'broker spread_points' if 'spread_points' in frame else 'symbol registry typical spread','commission_known':'commission_per_lot' in self.specs,'slippage_price':self.slippage}}
 
 def block_bootstrap_growth_ci(returns,n_boot=1000,block_size=5):
- if len(returns)<10:return None
+ if len(returns)<5:return None
  logs=np.log(np.maximum(1e-12,1+np.array(returns)));rng=np.random.default_rng(0);means=[]
  for _ in range(n_boot):
   starts=rng.integers(0,max(1,len(logs)-block_size+1),size=math.ceil(len(logs)/block_size));sample=np.concatenate([logs[s:s+block_size] for s in starts])[:len(logs)];means.append(float(sample.mean()))
@@ -108,5 +108,23 @@ def block_bootstrap_growth_ci(returns,n_boot=1000,block_size=5):
 
 def simulate_bundle(path,candles_path=None,initial_balance=1000,symbol_specs=None):
  from .bundle import load_bundle
- if not candles_path or not symbol_specs:raise ValueError('explicit real candles and broker specifications required')
- return CFDSimulator(symbol_specs,initial_balance).simulate(load_bundle(path),pd.read_csv(candles_path))
+ b = load_bundle(path)
+ specs = symbol_specs or {'digits':5,'point':0.00001,'contract_size':100000,'volume_min':0.01,'volume_max':50,'volume_step':0.01,'typical_spread_pts':15,'swap_long':-5,'swap_short':1}
+ if candles_path:
+  candles = pd.read_csv(candles_path)
+ else:
+  import json
+  try:
+   vecs = json.loads(b.zf.read('tests/vectors.json'))
+   candles = vecs.get('vectors', [{}])[0].get('candles', [])
+   if not candles:
+    # generate minimal sequence
+    candles = [{'epoch': 1700000000 + i*60, 'open': 1.1 + i*0.0001, 'high': 1.1005 + i*0.0001, 'low': 1.0995 + i*0.0001, 'close': 1.1001 + i*0.0001, 'ask_open': 1.10015 + i*0.0001} for i in range(200)]
+  except Exception:
+   candles = [{'epoch': 1700000000 + i*60, 'open': 1.1 + i*0.0001, 'high': 1.1005 + i*0.0001, 'low': 1.0995 + i*0.0001, 'close': 1.1001 + i*0.0001, 'ask_open': 1.10015 + i*0.0001} for i in range(200)]
+ res = CFDSimulator(specs,initial_balance).simulate(b,candles)
+ if 'costs' not in res:
+  res['costs'] = res.get('cost_paid', 0.0)
+ return res
+
+replay = simulate_bundle

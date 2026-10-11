@@ -38,10 +38,18 @@ def _sma(x, n):
     out[n - 1:] = (c[n:] - c[:-n]) / n
     return out
 
+def _wilder_ema(x, n):
+    a = 1.0 / n
+    out = np.empty_like(x)
+    out[0] = x[0]
+    for i in range(1, len(x)):
+        out[i] = a * x[i] + (1 - a) * out[i - 1]
+    return out
+
 def _rsi(close, n):
     d = np.diff(close, prepend=close[0])
     up = np.where(d > 0, d, 0.0); dn = np.where(d < 0, -d, 0.0)
-    ru = _ema(up, n); rd = _ema(dn, n)
+    ru = _wilder_ema(up, n); rd = _wilder_ema(dn, n)
     rs = np.divide(ru, rd, out=np.zeros_like(ru), where=rd > 0)
     return 100 - 100 / (1 + rs)
 

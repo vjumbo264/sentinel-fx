@@ -59,8 +59,8 @@ export const modelsView = {
           </div>
 
           <div style="display:flex; gap:var(--space-2);">
-            <a href="#/train" class="btn btn-secondary btn-sm" style="text-decoration:none;">
-              ${icons.train("w-4 h-4")} <span>Train Model</span>
+            <a href="https://colab.research.google.com/github/vjumbo264/sentinel-fx/blob/main/notebooks/sentinel_trainer.ipynb" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none;">
+              ${icons.train("w-4 h-4")} <span>Open Training Notebook ↗</span>
             </a>
             <a href="#/upload" class="btn btn-secondary btn-sm" style="text-decoration:none;">
               ${icons.upload("w-4 h-4")} <span>Install Bundle</span>
@@ -74,11 +74,11 @@ export const modelsView = {
             <div style="margin-bottom:var(--space-3); color:var(--text-muted);">${icons.models("w-12 h-12")}</div>
             <h3 style="font-family:var(--font-display); font-size:var(--text-lg); font-weight:700; margin-bottom:var(--space-1);">No Models Installed</h3>
             <p style="font-size:var(--text-sm); color:var(--text-secondary); max-width:460px; margin:0 auto var(--space-4);">
-              No trained model bundles have been installed into the live MT5 engine yet. Generate playbooks on the Train desk or upload a verified .sfxmodel.zip bundle.
+              No trained model bundles have been installed into the live MT5 engine yet. Train RL scalping policies in Google Colab with Gradio UI, or upload a verified .sfxmodel.zip bundle.
             </p>
             <div style="display:flex; justify-content:center; gap:var(--space-3);">
-              <a href="#/train" class="btn btn-primary" style="text-decoration:none;">
-                ${icons.train("w-4 h-4")} <span>Open Train Desk</span>
+              <a href="https://colab.research.google.com/github/vjumbo264/sentinel-fx/blob/main/notebooks/sentinel_trainer.ipynb" target="_blank" rel="noopener" class="btn btn-primary" style="text-decoration:none;">
+                ${icons.train("w-4 h-4")} <span>Open Training Notebook ↗</span>
               </a>
               <a href="#/upload" class="btn btn-secondary" style="text-decoration:none;">
                 ${icons.upload("w-4 h-4")} <span>Upload .sfxmodel.zip</span>
