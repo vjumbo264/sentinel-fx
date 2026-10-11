@@ -171,32 +171,39 @@ def _validate_decision_contract(dec: dict, report: dict, prefix: str = "Decision
         return
 
     act = dec.get("action")
-    if act not in ("trade", "skip"):
-        report["problems"].append(f"{prefix}: action must be 'trade' or 'skip', got '{act}'")
+    valid_actions = ("BUY", "SELL", "HOLD", "STAY_OUT", "MODIFY_STOP", "CLOSE_ALL", "trade", "skip")
+    if act not in valid_actions:
+        report["problems"].append(f"{prefix}: action must be one of {valid_actions}, got '{act}'")
 
-    if act == "trade":
-        sd = dec.get("side")
-        if sd not in ("CALL", "PUT"):
-            report["problems"].append(f"{prefix}: side must be 'CALL' or 'PUT', got '{sd}'")
+    if act in ("BUY", "SELL", "trade"):
+        sd = dec.get("side", act)
+        valid_sides = ("BUY", "SELL", "CALL", "PUT")
+        if sd not in valid_sides:
+            report["problems"].append(f"{prefix}: side must be one of {valid_sides}, got '{sd}'")
 
-    pwin = dec.get("p_win")
+        # SL check: Server-side SL is strictly mandatory for CFD positions
+        sl = dec.get("sl")
+        sl_pts = dec.get("sl_dist_points")
+        if sl is not None:
+            if not isinstance(sl, (int, float)) or math.isnan(sl) or math.isinf(sl) or sl <= 0:
+                report["problems"].append(f"{prefix}: sl must be positive finite number, got {sl}")
+        elif sl_pts is not None:
+            if not isinstance(sl_pts, (int, float)) or math.isnan(sl_pts) or math.isinf(sl_pts) or sl_pts <= 0:
+                report["problems"].append(f"{prefix}: sl_dist_points must be positive, got {sl_pts}")
+
+    pwin = dec.get("p_win") or dec.get("confidence")
     if pwin is not None:
         if not isinstance(pwin, (int, float)) or math.isnan(pwin) or math.isinf(pwin):
-            report["problems"].append(f"{prefix}: p_win is NaN or infinite")
+            report["problems"].append(f"{prefix}: p_win/confidence is NaN or infinite")
         elif not (0.0 <= pwin <= 1.0):
-            report["problems"].append(f"{prefix}: p_win must be in [0.0, 1.0], got {pwin}")
+            report["problems"].append(f"{prefix}: p_win/confidence must be in [0.0, 1.0], got {pwin}")
 
-    stake = dec.get("stake")
-    if stake is not None:
-        if not isinstance(stake, (int, float)) or math.isnan(stake) or math.isinf(stake):
-            report["problems"].append(f"{prefix}: stake is NaN or infinite")
-        elif stake < 0:
-            report["problems"].append(f"{prefix}: stake cannot be negative, got {stake}")
-        else:
-            # Check 2 decimals
-            rounded = round(float(stake), 2)
-            if abs(float(stake) - rounded) > 1e-4:
-                report["problems"].append(f"{prefix}: stake precision must be at most 2 decimal places, got {stake}")
+    vol = dec.get("volume") or dec.get("stake")
+    if vol is not None:
+        if not isinstance(vol, (int, float)) or math.isnan(vol) or math.isinf(vol):
+            report["problems"].append(f"{prefix}: volume/stake is NaN or infinite")
+        elif vol <= 0:
+            report["problems"].append(f"{prefix}: volume/stake must be positive, got {vol}")
 
     if not dec.get("reason"):
         report["warnings"].append(f"{prefix}: reason string is empty")

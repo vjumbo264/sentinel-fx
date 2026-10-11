@@ -51,12 +51,14 @@ def main():
     ap.add_argument("--version", type=int, required=True)
     ap.add_argument("--token", default=os.environ.get("GITHUB_TOKEN", ""))
     a = ap.parse_args()
-    if not re.match(r"^(frx[A-Z]{6}|R_\d+|1HZ\d+V)$", a.symbol):
-        sys.exit("bad symbol")
+    # Allow standard forex (EURUSD), frx-style, and synthetic index names
+    if not re.match(r"^([A-Z]{6}|frx[A-Z]{6}|R_\d+|1HZ\d+V|Volatility[\w\s\(\)]+)$", a.symbol):
+        sys.exit(f"bad symbol: {a.symbol}")
     if not a.token:
         sys.exit("no token (env GITHUB_TOKEN or --token)")
 
-    asset_name = f"{a.symbol}_v{a.version}.sfxmodel.zip"
+    clean_sym = a.symbol.replace(" ", "_").replace("(", "").replace(")", "")
+    asset_name = f"{clean_sym}_v{a.version}.sfxmodel.zip"
     print(f"[1/4] staging upload: {asset_name}")
     rel = ensure_staging(a.token)
     rel_id = rel["id"]

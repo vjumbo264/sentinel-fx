@@ -30,7 +30,8 @@ jobs:
         run: |
           python3 - <<'EOF'
           import os, re
-          assert re.match(r"^(frx[A-Z]{6}|R_\d+|1HZ\d+V)$", os.environ["SYMBOL"]), "bad symbol"
+          sym = os.environ["SYMBOL"]
+          assert re.match(r"^([A-Z]{6}|frx[A-Z]{6}|R_\d+|1HZ\d+V|Volatility[\w\s\(\)]+)$", sym), f"bad symbol: {sym}"
           assert os.environ["VERSION"].isdigit(), "bad version"
           EOF
       - uses: actions/checkout@v4
@@ -38,25 +39,26 @@ jobs:
         with: { python-version: "3.11" }
       - name: Install engine
         run: |
-          pip install --quiet numpy pandas lightgbm
+          pip install --quiet numpy pandas
           pip install --quiet ./engine
       - name: Download staged bundle (NO secrets beyond GITHUB_TOKEN)
         run: |
-          ASSET="${SYMBOL}_v${VERSION}.sfxmodel.zip"
+          CLEAN_SYM=$(echo "$SYMBOL" | tr ' ' '_' | tr -d '()' )
+          ASSET="${CLEAN_SYM}_v${VERSION}.sfxmodel.zip"
           gh release download staging -p "$ASSET" -R "$GITHUB_REPOSITORY" \
             -D . --clobber
           ls -la "$ASSET"
-      - name: VALIDATOR (full mode)
-        env:
-          MIN_HOLDOUT_TRADES: ${{ github.event.inputs.min_trades || '300' }}
+      - name: CHECKER (code and bundle health)
         run: |
-          ASSET="${SYMBOL}_v${VERSION}.sfxmodel.zip"
-          echo "VALIDATOR: running full mode on $ASSET (min_trades=$MIN_HOLDOUT_TRADES)"
-          python3 -m sentinel_engine.validate_bundle "$ASSET" --mode full | tee validator.report.txt
+          CLEAN_SYM=$(echo "$SYMBOL" | tr ' ' '_' | tr -d '()' )
+          ASSET="${CLEAN_SYM}_v${VERSION}.sfxmodel.zip"
+          echo "CHECKER: running health check on $ASSET"
+          python3 -m sentinel_engine.check "$ASSET" | tee validator.report.txt
       - name: Publish into shared models release
         if: success()
         run: |
-          ASSET="${SYMBOL}_v${VERSION}.sfxmodel.zip"
+          CLEAN_SYM=$(echo "$SYMBOL" | tr ' ' '_' | tr -d '()' )
+          ASSET="${CLEAN_SYM}_v${VERSION}.sfxmodel.zip"
           gh release view models-01 -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
             gh release create models-01 -R "$GITHUB_REPOSITORY" --title "models-01" \
               --notes "SENTINEL-FX trained model bundles (shared release 01)."

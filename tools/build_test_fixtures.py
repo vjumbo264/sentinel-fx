@@ -12,26 +12,26 @@ os.makedirs(FIXTURES_DIR, exist_ok=True)
 def make_clean_bundle(out_path):
     plan = {
         "schema_version": 2,
-        "symbol": "R_10",
-        "market": "synthetic",
-        "decision": {
-            "payout_assumed": 0.85,
-            "min_p": 0.55,
-            "duration": 5,
-            "duration_unit": "s",
-        },
+        "symbol": "EURUSD",
+        "market": "forex",
         "nodes": [
             {
-                "id": "momentum_1m",
-                "type": "analyst",
-                "features": ["return_1", "return_5"],
-                "outputs": ["p_up", "p_down"]
+                "id": "features",
+                "type": "feature_group",
+                "dsl": [
+                    {"id": "rsi_14", "op": "rsi", "params": {"period": 14}}
+                ]
             },
             {
-                "id": "head_trader",
-                "type": "head",
-                "inputs": ["momentum_1m"],
-                "outputs": ["action", "side", "p_win", "stake"]
+                "id": "cfd_policy",
+                "type": "policy",
+                "inputs": ["features"],
+                "action": "BUY",
+                "side": "BUY",
+                "volume": 0.01,
+                "sl": 1.0500,
+                "tp": 1.0600,
+                "confidence": 0.65
             }
         ]
     }
@@ -42,15 +42,16 @@ def make_clean_bundle(out_path):
     }
     
     risk_brain = {
-        "sizing": "fractional_kelly",
-        "fraction": 0.25,
-        "max_stake_pct": 0.05,
-        "min_stake": 0.35,
-        "payout_model": 0.85
+        "symbol": "EURUSD",
+        "digits": 5,
+        "contract_size": 100000.0,
+        "volume_min": 0.01,
+        "volume_step": 0.01,
+        "default_sl_pts": 50
     }
 
     candles = [
-        {"epoch": 1700000000 + i * 60, "open": 100.0 + i * 0.1, "high": 100.2 + i * 0.1, "low": 99.8 + i * 0.1, "close": 100.1 + i * 0.1}
+        {"epoch": 1700000000 + i * 60, "open": 1.0500 + i * 0.0001, "high": 1.0505 + i * 0.0001, "low": 1.0495 + i * 0.0001, "close": 1.0502 + i * 0.0001}
         for i in range(60)
     ]
     
@@ -62,8 +63,9 @@ def make_clean_bundle(out_path):
                 "inputs": candles,
                 "context": {"minutes_to_news": 9999, "news_state": "clear"},
                 "expected": {
-                    "action": "trade",
-                    "side": "CALL"
+                    "action": "BUY",
+                    "side": "BUY",
+                    "p_win": 0.65
                 }
             }
         ]

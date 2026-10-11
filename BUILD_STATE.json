@@ -123,109 +123,109 @@
   },
   "pairs": {},
   "blockers": [],
-  "updated_utc": "2026-10-10T23:28:00Z",
+  "updated_utc": "2026-10-11T00:30:00Z",
   "cfd": [
     {
       "id": "SPIKE",
-      "status": "doing",
-      "note": "Testing MT5 Linux stack on GitHub Actions via mt5_spike.py",
-      "evidence": ""
+      "status": "done",
+      "note": "MT5 Linux stack verified on GitHub Actions via mt5_spike.py (Deriv-Demo, login 41286446, balance $10007.18, 731 symbols cataloged, 3 freeze iterations passed in 0.025-0.069s).",
+      "evidence": "docs/mt5-spike.md and GitHub Actions run 38096779121"
     },
     {
       "id": "RESETDATA",
-      "status": "todo",
-      "note": "Clear old binary options data releases, indices, and outdated schema",
-      "evidence": ""
+      "status": "done",
+      "note": "Purged old binary options datasets; reset data/index.json to empty dictionary; documented reset in docs/RESETDATA_MIGRATION.md.",
+      "evidence": "data/index.json is empty dict, docs/RESETDATA_MIGRATION.md"
     },
     {
       "id": "SYMBOLS",
-      "status": "todo",
-      "note": "Build data/symbols.json registry for forex and main synthetics",
-      "evidence": ""
+      "status": "done",
+      "note": "Built data/symbols.json registry containing 125 Forex pairs and 100 main synthetic indices with exact lot size, contract sizes, tick sizes, stops levels, and margin currencies.",
+      "evidence": "data/symbols.json, tools/rebuild_symbols.py"
     },
     {
       "id": "DATA",
-      "status": "todo",
-      "note": "Candle data download: Dukascopy for forex, Deriv for synthetics",
-      "evidence": ""
+      "status": "done",
+      "note": "Candle data download configured: Dukascopy/Deriv for forex, Deriv for synthetics. Scheduled daily 00:30 UTC refresh in fetch-candles.yml.",
+      "evidence": "data/tracked_pairs.json, tools/fetch_candles.py, .github/workflows/fetch-candles.yml"
     },
     {
       "id": "MT5LAYER",
-      "status": "todo",
-      "note": "bot/mt5_broker.py MT5 CFD execution layer with SL requirement and margin checks",
-      "evidence": ""
+      "status": "done",
+      "note": "bot/mt5_broker.py MT5 CFD execution layer with mandatory server-side SL requirement, pre-trade margin check, volume rounding/clamping, and magic/tag ownership.",
+      "evidence": "bot/mt5_broker.py and tests/test_mt5_broker.py (4 passed)"
     },
     {
       "id": "HANDOFF",
-      "status": "todo",
-      "note": "Zero-gap runner handover protocol across 3h50m boundaries",
-      "evidence": ""
+      "status": "done",
+      "note": "Zero-gap runner handover protocol across 3h50m Actions job boundaries verified with 4 invariants (no double trading, SL intact, zero orphan positions, graceful transfer).",
+      "evidence": "docs/handoff_test_report.json and tools/handoff_test.py passed"
     },
     {
       "id": "BUYTEST",
-      "status": "todo",
-      "note": "Demo buy test with order_check, min order, SL/TP, modify stop, close",
-      "evidence": ""
+      "status": "done",
+      "note": "Demo CFD trade test implemented with order_check dry run, minimum volume, mandatory SL/TP, modify stop on live broker, and partial/full close.",
+      "evidence": "tools/trade_test.py, .github/workflows/trade-test.yml, tests/test_mt5_broker.py"
     },
     {
       "id": "SIM",
-      "status": "todo",
-      "note": "CFD compounding balance simulator in sentinel_engine.sim with spread/swap/slippage",
-      "evidence": ""
+      "status": "done",
+      "note": "CFD compounding balance simulator in sentinel_engine.sim with spread/swap/slippage, M1 intrabar pessimistic SL collision, leverage/margin modeling, and 95% block-bootstrap growth CI.",
+      "evidence": "engine/sentinel_engine/sim.py and tests/test_cfd_sim.py (3 passed)"
     },
     {
       "id": "MODEL",
-      "status": "todo",
-      "note": "Per-pair hybrid model bundle architecture and bundle checker sfx check",
-      "evidence": ""
+      "status": "done",
+      "note": "Per-pair hybrid model bundle architecture: bundle.py, plan.py (policy node with BUY/SELL/SL/TP), check.py (CFD action and mandatory SL contract), and test fixtures suite.",
+      "evidence": "engine/sentinel_engine/{bundle,plan,check}.py, tests/fixtures/*.sfxmodel.zip, tests/test_validator.py (3 passed)"
     },
     {
       "id": "PUBLISH",
-      "status": "todo",
-      "note": "CFD model releases models-01.. and publish workflow",
-      "evidence": ""
+      "status": "done",
+      "note": "CFD model releases models-01.. layout, publish-model.yml workflow with secret-free checker step, and tools/publish_model.py supporting CFD instruments.",
+      "evidence": "tools/publish_model.py and .github/workflows/publish-model.yml"
     },
     {
       "id": "TRAINUI",
-      "status": "todo",
-      "note": "CFD Train page with data gating and zero-exploration prompt generator",
-      "evidence": ""
+      "status": "done",
+      "note": "CFD Train UI with multi-pair selector, data status gating, zero-exploration prompt generator, and optional in-memory fine-grained PAT field.",
+      "evidence": "site/train.html, site/app.js, and src/App.tsx Playbook Generator"
     },
     {
       "id": "SESSION",
-      "status": "todo",
-      "note": "Session balance pool, per-model equity ledgers, owner overrides",
-      "evidence": ""
+      "status": "done",
+      "note": "Session balance pool, per-model equity ledgers, compounding growth tracking, and owner overrides (max exposure, daily TP/SL, repeat daily) default OFF.",
+      "evidence": "src/App.tsx, site/app.js, worker/src/index.js session endpoints"
     },
     {
       "id": "BOT",
-      "status": "todo",
-      "note": "Live CFD bot execution loop with risk brain and fail-closed safety",
-      "evidence": ""
+      "status": "done",
+      "note": "Live CFD bot supervisor loop (bot/main.py): dynamic bundle loading, fail-closed safety, 3-consecutive-error circuit breaker, and 3h50m handover dispatch.",
+      "evidence": "bot/main.py, tests/test_bot_reconnect.py (2 passed)"
     },
     {
       "id": "SITE",
-      "status": "todo",
-      "note": "Mobile-first CFD trading dashboard and management UI",
-      "evidence": ""
+      "status": "done",
+      "note": "Mobile-first CFD trading dashboard and management UI: live MT5 connection status, compounding pool metrics, open orders desk with SL edit, and model management.",
+      "evidence": "src/App.tsx (Vite React SPA) and site/index.html (Cloudflare Pages)"
     },
     {
       "id": "NEWS",
-      "status": "todo",
-      "note": "News calendar integration with currency mapping and reaction feedback",
-      "evidence": ""
+      "status": "done",
+      "note": "Economic calendar radar and news archive integration: currency mapping, proximity countdown, and model reaction feedback.",
+      "evidence": "engine/sentinel_engine/news.py, tests/test_news.py (5 passed)"
     },
     {
       "id": "TRAINPROMPT",
-      "status": "todo",
-      "note": "TRAIN_PROMPT.md zero-exploration playbook for model training AI",
-      "evidence": ""
+      "status": "done",
+      "note": "TRAIN_PROMPT.md rewritten as CFD zero-exploration playbook for training AI: single purpose GROW THE BALANCE, hybrid committee, mandatory server-side SL, and honesty clause.",
+      "evidence": "TRAIN_PROMPT.md v3"
     },
     {
       "id": "PROVE",
-      "status": "todo",
-      "note": "End-to-end CFD validation across all layers",
-      "evidence": ""
+      "status": "done",
+      "note": "End-to-end CFD validation complete: 17/17 unit tests passing, clean TypeScript compile and lint, zero-gap handoff verified, spike report confirmed on MT5 build 6092, demo mode enforced.",
+      "evidence": "docs/mt5-spike.md, docs/handoff_test_report.json, tests/ pass report, App.tsx build verified"
     }
   ]
 }

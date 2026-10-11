@@ -1,0 +1,72 @@
+name: trade-test
+on:
+  workflow_dispatch:
+    inputs:
+      synthetic_symbol:
+        description: "Synthetic symbol name"
+        required: false
+        default: "Volatility 10 Index"
+      forex_symbol:
+        description: "Forex symbol name"
+        required: false
+        default: "EURUSD"
+
+permissions:
+  contents: write
+
+jobs:
+  trade-test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_CHAIN_PAT || github.token }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Start MT5 Linux Stack
+        run: |
+          python3 -m pip install "rpyc>=6.0.0,<7" requests mt5linux
+          docker run -d --name mt5-trade-test -p 18812:18812 \
+            -e LOGIN="${{ secrets.MT5_DEMO_LOGIN || '41286446' }}" \
+            -e PASSWORD="${{ secrets.MT5_PASSWORD || 'Kaiju-No.8' }}" \
+            -e SERVER="${{ secrets.MT5_DEMO_SERVER || 'Deriv-Demo' }}" \
+            lprett/mt5linux:latest
+
+          echo "Waiting for RPyC bridge..."
+          for i in $(seq 1 30); do
+            if python3 -c "import rpyc; c=rpyc.classic.connect('localhost', 18812); c.close()" 2>/dev/null; then
+              echo "Bridge ready after $((i*2))s"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Run CFD Trade Test
+        env:
+          MT5_DEMO_LOGIN: ${{ secrets.MT5_DEMO_LOGIN || '41286446' }}
+          MT5_PASSWORD: ${{ secrets.MT5_PASSWORD || 'Kaiju-No.8' }}
+          MT5_DEMO_SERVER: ${{ secrets.MT5_DEMO_SERVER || 'Deriv-Demo' }}
+          WORKER_URL: https://sentinel-fx-worker.vjumbo264.workers.dev
+          BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
+        run: |
+          python3 tools/trade_test.py \
+            --synthetic-symbol "${{ github.event.inputs.synthetic_symbol || 'Volatility 10 Index' }}" \
+            --forex-symbol "${{ github.event.inputs.forex_symbol || 'EURUSD' }}" \
+            --out docs/cfd_trade_test_report.json
+
+      - name: Commit and Push Trade Test Evidence
+        if: always()
+        run: |
+          git config user.name "Victor Jumbo (Sentinel Builder)"
+          git config user.email "jumbovictor700@gmail.com"
+          if [ -f docs/cfd_trade_test_report.json ]; then
+            git add docs/cfd_trade_test_report.json
+            git commit -m "docs: record CFD trade test evidence [skip ci]" || true
+            git push origin main || true
+          fi

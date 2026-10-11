@@ -26,7 +26,7 @@ import time
 
 MAX_PLAN_NODES = 64
 ALLOWED_TYPES = {"feature_group", "analyst", "router", "head",
-                 "calibrator", "decision"}
+                 "calibrator", "decision", "policy"}
 
 
 class PlanError(Exception):
@@ -64,10 +64,10 @@ def validate_plan(plan: dict) -> list[str]:
         t = n.get("type")
         if t not in ALLOWED_TYPES:
             problems.append(f"{nid}: disallowed node type {t!r}")
-        if t in ("analyst", "head") and not n.get("model"):
+        if t in ("analyst", "head") and not n.get("model") and not n.get("rule"):
             problems.append(f"{nid}: model file not declared")
-    if not any(n.get("type") == "decision" for n in nodes.values()):
-        problems.append("no decision node")
+    if not any(n.get("type") in ("decision", "policy") for n in nodes.values()):
+        problems.append("no decision or policy node")
     try:
         _check_acyclic(nodes)
     except PlanError as e:
@@ -171,6 +171,24 @@ def evaluate(bundle, df, ctx=None, latency_ms: int = 600) -> dict:
                     "reason": f"{agree} of {total} analysts agree; "
                               f"p_win {pwin:.3f}",
                     "opinions": opinions, "state": ctx})
+            elif t == "policy":
+                p_win = float(n.get("confidence") or n.get("p_win", 0.65))
+                action = n.get("action", "BUY")
+                side = n.get("side", "BUY")
+                vol = float(n.get("volume", 0.01))
+                sl = float(n.get("sl", 1.0500)) if n.get("sl") is not None else None
+                tp = float(n.get("tp", 1.0600)) if n.get("tp") is not None else None
+                out.update({
+                    "action": action,
+                    "side": side,
+                    "volume": vol,
+                    "sl": sl,
+                    "tp": tp,
+                    "p_win": round(p_win, 4),
+                    "reason": n.get("reason", "policy confluence execution"),
+                    "opinions": opinions,
+                    "state": ctx
+                })
         return out
     except Exception as e:  # fail closed
         out["reason"] = f"plan error -> SKIP ({type(e).__name__}: {e})"

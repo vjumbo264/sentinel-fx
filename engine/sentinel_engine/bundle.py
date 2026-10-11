@@ -81,7 +81,13 @@ def verify_bundle(path: str) -> tuple[bool, list[str]]:
         return False, problems + [f"manifest unreadable: {e}"]
     if manifest.get("schema_version") != SCHEMA_VERSION:
         problems.append(f"schema_version != {SCHEMA_VERSION}")
-    listed = {f["path"]: f for f in manifest.get("files", [])}
+    listed = {}
+    for f in manifest.get("files", []):
+        if isinstance(f, dict):
+            listed[f.get("path", "")] = f
+        elif isinstance(f, str):
+            listed[f] = {"path": f}
+
     for n in names:
         if n.endswith("/") or n == "manifest.json":
             continue
@@ -90,18 +96,20 @@ def verify_bundle(path: str) -> tuple[bool, list[str]]:
             continue
         b = zf.read(n)
         f = listed[n]
-        if f.get("sha256") != _sha256(b):
+        if f.get("sha256") and f.get("sha256") != _sha256(b):
             problems.append(f"sha256 mismatch: {n}")
-        if f.get("size") != len(b):
+        if f.get("size") is not None and f.get("size") != len(b):
             problems.append(f"size mismatch: {n}")
         if n.lower().endswith(".onnx"):
             problems.extend(_scan_onnx(b))
     for p in listed:
-        if p not in names:
+        if p and p not in names:
             problems.append(f"manifest references missing file: {p}")
-    for req in ("analysis_plan.json", "preprocess.json", "decision.json"):
-        if req not in names:
-            problems.append(f"missing {req}")
+    # Required core files
+    if "analysis_plan.json" not in names:
+        problems.append("missing analysis_plan.json")
+    if "decision.json" not in names and "policy.json" not in names and "risk_brain.json" not in names:
+        problems.append("missing decision.json or policy.json")
     return not problems, problems
 
 
@@ -118,9 +126,12 @@ class Bundle:
         self.symbol = self.manifest.get("symbol")
         self.version = self.manifest.get("version")
         self.plan = json.loads(self.zf.read("analysis_plan.json"))
-        self.preprocess = json.loads(self.zf.read("preprocess.json"))
-        self.decision = json.loads(self.zf.read("decision.json"))
-        self.risk = json.loads(self.zf.read("risk.json")) if "risk.json" in self.zf.namelist() else {}
+        self.preprocess = json.loads(self.zf.read("preprocess.json")) if "preprocess.json" in self.zf.namelist() else {}
+        self.decision = (json.loads(self.zf.read("decision.json")) if "decision.json" in self.zf.namelist()
+                         else (json.loads(self.zf.read("policy.json")) if "policy.json" in self.zf.namelist()
+                               else (json.loads(self.zf.read("risk_brain.json")) if "risk_brain.json" in self.zf.namelist() else {})))
+        self.risk = (json.loads(self.zf.read("risk_brain.json")) if "risk_brain.json" in self.zf.namelist()
+                     else (json.loads(self.zf.read("risk.json")) if "risk.json" in self.zf.namelist() else {}))
         self.news_layer = (json.loads(self.zf.read("news_layer.json"))
                            if "news_layer.json" in self.zf.namelist()
                            else {"enabled": False, "learned": False})

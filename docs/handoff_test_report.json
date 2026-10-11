@@ -1,0 +1,17 @@
+{
+  "timestamp_utc": "2026-10-11T00:23:20.316371+00:00",
+  "dry_run": true,
+  "success": true,
+  "invariants": {
+    "no_double_trading": true,
+    "server_side_sl_protection_intact": true,
+    "zero_orphan_positions_adopted": true,
+    "graceful_handover_transition": true
+  },
+  "adopted_tickets": [
+    5001,
+    5002
+  ],
+  "events_count": 8,
+  "errors": []
+}
