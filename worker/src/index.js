@@ -83,10 +83,11 @@ export default {
     const path = url.pathname;
     const method = request.method;
 
+    // Parse JSON body once for every non-GET request (site AND bot endpoints)
+    let body = {};
+    if (method !== "GET") body = await request.json().catch(() => ({}));
+
     try {
-      // Parse JSON body once for every non-GET request (site AND bot endpoints)
-      let body = {};
-      if (method !== "GET") body = await request.json().catch(() => ({}));
 
       // -------- public health
       if (path === "/api/health") {
