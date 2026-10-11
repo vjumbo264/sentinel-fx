@@ -1,0 +1,78 @@
+name: forex-history
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: UTC date inclusive (backfill month chunks; at most 240 months)
+        required: true
+        default: '2026-09-01'
+      to:
+        description: UTC date exclusive
+        required: true
+        default: '2026-10-01'
+  schedule:
+    - cron: '30 0 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: forex-history
+  cancel-in-progress: false
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        env:
+          DATE_FROM: ${{ inputs.from }}
+          DATE_TO: ${{ inputs.to }}
+        run: |
+          python - <<'PY'
+          import os,json
+          from datetime import date,timedelta
+          today=date.today()
+          start=date.fromisoformat(os.environ['DATE_FROM']) if os.environ['DATE_FROM'] else today-timedelta(days=2)
+          end=date.fromisoformat(os.environ['DATE_TO']) if os.environ['DATE_TO'] else today
+          chunks=[]
+          while start<end:
+              following=date(start.year+1,1,1) if start.month==12 else date(start.year,start.month+1,1)
+              stop=min(following,end)
+              chunks.append({'start':str(start),'end':str(stop)})
+              start=stop
+          assert 0<len(chunks)<=240,'Backfill in ranges of at most 20 years'
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('matrix='+json.dumps({'include':chunks})+'\n')
+          PY
+  month:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      FROM: ${{ matrix.start }}
+      TO: ${{ matrix.end }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/cache@v4
+        with:
+          path: .bi5-cache
+          key: bi5-EURUSD-${{ matrix.start }}-${{ github.run_id }}
+          restore-keys: bi5-EURUSD-${{ matrix.start }}-
+      - run: pip install --quiet requests
+      - name: Serial raw tick download, UTC M1 bid and ask candles
+        run: python tools/fetch_dukascopy_bi5.py --instrument EURUSD --from "$FROM" --to "$TO" --out out/frxEURUSD_60s.csv.gz
+      - name: Publish verified immutable asset and CAS update index
+        run: python tools/publish_data.py out/frxEURUSD_60s.csv.gz
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: forex-evidence-${{ matrix.start }}
+          path: out/*.report.json

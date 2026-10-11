@@ -1,162 +1,77 @@
 #!/usr/bin/env python3
-"""SENTINEL-FX: Dukascopy .bi5 raw-tick fetcher + M1 candle builder.
-
-Bypasses the throttled `dukascopy-node` CLI (which fires hundreds of parallel
-requests and gets HTTP 202/429/503) by downloading the raw hourly tick files
-serially with a browser User-Agent and exponential backoff, then decoding the
-LZMA-compressed 20-byte records and aggregating ticks into candles.
-
-File layout (zero-based month in URL):
-  https://datafeed.dukascopy.com/datafeed/<PAIR>/<YEAR>/<MM>/<DD>/<HH>h_ticks.bi5
-
-Record format (big-endian, 20 bytes):
-  >iiiii  -> ms_offset_in_hour, ask_i, bid_i, ask_vol(f32), bid_vol(f32)
-Price scale: 100000 for FX majors, 1000 for JPY pairs.
+"""Serial UTC hourly tick decoder, bid/ask M1 OHLC, resumable month chunks.
+Failures are never represented as empty hours. Months in the URL are zero-based.
 """
-from __future__ import annotations
+import argparse,csv,gzip,hashlib,json,lzma,struct,time,urllib.request,urllib.error
+from datetime import datetime,timezone,timedelta
+from pathlib import Path
+BASE='https://datafeed.dukascopy.com/datafeed'
+def price_scale(instrument):return 1000 if instrument.upper().endswith('JPY') else 100000
 
-import argparse
-import gzip
-import io
-import lzma
-import struct
-import sys
-import time
-from datetime import datetime, timezone, timedelta
+def fetch_bi5(url,retries=6,base_pause=2):
+ for attempt in range(retries):
+  try:
+   with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0'}),timeout=30) as response:
+    if response.status==202:raise RuntimeError('HTTP 202 asynchronous/throttled response')
+    raw=response.read()
+   if not raw:return b''
+   return lzma.decompress(raw,format=lzma.FORMAT_ALONE)
+  except urllib.error.HTTPError as error:
+   if error.code==404:return b''
+   print(f'RETRY {attempt+1} HTTP {error.code} {url}',flush=True)
+   if error.code not in (202,429,500,502,503,504):raise
+  except (OSError,ValueError,RuntimeError,lzma.LZMAError) as error:print(f'RETRY {attempt+1} {type(error).__name__}: {error} {url}',flush=True)
+  time.sleep(min(60,base_pause*2**attempt))
+ raise RuntimeError(f'Unresolved hour after {retries} attempts: {url}')
 
-import urllib.request
+def decode_ticks(data,epoch_hour,scale):
+ if len(data)%20:raise ValueError('truncated 20-byte record')
+ for ms,ask,bid,av,bv in struct.iter_unpack('>iiiff',data):
+  if not 0<=ms<3600000 or bid<=0 or ask<bid:raise ValueError('invalid timestamp or crossed bid/ask')
+  yield epoch_hour*1000+ms,bid/scale,ask/scale
 
-BASE = "https://datafeed.dukascopy.com/datafeed"
-UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
+def aggregate_m1(ticks,scale=None):
+ candles={}
+ for ts,bid,ask in ticks:
+  key=(ts//60000)*60
+  if key not in candles:candles[key]=[bid,bid,bid,bid,ask,ask,ask,ask,1]
+  else:
+   c=candles[key];c[1]=max(c[1],bid);c[2]=min(c[2],bid);c[3]=bid;c[5]=max(c[5],ask);c[6]=min(c[6],ask);c[7]=ask;c[8]+=1
+ return candles
 
-
-def price_scale(instrument: str) -> int:
-    return 1000 if instrument.lower().endswith("jpy") else 100000
-
-
-def hour_urls(instrument: str, start: datetime, end: datetime):
-    """Yield (epoch_hour, url) for every hour in [start, end)."""
-    t = start.replace(minute=0, second=0, microsecond=0)
-    while t < end:
-        # zero-based month per Dukascopy convention
-        url = f"{BASE}/{instrument.upper()}/{t.year}/{t.month - 1:02d}/{t.day:02d}/{t.hour:02d}h_ticks.bi5"
-        yield int(t.timestamp()), url
-        t += timedelta(hours=1)
-
-
-def fetch_bi5(url: str, retries: int = 6, base_pause: float = 1.5):
-    """Download + decompress one hourly bi5 file. Returns decompressed bytes or None."""
-    pause = base_pause
-    for attempt in range(retries):
-        try:
-            req = urllib.request.Request(url, headers=UA)
-            raw = urllib.request.urlopen(req, timeout=20).read()
-            if not raw:
-                return b""  # empty hour (no ticks)
-            try:
-                return lzma.decompress(raw, format=lzma.FORMAT_ALONE)
-            except lzma.LZMAError:
-                return lzma.decompress(raw)  # some files carry a container header
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return None  # hour legitimately absent (weekend / holiday)
-            if e.code in (202, 429, 500, 502, 503):
-                time.sleep(pause + (0.5 * attempt))
-                pause = min(pause * 2, 30)
-                continue
-            raise
-        except Exception:
-            time.sleep(pause)
-            pause = min(pause * 2, 30)
-    return None
-
-
-def decode_ticks(data: bytes, epoch_hour: int, scale: int):
-    """Decode 20-byte records -> (epoch_ms, bid, ask)."""
-    out = []
-    n = len(data) - (len(data) % 20)
-    for off in range(0, n, 20):
-        ms, ask_i, bid_i, _av, _bv = struct.unpack(">iiiff", data[off:off + 20])
-        ts = epoch_hour * 1000 + ms
-        out.append((ts, bid_i / scale, ask_i / scale))
-    return out
-
-
-def aggregate_m1(ticks, scale: int):
-    """Aggregate (epoch_ms, bid, ask) ticks into M1 candles keyed by epoch second."""
-    candles = {}
-    for ts, bid, ask in ticks:
-        minute = ts // 60000  # epoch minute
-        mid = round((bid + ask) / 2.0, 6)
-        c = candles.get(minute)
-        if c is None:
-            candles[minute] = [mid, mid, mid, mid, 1]  # o h l c ticks
-        else:
-            if mid > c[1]:
-                c[1] = mid
-            if mid < c[2]:
-                c[2] = mid
-            c[3] = mid
-            c[4] += 1
-    return candles
-
-
-def build_range(instrument: str, start: datetime, end: datetime, pause: float = 0.25):
-    """Serial download of all hourly files in range; returns {epoch_sec: ohlc}."""
-    scale = price_scale(instrument)
-    all_candles = {}
-    hours = list(hour_urls(instrument, start, end))
-    total = len(hours)
-    got = miss = err = 0
-    for i, (epoch_hour, url) in enumerate(hours):
-        data = fetch_bi5(url)
-        if data is None:
-            miss += 1
-        elif data == b"":
-            miss += 1
-        else:
-            got += 1
-            ticks = decode_ticks(data, epoch_hour, scale)
-            for minute, ohlc in aggregate_m1(ticks, scale).items():
-                all_candles[minute * 60] = ohlc
-        if pause:
-            time.sleep(pause)
-        if (i + 1) % 200 == 0:
-            print(f"[bi5] {i+1}/{total} hours | ok={got} empty={miss} err={err} | candles={len(all_candles)}", flush=True)
-    print(f"[bi5] DONE {total} hours | ok={got} empty={miss} | m1_candles={len(all_candles)}", flush=True)
-    return all_candles
-
+def build_range(instrument,start,end,pause=.25,cache=None):
+ cache=Path(cache or '.bi5-cache')/instrument;cache.mkdir(parents=True,exist_ok=True)
+ result={};t=start.replace(minute=0,second=0,microsecond=0);hours=empty=0
+ while t<end:
+  # Known weekend hours only. Sunday/Friday boundaries remain fetched (DST).
+  if t.weekday()==5:t+=timedelta(hours=1);continue
+  name=t.strftime('%Y%m%d%H')+'.raw';file=cache/name
+  url=f'{BASE}/{instrument.upper()}/{t.year}/{t.month-1:02d}/{t.day:02d}/{t.hour:02d}h_ticks.bi5'
+  data=file.read_bytes() if file.exists() else fetch_bi5(url)
+  if not file.exists():
+   temp=file.with_suffix('.tmp');temp.write_bytes(data);temp.replace(file);time.sleep(pause)
+  if data:result.update(aggregate_m1(decode_ticks(data,int(t.timestamp()),price_scale(instrument))))
+  else:empty+=1
+  hours+=1
+  if hours%24==0:print(f'PROGRESS hours={hours} empty={empty} rows={len(result)} through={t.isoformat()}',flush=True)
+  t+=timedelta(hours=1)
+ return result
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--instrument", required=True)          # e.g. EURUSD
-    ap.add_argument("--from", dest="date_from", required=True)  # YYYY-MM-DD
-    ap.add_argument("--to", dest="date_to", required=True)      # YYYY-MM-DD
-    ap.add_argument("--granularity", type=int, default=60)
-    ap.add_argument("--out", required=True)                  # csv path (plain or .gz)
-    ap.add_argument("--pause", type=float, default=0.25)
-    a = ap.parse_args()
-
-    start = datetime.strptime(a.date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-    end = datetime.strptime(a.date_to, "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1)
-
-    candles = build_range(a.instrument, start, end, pause=a.pause)
-    if not candles:
-        print("ERROR: no candles decoded", file=sys.stderr)
-        sys.exit(1)
-
-    epochs = sorted(candles)
-    opener = gzip.open if a.out.endswith(".gz") else open
-    mode = "wt" if a.out.endswith(".gz") else "w"
-    with opener(a.out, mode, newline="") as f:
-        f.write("epoch,open,high,low,close,volume\n")
-        for ep in epochs:
-            o, h, l, c, n = candles[ep]
-            f.write(f"{ep},{o},{h},{l},{c},{n}\n")
-    print(f"[bi5] wrote {len(epochs)} candles -> {a.out} "
-          f"({datetime.fromtimestamp(epochs[0],timezone.utc).date()} -> "
-          f"{datetime.fromtimestamp(epochs[-1],timezone.utc).date()})", flush=True)
-
-
-if __name__ == "__main__":
-    main()
+ ap=argparse.ArgumentParser();ap.add_argument('--instrument',required=True);ap.add_argument('--from',dest='start',required=True);ap.add_argument('--to',dest='end',required=True);ap.add_argument('--out',required=True);ap.add_argument('--cache',default='.bi5-cache');ap.add_argument('--pause',type=float,default=.4);ap.add_argument('--granularity',type=int,default=60);a=ap.parse_args()
+ assert a.granularity==60,'M1 only; resample causally in shared features'
+ start=datetime.fromisoformat(a.start).replace(tzinfo=timezone.utc);end=datetime.fromisoformat(a.end).replace(tzinfo=timezone.utc)
+ rows=build_range(a.instrument,start,end,a.pause,a.cache);assert rows,'refusing to publish an empty dataset'
+ columns=['epoch','open','high','low','close','bid_open','bid_high','bid_low','bid_close','ask_open','ask_high','ask_low','ask_close','tick_volume']
+ path=Path(a.out);path.parent.mkdir(parents=True,exist_ok=True)
+ with gzip.open(str(path)+'.tmp','wt',newline='') as f:
+  w=csv.writer(f);w.writerow(columns)
+  for ep in sorted(rows):
+   bid=rows[ep][:4];ask=rows[ep][4:8];w.writerow([ep,*bid,*bid,*ask,rows[ep][8]])
+ Path(str(path)+'.tmp').replace(path)
+ epochs=sorted(rows);gaps=[]
+ for before,after in zip(epochs,epochs[1:]):
+  if after-before>60:gaps.append({'from':before,'to':after,'seconds':after-before,'weekend':any(datetime.fromtimestamp(before+offset,timezone.utc).weekday()>=5 for offset in range(0,after-before,3600))})
+ report={'symbol':'frx'+a.instrument.upper(),'granularity':60,'rows':len(rows),'first_epoch':epochs[0],'last_epoch':epochs[-1],'first_utc':datetime.fromtimestamp(epochs[0],timezone.utc).isoformat(),'last_utc':datetime.fromtimestamp(epochs[-1],timezone.utc).isoformat(),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'source':'dukascopy-bi5-bid-ask-ticks','columns':columns,'duplicates':0,'crossed_bid_ask':0,'gaps':gaps,'requested_from':start.isoformat(),'requested_to_exclusive':end.isoformat(),'file':path.name,'last_checked_utc':datetime.now(timezone.utc).isoformat()}
+ Path(str(path)+'.report.json').write_text(json.dumps(report,indent=2));print('STATS '+json.dumps(report),flush=True)
+if __name__=='__main__':main()
