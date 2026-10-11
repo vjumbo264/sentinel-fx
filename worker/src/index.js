@@ -811,7 +811,9 @@ export default {
       }
 
       // -------- live data index + tracked pairs (B1 single source of truth)
+      if (path === "/api/data/playbook" && method === "GET") return serveRepoData(request,"data/playbook.json");
       if (path === "/api/data/index" && method === "GET") {
+        if (url.searchParams.get("fresh")) _dataCache.delete("data/index.json");
         return serveRepoData(request, "data/index.json");
       }
       if (path === "/api/data/tracked-pairs" && method === "GET") {

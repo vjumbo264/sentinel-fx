@@ -17,6 +17,7 @@ import { icons, pairAvatar } from "../icons.js";
 import { api } from "../api.js";
 import { sfxBusy, showToast } from "../ui.js";
 import { getPageState, setPageState } from "../pageState.js";
+import { resolvePrompt } from "../trainingPrompt.js";
 
 const SYMBOL_REGISTRY = [
   // Forex Majors
@@ -76,6 +77,7 @@ export const trainView = {
   async render(container) {
     this.container = container;
     await this.reloadIndex();
+    await this.refreshPromptGate(false);
 
     const ps = this.ps();
     container.innerHTML = `
@@ -145,7 +147,7 @@ export const trainView = {
     );
 
     const selected = new Set(ps.selectedSymbols);
-    const allSelectedReady = selected.size > 0 && [...selected].every(sym => !!this.indexEntry(sym));
+    const allSelectedReady = selected.size > 0 && [...selected].every(sym => !!this.indexEntry(sym)) && this.promptSignature === [...selected].join(",") && !this.promptError;
 
     rowsEl.innerHTML = `
       <div style="display:flex; flex-direction:column; gap:var(--space-2);">
@@ -210,9 +212,10 @@ export const trainView = {
         <div>
           <span style="font-weight:700; font-size:var(--text-sm);">${selected.size} Selected</span>
           <span style="font-size:var(--text-xs); color:var(--text-muted); display:block;">
-            ${allSelectedReady ? "All selected pairs confirmed in data index" : "Data not downloaded: fetch candles first"}
+            ${allSelectedReady ? "Exact data, engine, playbook and news pointers resolved" : (this.promptError || "Resolving required pointers…").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
           </span>
         </div>
+        <button id="btn-preview-prompt" class="btn btn-secondary" ${!allSelectedReady ? "disabled" : ""}>Preview prompt</button>
         <button id="btn-copy-playbook" class="btn btn-primary" ${!allSelectedReady ? "disabled" : ""} style="min-height:42px;">
           ${icons.copy("w-4 h-4")} <span>Copy Playbook Prompt</span>
         </button>
@@ -220,6 +223,20 @@ export const trainView = {
     `;
 
     this.bindRowEvents();
+    const patInput = this.container.querySelector("#input-train-pat");
+    if (patInput) { patInput.value = this.publishPat || ""; patInput.addEventListener("input", () => { this.publishPat = patInput.value; }); }
+  },
+
+  async refreshPromptGate(update=true) {
+    const symbols=[...this.ps().selectedSymbols];const signature=symbols.join(",");
+    this.promptError="Resolving required pointers…";
+    try {
+      if (!symbols.length) throw Error("Missing selected instrument");
+      this.resolvedPrompt=await resolvePrompt(symbols,!!this.publishPat);
+      this.promptError=null;
+    } catch(error) { this.promptError=error.message; }
+    this.promptSignature=signature;
+    if(update&&this.container)this.updateRows();
   },
 
   setFetchStatus(sym, status) {
@@ -264,6 +281,7 @@ export const trainView = {
               const ps = this.ps();
               delete ps.fetchStatus[sym];
               setPageState("train", { fetchStatus: ps.fetchStatus });
+              await this.refreshPromptGate();
               this.updateRows();
               showToast(`${sym} dataset confirmed in release data-01`, "success");
               return;
@@ -306,7 +324,7 @@ export const trainView = {
         const set = new Set(ps.selectedSymbols);
         if (e.target.checked) set.add(sym); else set.delete(sym);
         setPageState("train", { selectedSymbols: [...set] });
-        this.updateRows();
+        this.promptSignature = null; this.updateRows(); this.refreshPromptGate();
       });
     });
 
@@ -321,13 +339,20 @@ export const trainView = {
     });
 
     const copyBtn = this.container.querySelector("#btn-copy-playbook");
-    if (copyBtn) {
-      copyBtn.addEventListener("click", () => {
-        const syms = this.ps().selectedSymbols.join(", ");
-        const promptText = `# SENTINEL-FX CFD TRAINING PLAYBOOK\n\nInstruments: ${syms}\nObjective: Compound balance with zero martingale. Mandatory server-side SL on every position.\n\nFollow TRAIN_PROMPT.md architecture.`;
-        navigator.clipboard.writeText(promptText);
-        showToast("Training prompt copied to clipboard", "success");
-      });
-    }
+    if (copyBtn) copyBtn.addEventListener("click", () => sfxBusy(copyBtn, async () => {
+      const resolved = await resolvePrompt(this.ps().selectedSymbols, !!this.publishPat);
+      await navigator.clipboard.writeText(resolved.text);
+      showToast("Resolved training prompt copied", "success");
+    }).catch(error => { this.promptError=error.message; this.updateRows(); }));
+    const preview = this.container.querySelector("#btn-preview-prompt");
+    if (preview) preview.addEventListener("click", () => sfxBusy(preview, async () => {
+      const resolved=await resolvePrompt(this.ps().selectedSymbols, !!this.publishPat);
+      const sheet=document.createElement("dialog");sheet.style.cssText="width:calc(100% - 24px);max-width:680px;max-height:85vh;margin:auto auto 0;padding:20px;background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:16px 16px 0 0";
+      const heading=document.createElement("h2");heading.textContent="Preview prompt · "+resolved.text.length.toLocaleString()+" characters";
+      const pointers=document.createElement("pre");pointers.textContent=JSON.stringify({engine:resolved.engine_sha,playbook:resolved.playbook,pointers:resolved.pointers},null,2);
+      const text=document.createElement("pre");text.textContent=resolved.text;text.style.whiteSpace="pre-wrap";text.style.overflowWrap="anywhere";pointers.style.whiteSpace="pre-wrap";pointers.style.overflowWrap="anywhere";
+      const close=document.createElement("button");close.className="btn btn-secondary";close.textContent="Close preview";close.onclick=()=>sheet.close();
+      sheet.append(heading,close,pointers,text);document.body.append(sheet);sheet.addEventListener("close",()=>sheet.remove());sheet.showModal();
+    }).catch(error=>showToast(error.message,"error")));
   }
 };
