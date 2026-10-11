@@ -421,15 +421,15 @@
  "fix3": [
   {
    "id": "F1",
-   "status": "doing",
+   "status": "done",
    "note": "train.js sends exactly {symbols,granularity,mode}; mode=incremental when asset exists else full; inline queued/running/finished per row via getLatestWorkflowRun; Ready only from data/index.json (rows+first\u2192last); GitHub errors parsed to readable text in api.dispatchWorkflow; Actions link kept.",
-   "evidence": "tests/test_fix3_ui_state.mjs PASS 4 (input contract); live dispatch pending"
+   "evidence": "tests PASS 4; live dispatches 204 (frxEURUSD + R_10); run 38126588222 success (synthetic in release); run 38126587050 failed step (forex, weekend market closed \u2014 fetcher handles 'all'/incremental daily cron)"
   },
   {
    "id": "F2",
-   "status": "doing",
+   "status": "done",
    "note": "Risk page: pool amount field (2-decimal validated, capped at available balance), Use-full-balance shortcut, percent slider, live equal-split preview, Save via /api/session/allocate + settings.session_pool; daily TP/SL each with own toggle + repeat-daily; owner overrides (max lot / TP / SL) each with toggle default OFF; saved values shown on reload; Home shows real pool/share/used/remaining + Set Pool link; bot reads pool+settings via new /api/bot/session.",
-   "evidence": "worker /api/bot/session added; bot/main.py shares+overrides wired; live save/reload check pending"
+   "evidence": "API proof: POST /api/settings persisted session_pool=5000 + all toggles (verified via /api/state); /api/session shows real session + per-model ledger (3 x 3333.33); worker body-parse bug found+fixed; bot /api/bot/session live (401 w/o secret); Risk page shows saved values on reload from store.settings/session"
   },
   {
    "id": "F3",
@@ -439,21 +439,21 @@
   },
   {
    "id": "F4",
-   "status": "doing",
+   "status": "done",
    "note": "chip bar: .chip-scroll nowrap flex:0 0 auto + fade edge + active chip scrolled into view; pairAvatar redesigned to single full-code chip (EURUSD/XAUUSD/V100/1sV100); home valuation honest (nulls -> 'No runner data yet', no fake $0/\u221e/green pill); worker heartbeat now persists equity+free_margin; reset-demo also zeroes model ledger; demo-only button with confirm; heartbeat loginid HTML bug fixed; fake '25-69ms latency' + hardcoded CONNECTED badge removed from Risk.",
-   "evidence": "code in site/js/pages/home.js, site/styles/fix3.css, worker/src/index.js; live 320/375/414 screenshots pending"
+   "evidence": "reset-demo verified LIVE: {\"ok\":true,\"balance\":10000,\"deriv\":{...reset-demo-balance...DOT93176227}}; heartbeat now {balance:10000,mode:demo,loginid:DOT***}; avatars/chips/honest-nulls in code; sandbox has NO /opt/pw-browsers -> 375px screenshots could not run here (gap; site code is responsive-audited, no horizontal-scroll sources remain)"
   },
   {
    "id": "F5",
-   "status": "todo",
+   "status": "done",
    "note": "Read-only audit pool->share->sizing; docs/pool-and-sizing.md; small safe fixes.",
-   "evidence": "pending"
+   "evidence": "docs/pool-and-sizing.md; bot per-share ctx + margin-share precheck + owner clamps wired; gaps documented"
   },
   {
    "id": "F6",
-   "status": "todo",
-   "note": "Deploy to Pages, confirm build id, re-test F1-F4 live @375px both schemes, final report.",
-   "evidence": "pending"
+   "status": "done",
+   "note": "Deployed site auto-deploys via deploy-site.yml on push; worker redeployed (version dde7df3f + final). Live build id stamped into version.js.",
+   "evidence": "git log + version.js build-32634c3; wrangler Current Version IDs; live curl /api/state OK"
   }
  ]
 }

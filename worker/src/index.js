@@ -84,6 +84,10 @@ export default {
     const method = request.method;
 
     try {
+      // Parse JSON body once for every non-GET request (site AND bot endpoints)
+      let body = {};
+      if (method !== "GET") body = await request.json().catch(() => ({}));
+
       // -------- public health
       if (path === "/api/health") {
         return json({ ok: true, service: "sentinel-fx-worker", utc: nowUTC() });
@@ -98,7 +102,6 @@ export default {
       // ============================ BOT ENDPOINTS ============================
       if (path.startsWith("/api/bot/")) {
         if (!verifyBotAuth(request, env)) return err("unauthorized", 401);
-        const body = method === "GET" ? {} : await request.json().catch(() => ({}));
 
         if (path === "/api/bot/state" && method === "GET") {
           const settings = {};
@@ -548,7 +551,6 @@ export default {
       }
 
       if (path === "/api/settings" && method === "POST") {
-        const body = await request.json();
         for (const [k, v] of Object.entries(body)) {
           if (k.toLowerCase().includes("token") || k.toLowerCase().includes("secret")) {
             return err("refusing to store secrets in D1", 400);
@@ -562,7 +564,6 @@ export default {
       }
 
       if (path === "/api/pairs/update" && method === "POST") {
-        const body = await request.json();
         const allowed = ["enabled", "shadow_mode", "duration", "duration_unit", "min_stake", "max_stake", "stake_pct",
                          "daily_loss_cap", "daily_target", "max_consec_losses", "status", "pack_version", "verdict", "has_custom_code"];
         const sets = [], vals = [];
@@ -635,7 +636,6 @@ export default {
       }
 
       if (path === "/api/packs/register" && method === "POST") {
-        const body = await request.json();
         await env.DB.prepare(
           "INSERT INTO pair_packs (symbol, version, sha256, status, has_custom_code, verdict, metrics, created_utc) VALUES (?,?,?,?,?,?,?,?)"
         ).bind(body.symbol, body.version, body.sha256 || null, body.status || "incoming",
@@ -656,7 +656,6 @@ export default {
       }
 
       if (path === "/api/packs/promote" && method === "POST") {
-        const body = await request.json();
         // mark all previous packs retired, this one active; upsert pair row
         await env.DB.prepare("UPDATE pair_packs SET status='retired' WHERE symbol=? AND status='active'")
           .bind(body.symbol).run();
