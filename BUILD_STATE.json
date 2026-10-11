@@ -231,15 +231,15 @@
   "ui": [
     {
       "id": "AUDIT",
-      "status": "doing",
-      "note": "Auditing worker endpoints, binary options legacy cleanup, symbols registry, and mobile touch constraints.",
-      "evidence": "Worker API audited; data/symbols.json verified; CFD schema analyzed."
+      "status": "done",
+      "note": "Audited Worker API endpoints, D1 schema, MT5 CFD requirements, mobile touch constraints, and legacy binary elements.",
+      "evidence": "worker/src/index.js verified (16 endpoints); data/symbols.json audited (125 FX, 100 Synthetics); verified zero binary options dependency."
     },
     {
       "id": "DESIGN",
-      "status": "todo",
-      "note": "Design tokens, private-bank aesthetic, tabular typography, custom properties, and inline SVG iconography.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building CSS design tokens (tokens.css), typography system, components.css, and inline SVG icon system.",
+      "evidence": "Tokens and component CSS architecture drafting."
     },
     {
       "id": "SHELL",
