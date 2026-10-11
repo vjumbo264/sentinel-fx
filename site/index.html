@@ -2,242 +2,214 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <title>SENTINEL-FX · AI Model Trading System</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/sodium.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>SENTINEL-FX Terminal · Autonomous CFD Forex System</title>
+  <meta name="description" content="Autonomous CFD Forex Trading Terminal & Multi-Model Execution Engine for Deriv MT5">
+  <meta property="og:title" content="SENTINEL-FX Terminal">
+  <meta property="og:description" content="Autonomous CFD Forex Trading Terminal & Multi-Model Execution Engine for Deriv MT5">
+
+  <!-- Dual Android / Browser Theme Color Meta -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8fafc">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#080c14">
+
+  <!-- Pre-paint Theme Script (Eliminates Flash of Unstyled Theme) -->
+  <script>
+    (function() {
+      try {
+        var p = localStorage.getItem('sentinel_theme');
+        if (p === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        else if (p === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      } catch (_) {}
+    })();
+  </script>
+
+  <!-- Google Fonts: Refined Typography Pairing -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Pinned Lightweight Charts Financial Candlestick Library -->
+  <script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
+
+  <!-- Design System CSS -->
+  <link rel="stylesheet" href="./styles/tokens.css">
+  <link rel="stylesheet" href="./styles/components.css">
 </head>
 <body>
-  <header>
-    <div class="brand">
-      SENTINEL-FX <span class="sub">MOTIONSALT</span>
+
+  <!-- Top Bar Contract -->
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <a href="#/dash" class="brand-mark" aria-label="SENTINEL-FX Terminal Home">
+        <div id="brand-icon-root" style="color: var(--accent-primary);"></div>
+        <div style="display:flex; flex-direction:column;">
+          <span class="brand-title">SENTINEL-FX</span>
+          <span class="brand-badge">MOTIONSALT</span>
+        </div>
+      </a>
     </div>
-    <div class="header-right">
-      <span id="modeBadge" class="mode-pill">DEMO</span>
-      <div class="status-pill">
-        <span id="botDot" class="status-dot"></span>
-        <span id="botStatusText">Connecting</span>
+
+    <div class="top-bar-right">
+      <!-- Mode Pill -->
+      <button id="top-mode-pill" class="mode-pill demo" aria-label="Switch Trading Mode">
+        <span id="mode-text">DEMO</span>
+      </button>
+
+      <!-- Runner Live Dot -->
+      <div id="top-status-indicator" class="status-indicator">
+        <span id="runner-dot" class="dot-paused"></span>
+        <span id="runner-label" style="display:none; font-weight:500;">Bot Standby</span>
       </div>
+
+      <!-- Quick Refresh Button -->
+      <button id="btn-top-refresh" class="btn btn-ghost btn-sm" aria-label="Refresh Market Data" style="padding: 0 8px;">
+        <span id="refresh-icon-root"></span>
+      </button>
     </div>
   </header>
 
-  <!-- Connect Card -->
-  <div id="auth" class="card" style="max-width: 480px; margin: 30px auto;">
-    <h3 style="margin-bottom: 6px;">Connect Terminal</h3>
-    <p class="dim" style="margin-bottom: 12px;">Paste your GitHub PAT (kept in this browser session only).</p>
-    <input id="pat" type="password" placeholder="github_pat_...">
-    <button class="btn btn-primary" style="width: 100%;" onclick="connect()">Connect &amp; Launch</button>
-    <div id="authMsg" class="dim" style="margin-top: 8px;"></div>
-  </div>
+  <!-- Desktop Rail Navigation (>=1024px) -->
+  <aside class="desktop-rail">
+    <div class="rail-header">
+      <div id="rail-logo-root" style="color: var(--accent-primary);"></div>
+      <div>
+        <div style="font-family:var(--font-display); font-weight:700; font-size:var(--text-base); color:var(--text-primary);">SENTINEL-FX</div>
+        <div style="font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing:0.05em;">CFD TERMINAL</div>
+      </div>
+    </div>
 
-  <main id="app" class="hidden">
-    <nav>
-      <button data-p="dash" class="on">Dashboard</button>
-      <button data-p="pairs">Trained Pairs</button>
-      <button data-p="upload">Upload Model</button>
-      <button data-p="train">Train Pairs</button>
-      <button data-p="risk">Risk &amp; Auth</button>
-      <button data-p="news">News Calendar</button>
-      <button data-p="logs">Logs</button>
-      <button data-p="trades">Trades</button>
+    <nav class="rail-links">
+      <a href="#/dash" class="rail-link active" data-page="dash">
+        <span id="icon-dash"></span>
+        <span>Dashboard</span>
+      </a>
+      <a href="#/trades" class="rail-link" data-page="trades">
+        <span id="icon-trades"></span>
+        <span>Active Trades</span>
+      </a>
+      <a href="#/chart" class="rail-link" data-page="chart">
+        <span id="icon-chart"></span>
+        <span>Candle Chart</span>
+      </a>
+      <a href="#/models" class="rail-link" data-page="models">
+        <span id="icon-models"></span>
+        <span>Trained Pairs</span>
+      </a>
+      <a href="#/history" class="rail-link" data-page="history">
+        <span id="icon-history"></span>
+        <span>Trade History</span>
+      </a>
+      <a href="#/train" class="rail-link" data-page="train">
+        <span id="icon-train"></span>
+        <span>Train Models</span>
+      </a>
+      <a href="#/upload" class="rail-link" data-page="upload">
+        <span id="icon-upload"></span>
+        <span>Upload Model</span>
+      </a>
+      <a href="#/risk" class="rail-link" data-page="risk">
+        <span id="icon-risk"></span>
+        <span>Risk &amp; Auth</span>
+      </a>
+      <a href="#/settings" class="rail-link" data-page="settings">
+        <span id="icon-settings"></span>
+        <span>Settings</span>
+      </a>
     </nav>
 
-    <!-- DASHBOARD -->
-    <section id="dash" class="page on">
-      <div class="row">
-        <div class="stat-box">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="title" id="balLabel">Balance</div>
-            <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="resetDemoBalance()">Reset $10k</button>
-          </div>
-          <div id="balance" class="value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="title">Today PnL (Lagos)</div>
-          <div id="pnl" class="value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="title">Win Rate</div>
-          <div id="todayWinRate" class="value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="title">Trades Today</div>
-          <div id="todayTradesCount" class="value">0</div>
-        </div>
+    <div class="rail-footer">
+      <div style="font-size:11px; color:var(--text-muted); display:flex; justify-content:space-between;">
+        <span>Deriv MT5 Engine</span>
+        <span class="tabular">v2.4.0</span>
       </div>
-
-      <!-- Controls -->
-      <div class="card">
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;">
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button id="powerBtn" class="btn btn-primary" onclick="togglePower()">BOT POWER</button>
-            <button id="killBtn" class="btn btn-danger" onclick="toggleKill()">KILL SWITCH</button>
-            <button id="modeBtn" class="btn btn-secondary" onclick="toggleMode()">Switch Demo/Real</button>
-            <button id="buyTestBtn" class="btn btn-secondary" onclick="runBuyTest()">Run Buy Test</button>
-          </div>
-          <div id="flags" class="dim"></div>
-        </div>
+      <div style="font-size:11px; color:var(--text-muted); display:flex; justify-content:space-between;">
+        <span>Lagos Time</span>
+        <span id="rail-clock" class="tabular">—:—:—</span>
       </div>
+    </div>
+  </aside>
 
-      <!-- Chart.js Live Chart -->
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-          <div id="pairTabs" class="pair-tabs-container" style="margin-bottom:0;"></div>
-          <!-- Timeframe selector -->
-          <div class="filter-bar" style="margin:0;" id="tfSelector">
-            <button class="filter-btn active" onclick="setTimeframe(60, '1m')">1m</button>
-            <button class="filter-btn" onclick="setTimeframe(300, '5m')">5m</button>
-            <button class="filter-btn" onclick="setTimeframe(600, '10m')">10m</button>
-            <button class="filter-btn" onclick="setTimeframe(900, '15m')">15m</button>
-          </div>
-        </div>
-        <div id="chartStatus" class="dim" style="margin-bottom:6px;">Connecting chart stream...</div>
-        <div style="position: relative; height: 320px; width: 100%;">
-          <canvas id="chartCanvas"></canvas>
-        </div>
-      </div>
-    </section>
+  <!-- Main Content Viewport Mount -->
+  <main id="app-view" class="main-content" role="main"></main>
 
-    <!-- PAIRS TAB -->
-    <section id="pairs" class="page">
-      <div class="card" style="padding: 12px 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-          <div>
-            <h3 style="margin-bottom: 2px;">Trained Pairs</h3>
-            <span class="dim">Showing pairs with trained models. Enable to trade in <b>DEMO MODE</b>. Real mode requires verified models.</span>
-          </div>
-        </div>
-      </div>
-      <div id="pairList" class="pair-grid"></div>
-    </section>
+  <!-- Mobile Bottom Tab Bar (<1024px) -->
+  <nav class="bottom-nav" aria-label="Mobile Navigation">
+    <button class="bottom-tab active" data-route="dash" aria-label="Home Dashboard">
+      <span id="m-icon-dash"></span>
+      <span>Home</span>
+    </button>
+    <button class="bottom-tab" data-route="trades" aria-label="Active Trades">
+      <span id="m-icon-trades"></span>
+      <span>Trades</span>
+    </button>
+    <button class="bottom-tab" data-route="chart" aria-label="Candlestick Chart">
+      <span id="m-icon-chart"></span>
+      <span>Chart</span>
+    </button>
+    <button class="bottom-tab" data-route="models" aria-label="Trained Models">
+      <span id="m-icon-models"></span>
+      <span>Models</span>
+    </button>
+    <button class="bottom-tab" id="btn-open-more" data-route="more" aria-label="More Features">
+      <span id="m-icon-more"></span>
+      <span>More</span>
+    </button>
+  </nav>
 
-    <!-- UPLOAD MODEL TAB -->
-    <section id="upload" class="page">
-      <div class="card">
-        <h3>Upload Trained Model Bundle (.sfxmodel.zip)</h3>
-        <p class="dim" style="margin-top: 4px; margin-bottom: 14px;">
-          Upload a trained pair model zip bundle containing <code>manifest.json</code>, <code>analysis_plan.json</code>, ONNX or LightGBM models.
-          The bundle will be staged, validated in GitHub Actions full mode, and activated for trading.
-        </p>
-
-        <div class="upload-zone" id="dropZone" onclick="$('modelFile').click()">
-          <div style="font-size: 28px; margin-bottom: 6px;">📦</div>
-          <div style="font-weight: 700; margin-bottom: 4px;">Click to select or drag &amp; drop .sfxmodel.zip</div>
-          <div class="dim">Supports .sfxmodel.zip &amp; .zip model packages</div>
-          <input type="file" id="modelFile" accept=".zip,.sfxmodel.zip" style="display: none;">
-        </div>
-
-        <div id="modelPreview" class="hidden" style="margin-top: 14px;">
-          <div style="padding: 12px; background: #090d16; border-radius: 8px; border: 1px solid var(--border-color);" id="modelInfo"></div>
-          <button id="uploadModelBtn" class="btn btn-primary" style="margin-top: 10px; width: 100%;" onclick="uploadModelBundle()">
-            Upload &amp; Dispatch Full Validation
-          </button>
-        </div>
-
-        <div id="uploadProgress" class="dim" style="margin-top: 12px;"></div>
-      </div>
-    </section>
-
-    <!-- TRAIN TAB -->
-    <section id="train" class="page">
-      <div class="card">
-        <h3>Train Per-Pair AI Models</h3>
-        <p class="dim" style="margin-top: 4px; margin-bottom: 12px;">
-          Select pairs to train, configure contract duration, and copy the prompt to paste into your AI.
-        </p>
-
-        <div class="filter-bar" style="margin-bottom: 8px;">
-          <button class="filter-btn active" onclick="filterTrainCategory('all')">All Pairs</button>
-          <button class="filter-btn" onclick="filterTrainCategory('volatility')">Volatility Indices</button>
-          <button class="filter-btn" onclick="filterTrainCategory('volatility_1s')">1-Second Indices</button>
-          <button class="filter-btn" onclick="filterTrainCategory('forex')">Forex Pairs</button>
-          <button class="filter-btn" style="margin-left: auto;" onclick="selectAllTrain(true)">Select All</button>
-          <button class="filter-btn" onclick="selectAllTrain(false)">Clear</button>
-        </div>
-
-        <div id="trainPairs" style="max-height: 280px; overflow-y: auto; padding: 4px; background: #090d16; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px;"></div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 12px;">
-          <div>
-            <label class="dim" style="font-weight: 600;">Trade Contract Duration:</label>
-            <select id="trainDuration">
-              <option value="60s">1 Minute (60s) - Recommended for Synthetics</option>
-              <option value="15s">15 Seconds (15s) - Fast Synthetics</option>
-              <option value="5s">5 Seconds (5s) - Ultra-Fast Synthetics</option>
-              <option value="5m">5 Minutes (5m) - Momentum Synthetics</option>
-              <option value="15m" selected>15 Minutes (15m) - Forex &amp; Standard</option>
-            </select>
-          </div>
-          <div>
-            <label class="dim" style="font-weight: 600;">Data Refresh Strategy:</label>
-            <div style="display: flex; gap: 12px; margin-top: 10px;">
-              <label style="font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
-                <input type="checkbox" id="keepFresh" checked> Keep fresh daily
-              </label>
-              <label style="font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
-                <input type="checkbox" id="fullRefetch"> Full refetch
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <button id="copyPromptBtn" class="btn btn-primary" style="width: 100%; padding: 12px;">
-          Copy Prompt &amp; Start Training Dispatch
+  <!-- Mobile More Drawer / Sheet -->
+  <div id="more-sheet-backdrop" class="sheet-backdrop">
+    <div class="sheet-container">
+      <div class="sheet-handle"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4);">
+        <h3 style="font-family:var(--font-display); font-size:var(--text-lg); font-weight:700;">Terminal Navigation</h3>
+        <button id="btn-close-more" class="btn btn-ghost btn-sm" aria-label="Close Drawer" style="padding:0 6px;">
+          <span id="icon-close-more"></span>
         </button>
-        <div id="trainStatus" class="dim" style="margin-top: 10px;"></div>
       </div>
 
-      <div class="card">
-        <h3>Autonomous Publish Access (Optional)</h3>
-        <p class="dim" style="margin-top: 4px; margin-bottom: 8px;">
-          If provided, the copied prompt appends an authorization block allowing the AI to publish the finished model directly via <code>tools/publish_model.py</code>.
-          Kept in browser memory only — never stored.
-        </p>
-        <input id="publishPat" type="password" placeholder="github_pat_... (optional fine-grained PAT)" autocomplete="off">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-4);">
+        <a href="#/history" class="card more-sheet-link" style="text-decoration:none; display:flex; flex-direction:column; gap:6px;">
+          <div id="m-sheet-icon-history" style="color:var(--accent-primary);"></div>
+          <span style="font-weight:600; font-size:var(--text-sm); color:var(--text-primary);">Trade History</span>
+          <span style="font-size:var(--text-xs); color:var(--text-muted);">Audit journal &amp; metrics</span>
+        </a>
+
+        <a href="#/train" class="card more-sheet-link" style="text-decoration:none; display:flex; flex-direction:column; gap:6px;">
+          <div id="m-sheet-icon-train" style="color:var(--warning);"></div>
+          <span style="font-weight:600; font-size:var(--text-sm); color:var(--text-primary);">Train Models</span>
+          <span style="font-size:var(--text-xs); color:var(--text-muted);">CFD prompt playbook</span>
+        </a>
+
+        <a href="#/upload" class="card more-sheet-link" style="text-decoration:none; display:flex; flex-direction:column; gap:6px;">
+          <div id="m-sheet-icon-upload" style="color:var(--profit);"></div>
+          <span style="font-weight:600; font-size:var(--text-sm); color:var(--text-primary);">Upload Bundle</span>
+          <span style="font-size:var(--text-xs); color:var(--text-muted);">Install .sfxmodel.zip</span>
+        </a>
+
+        <a href="#/risk" class="card more-sheet-link" style="text-decoration:none; display:flex; flex-direction:column; gap:6px;">
+          <div id="m-sheet-icon-risk" style="color:var(--loss);"></div>
+          <span style="font-weight:600; font-size:var(--text-sm); color:var(--text-primary);">Risk &amp; Auth</span>
+          <span style="font-size:var(--text-xs); color:var(--text-muted);">Kill switch &amp; overrides</span>
+        </a>
       </div>
-    </section>
 
-    <!-- RISK & SETTINGS -->
-    <section id="risk" class="page">
-      <div class="card" id="riskForm"></div>
-    </section>
-
-    <!-- NEWS -->
-    <section id="news" class="page">
-      <div class="card" style="padding: 12px 16px;">
-        <h3 style="margin-bottom: 2px;">Economic Calendar</h3>
-        <span class="dim">Market economic releases scheduled for this week (UTC+1 Africa/Lagos time).</span>
-      </div>
-      <div id="newsList"></div>
-    </section>
-
-    <!-- LOGS -->
-    <section id="logs" class="page">
-      <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <h3 style="font-size: 15px;">Bot Runtime Logs</h3>
-          <select id="logLevel" onchange="loadLogs()" style="width: auto; margin: 0; padding: 4px 8px;">
-            <option value="">All Levels</option>
-            <option value="info">Info</option>
-            <option value="warn">Warnings</option>
-            <option value="error">Errors</option>
-          </select>
+      <a href="#/settings" class="card more-sheet-link" style="text-decoration:none; display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-4);">
+        <div style="display:flex; align-items:center; gap:var(--space-3);">
+          <div id="m-sheet-icon-settings" style="color:var(--text-secondary);"></div>
+          <div>
+            <div style="font-weight:600; font-size:var(--text-sm); color:var(--text-primary);">Settings &amp; Theme</div>
+            <div style="font-size:var(--text-xs); color:var(--text-muted);">Preferences, PAT &amp; diagnostics</div>
+          </div>
         </div>
-        <div id="logList" class="logbox"></div>
-      </div>
-    </section>
+        <span id="m-sheet-chevron"></span>
+      </a>
+    </div>
+  </div>
 
-    <!-- TRADES -->
-    <section id="trades" class="page">
-      <div class="card">
-        <h3 style="margin-bottom: 10px;">Trade Execution History</h3>
-        <div id="tradeList"></div>
-      </div>
-    </section>
-  </main>
+  <!-- Toast Notification Anchor -->
+  <div id="toast-root"></div>
 
-  <script src="app.js"></script>
+  <!-- Main Application Entrypoint -->
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>

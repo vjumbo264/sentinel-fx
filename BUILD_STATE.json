@@ -243,15 +243,15 @@
     },
     {
       "id": "SHELL",
-      "status": "doing",
-      "note": "Building application shell: top bar contract, mobile bottom bar, desktop rail, responsive layout, and client router.",
-      "evidence": "Drafting site/index.html, js/router.js, js/theme.js, and js/ui.js."
+      "status": "done",
+      "note": "Assembled responsive mobile bottom nav, desktop side rail, safe-area support, persistent top-bar contract, and client router.",
+      "evidence": "site/index.html, site/js/router.js, site/js/store.js, site/js/app.js verified."
     },
     {
       "id": "DASH",
-      "status": "todo",
-      "note": "Hero balance card, Lagos time countdown, runner heartbeat, session compounding pool, and top movers.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building Home/Dashboard: hero balance card with metrics grid, runner heartbeat, Lagos countdown, compounding pool, and top movers.",
+      "evidence": "Drafting site/js/pages/home.js."
     },
     {
       "id": "TRADES",
