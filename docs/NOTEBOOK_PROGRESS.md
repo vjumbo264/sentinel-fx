@@ -49,3 +49,6 @@
 
 ## Session 2 checkpoint (auto-save)
 - Lab DSL length-mismatch fixed and verified (kept>0). Backfill dispatch hit 404 (workflow indexing lag) — retry is the exact next step in BUILD_STATE.json.
+
+## Session 2 checkpoint
+- Lab cost_vec off-by-one fixed. Backfill 38165565445 (EURUSD 2024, 12 months x3 parallel) RUNNING. forex-history 38164983264 FAILED - root-cause line being extracted. Exact next_step in BUILD_STATE.json.

@@ -112,7 +112,9 @@ def score_signal(sig, mid, spread, folds, cost):
         if t1 - t0 < 60: continue
         s = s[t0:t1]; m = m[t0:t1]; sp = sp[t0:t1]
         pos = np.sign(s[:-1]); dlog = np.diff(np.log(m))
-        cost_vec = sp[:-1] / m[:-1] * cost * (np.abs(np.diff(pos)) > 0)
+        # pos (N-1) drives dlog (N-1); entry cost applies where pos CHANGES, aligned to N-1
+        change = np.concatenate([[1.0], (np.abs(np.diff(pos)) > 0).astype(float)])
+        cost_vec = sp[:-1] / m[:-1] * cost * change[:len(m)-1]
         pnl = pos * dlog - cost_vec
         rets.append(np.nansum(pnl))
     return float(np.mean(rets)) if rets else -1e9
