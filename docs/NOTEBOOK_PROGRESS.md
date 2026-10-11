@@ -46,3 +46,6 @@
   crossed-bid/ask count, real bid/ask O/H/L/C columns.
 - indicator_lab.py + train_rl.py scaffolds added (T, R in progress); lab NaN-warmup bug fixed.
 - Next: watch backfill + month runs, then full 16-pair backfill, then T parity test.
+
+## Session 2 checkpoint (auto-save)
+- Lab DSL length-mismatch fixed and verified (kept>0). Backfill dispatch hit 404 (workflow indexing lag) — retry is the exact next step in BUILD_STATE.json.

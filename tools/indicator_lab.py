@@ -79,6 +79,8 @@ def compile_dsl(node):
     op, lf, rf = node['op'], compile_dsl(node['l']), compile_dsl(node['r'])
     def apply(h, l, c):
         a, b = lf(h, l, c), rf(h, l, c)
+        n = min(len(a), len(b))
+        a, b = a[-n:], b[-n:]            # align causal tails; never invent leading data
         if op == '+': return a + b
         if op == '-': return a - b
         if op == '*': return a * b
@@ -104,7 +106,11 @@ def score_signal(sig, mid, spread, folds, cost):
     """Threshold strategy: long/short on signal sign change; net log-growth."""
     rets = []
     for (_, _), (t0, t1) in folds:
-        s = sig[t0:t1]; m = mid[t0:t1]; sp = spread[t0:t1]
+        ln = min(len(sig), len(mid))
+        s = sig[-ln:]; m = mid[-ln:]; sp = spread[-ln:]
+        t0 = max(0, t0 - (len(mid) - ln)); t1 = min(ln, t1 - (len(mid) - ln))
+        if t1 - t0 < 60: continue
+        s = s[t0:t1]; m = m[t0:t1]; sp = sp[t0:t1]
         pos = np.sign(s[:-1]); dlog = np.diff(np.log(m))
         cost_vec = sp[:-1] / m[:-1] * cost * (np.abs(np.diff(pos)) > 0)
         pnl = pos * dlog - cost_vec

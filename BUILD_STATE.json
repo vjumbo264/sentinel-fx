@@ -627,10 +627,10 @@
   }
  ],
  "notebook": {
-  "updated_utc": "2026-10-11T18:49:21Z",
+  "updated_utc": "2026-10-11T18:51:25Z",
   "session": 2,
   "current": "D",
-  "next_step": "Watch dukascopy-backfill.yml EURUSD 2024-01..2025-01 run + forex-history month run 38164983264; on green, dispatch full 16-pair multi-year backfill; then T (toolkit/lab parity) using a real release pair.",
+  "next_step": "1) gh api -X POST repos/vjumbo264/sentinel-fx/actions/workflows/dukascopy-backfill.yml/dispatches -f ref=main -f inputs[pairs]=EURUSD -f inputs[from]=2024-01-01 -f inputs[to]=2025-01-01  2) check forex-history run 38164983264 result+report  3) on green -> full 16-pair backfill 2020-01-01  4) item T parity test.",
   "items": {
    "D": {
     "status": "doing",
@@ -650,6 +650,10 @@
      {
       "what": "Built dukascopy-backfill.yml (pair x month matrix, max-parallel 3, resume cache) + hardened fetch_dukascopy_bi5.py (Retry-After, 1.6s pacing, spread profile by hour, crossed-bid/ask count, proper bid/ask columns)",
       "result": "syntax OK; smoke-tested indicator_lab (fixed NaN-warmup crash) and train_rl on CPU (10k steps/s scaffold)"
+     },
+     {
+      "what": "First dukascopy-backfill dispatch returned 404 (workflow file had just been pushed; not yet indexed); lab broadcast bug fixed (DSL composition length alignment + tail-aligned scoring), smoke kept>0 verified locally",
+      "result": "dispatch must be retried; lab fix verified"
      }
     ],
     "evidence": [
@@ -768,7 +772,8 @@
    "2026-10-11T18:29:03Z probe workflow fixed (bash -e bug, 60s timeout, freeserv mirror) and redispatched as attempt 2, run 38163977306; session ended before logs could be read.",
    "2026-10-11T18:30:47Z D FOUNDATION PROVEN: EURUSD bi5 hour decoded on a real runner (3132 ticks, run 38163977306). Attempt-1 TCP timeout was transient/filtering, not a blockade. Constraint is 429/503 throttling: keep serial fetch, increase pause, honor Retry-After.",
    "2026-10-11T18:43:04Z session 2 started, resuming at D (pacing fix + month-scale proof).",
-   "2026-10-11T18:49:21Z Session 2: month-run (38164983264) still in progress; proceeding with backfill workflow + T/R scaffolds. Lab NaN-warmup bug found and fixed (sma/stddev warmup poisoned scores)."
+   "2026-10-11T18:49:21Z Session 2: month-run (38164983264) still in progress; proceeding with backfill workflow + T/R scaffolds. Lab NaN-warmup bug found and fixed (sma/stddev warmup poisoned scores).",
+   "2026-10-11T18:51:25Z Lab broadcast root cause = np.diff inside prims shortened composed arrays; fixed by tail alignment in compose() and scoring. Backfill dispatch 404 = transient workflow indexing; retry."
   ],
   "known_problems": [
    "No Dukascopy multi-year forex history in releases (only 100k-row MT5 fallback for frxEURUSD)",
