@@ -24,9 +24,19 @@ def now_utc_str() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 def get_mt5_connection(host: str = "localhost", port: int = 18812, timeout: int = 120):
-    """Connect to MT5 Python API via RPyC classic bridge."""
+    """Connect to MT5 Python API via mt5linux package or RPyC classic bridge."""
     import rpyc
-    # Connect with timeout and retry
+
+    # Try mt5linux package first if available
+    try:
+        from mt5linux import MetaTrader5 as MT5Linux
+        mt5_client = MT5Linux(host=host, port=port, search_on_init=True, timeout=timeout)
+        conn = rpyc.classic.connect(host, port)
+        conn._config["sync_request_timeout"] = timeout
+        return mt5_client, "mt5linux-package", conn
+    except Exception as e:
+        print(f"[INFO] mt5linux package client note: {e}; using rpyc classic")
+
     start_t = time.time()
     last_err = None
     while time.time() - start_t < 45:
@@ -36,10 +46,11 @@ def get_mt5_connection(host: str = "localhost", port: int = 18812, timeout: int 
             try:
                 conn.modules.sys.path.append("C:\\mt5libs")
                 conn.modules.sys.path.append("C:\\Program Files\\Deriv - MetaTrader 5")
+                conn.modules.sys.path.append("C:\\Program Files\\MetaTrader 5")
             except Exception:
                 pass
             mt5 = conn.modules.MetaTrader5
-            return mt5, "rpyc-classic"
+            return mt5, "rpyc-classic", conn
         except Exception as e:
             last_err = e
             time.sleep(2)
@@ -85,7 +96,7 @@ def run_spike(args) -> Dict[str, Any]:
 
     t_start = time.time()
     try:
-        mt5, bridge_mode = get_mt5_connection(args.host, args.port)
+        mt5, bridge_mode, conn = get_mt5_connection(args.host, args.port)
         results["bridge_mode"] = bridge_mode
         print(f"[OK] Connected to MT5 bridge ({bridge_mode}) on {args.host}:{args.port}")
     except Exception as e:
@@ -95,24 +106,59 @@ def run_spike(args) -> Dict[str, Any]:
         results["errors"].append(err)
         return results
 
-    # Initialize terminal with portable=True per issue #55 resolution
+    # Diagnostics inside container Wine environment
+    tasks = ""
+    try:
+        tasks = conn.eval("__import__('subprocess').getoutput('tasklist')")
+        print(f"[DIAGNOSTIC] Running processes in Wine:\n{tasks}")
+    except Exception as e:
+        print(f"[DIAGNOSTIC] tasklist failed: {e}")
+
+    actual_terminal_path = None
+    try:
+        found_paths = conn.eval("__import__('glob').glob('C:/**/terminal64.exe', recursive=True)")
+        print(f"[DIAGNOSTIC] Discovered terminal64.exe in Wine: {found_paths}")
+        if found_paths:
+            actual_terminal_path = found_paths[0]
+    except Exception as e:
+        print(f"[DIAGNOSTIC] terminal path search error: {e}")
+
+    # Ensure broker server lookup is triggered via container watchdog
+    try:
+        conn.execute(f'open("C:\\\\server", "w").write("{args.server}")')
+        print(f"[DIAGNOSTIC] Written '{args.server}' to C:\\server for watchdog server search")
+        time.sleep(2)
+    except Exception as e:
+        print(f"[DIAGNOSTIC] C:\\server write note: {e}")
+
+    # If terminal not running, launch it
+    if actual_terminal_path and "terminal64" not in tasks.lower():
+        print(f"[DIAGNOSTIC] Starting terminal: {actual_terminal_path}")
+        try:
+            conn.eval(f"__import__('subprocess').Popen(['{actual_terminal_path}', '/portable'])")
+            time.sleep(5)
+        except Exception as e:
+            print(f"[DIAGNOSTIC] Start terminal error: {e}")
+
+    # Initialize terminal: prefer default (connect to running terminal), then explicit configs
     candidate_configs = [
-        {"path": r"C:\MT5	erminal64.exe", "portable": True},
-        {"path": r"C:\MT5	erminal64.exe", "portable": False},
-        {"path": r"C:\Program Files\Deriv - MetaTrader 5	erminal64.exe", "portable": True},
-        {"path": r"C:\Program Files\MetaTrader 5	erminal64.exe", "portable": False},
-        {"portable": True},
-        {}
+        {},
+        {"server": args.server},
+        {"login": int(args.login), "password": args.password, "server": args.server},
     ]
+    if actual_terminal_path:
+        candidate_configs.append({"path": actual_terminal_path})
+        candidate_configs.append({"path": actual_terminal_path, "portable": True})
+
     init_ok = False
     last_err = None
     chosen_path = None
     start_init = time.time()
-    print("Polling mt5.initialize() across portable and path configurations...")
+    print("Polling mt5.initialize() across configurations...")
     while time.time() - start_init < 90:
         for cfg in candidate_configs:
             try:
-                ok = mt5.initialize(**cfg, timeout=60000)
+                ok = mt5.initialize(**cfg, timeout=10000)
                 if ok:
                     init_ok = True
                     chosen_path = str(cfg)
@@ -409,7 +455,7 @@ def run_spike(args) -> Dict[str, Any]:
 
     print(f"Testing second terminal connection on port {args.port_second}...")
     try:
-        mt5_2, mode2 = get_mt5_connection(args.host, args.port_second, timeout=10)
+        mt5_2, mode2, conn2 = get_mt5_connection(args.host, args.port_second, timeout=10)
         init2 = mt5_2.initialize()
         login2 = mt5_2.login(login=login_int, password=args.password, server=chosen_server)
         if login2:
@@ -547,7 +593,11 @@ def write_reports(results: Dict[str, Any], out_md: str, out_json: str):
     for it in results.get("iterations", []):
         md_content += f"- Iteration {it['iteration']}: **{'PASS' if it['success'] else 'FAIL'}** in {it['elapsed_sec']}s (Bid: {it.get('tick_bid')})\n"
 
-    md_content += "\n**Verdict:** The MT5 stack is verified operational on Linux and ready for autonomous CFD execution.\n"
+    if results.get("status") == "blocked":
+        err_msg = "; ".join(results.get("errors", ["MT5 initialization blocked"]))
+        md_content += f"\n**Verdict:** **BLOCKED**: {err_msg}. Documenting hosted MT5 bridge fallback.\n"
+    else:
+        md_content += "\n**Verdict:** The MT5 stack is verified operational on Linux and ready for autonomous CFD execution.\n"
 
     os.makedirs(os.path.dirname(out_md), exist_ok=True)
     with open(out_md, "w") as f:
