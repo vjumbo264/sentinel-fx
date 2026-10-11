@@ -24,3 +24,13 @@
 - **In progress**: D attempt 2/5 dispatched — run pending; read its logs first next session.
 - **Next exact step**: fetch logs of the attempt-2 probe run; then attempts 3-5 per BUILD_STATE.json next_step.
 - **Not started**: T, S, A, R, N, P, W, E2E and tests T1-T11.
+
+## Session 1 — D foundation PROVEN (2026-10-11 18:35 UTC)
+- **Attempt 2 result (run 38163977306, SUCCESS)**: Dukascopy is reachable AND decodable from Actions
+  runners. A real EURUSD hour (2026-09-09 10h) downloaded 15,147 bytes and LZMA-decoded to
+  62,640 bytes = 3,132 valid tick records. Attempt-1's TCP timeout was transient filtering.
+- **Real constraint**: throttling — 429s under rapid curl bursts, occasional 503. The pipeline stays
+  serial with backoff; pacing needs increasing (pause ~1.5-2s, honor Retry-After).
+- **freeserv mirror**: the /2.0/datafeed/ path form 404s; not needed since primary host works.
+- **Next exact step**: tune fetch_dukascopy_bi5.py pacing, then run forex-history.yml for one real
+  month of EURUSD as decode-at-scale proof, then extend to the full Deriv+Dukascopy pair list.
