@@ -1,3 +1,4 @@
+import { BUILD_INFO } from "../version.js";
 /**
  * SENTINEL-FX · Settings & System Diagnostics
  * Theme controls (Auto/Light/Dark), Lagos time info, reduced motion,
@@ -21,12 +22,16 @@ export const settingsView = {
 
   async checkApiHealth() {
     try {
+      const start = performance.now();
       this.healthInfo = await api.checkHealth();
+      const latency = Math.round(performance.now() - start);
       const el = document.getElementById("diag-health-val");
       if (el && this.healthInfo) {
-        el.textContent = `OK · ${this.healthInfo.service} (${this.healthInfo.utc})`;
+        el.textContent = `Online (${latency}ms) · ${this.healthInfo.utc}`;
         el.style.color = "var(--profit)";
       }
+      const buildEl = document.getElementById("settings-build-id");
+      if (buildEl) buildEl.textContent = BUILD_INFO.buildId;
     } catch (err) {
       const el = document.getElementById("diag-health-val");
       if (el) {
@@ -149,7 +154,7 @@ export const settingsView = {
             </div>
             <div style="display:flex; justify-content:space-between; padding:8px 0;">
               <span style="color:var(--text-muted);">Release Build Version</span>
-              <span class="tabular" style="font-weight:700;"><span id="settings-build-id" class="tabular" style="font-weight:600;"></span></span>
+              <span class="tabular" style="font-weight:700;"><span id="settings-build-id" class="tabular" style="font-weight:600;">${BUILD_INFO.buildId}</span></span>
             </div>
           </div>
         </section>

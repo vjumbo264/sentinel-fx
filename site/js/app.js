@@ -1,3 +1,4 @@
+import { BUILD_INFO } from "./version.js";
 /**
  * SENTINEL-FX · Main Application Entrypoint
  * Orchestrates navigation shell, reactive store, mode management, and page views.
@@ -191,6 +192,7 @@ function registerRoutes() {
 // Bootstrap
 window.addEventListener("DOMContentLoaded", () => {
   mountIcons();
+  const railBuild = document.getElementById("rail-build-id"); if (railBuild) railBuild.textContent = BUILD_INFO.buildId;
   initShellEvents();
   bindStoreToShell();
   registerRoutes();

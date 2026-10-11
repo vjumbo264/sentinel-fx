@@ -401,13 +401,13 @@
     },
     {
       "id": "SETTINGS",
-      "status": "doing",
-      "note": "Rebuild Settings with Auto/Light/Dark, Lagos timezone, logout, real build ID and /api/health.",
-      "evidence": ""
+      "status": "done",
+      "note": "Rebuilt Settings with Auto/Light/Dark controls, Lagos time display, reduce motion toggle, disconnect/logout confirmation action, live latency/UTC diagnostics from /api/health, and real git commit buildId.",
+      "evidence": "site/js/version.js stamped; site/js/pages/settings.js verified; zero fake version strings."
     },
     {
       "id": "THEME",
-      "status": "todo",
+      "status": "doing",
       "note": "Live OS light/dark media query listener, data-theme override, chart retheming, dual meta theme-color.",
       "evidence": ""
     },
