@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-11T09:41:35.209177+00:00",
+  "timestamp_utc": "2026-10-11T10:01:53.020886+00:00",
   "account": {
     "login": 41286446,
     "server": "Deriv-Demo",
@@ -23,17 +23,17 @@
       "status": "failed",
       "steps": {
         "order_check": {
-          "retcode": null,
-          "ok": false,
-          "comment": "",
-          "margin_free": null,
+          "retcode": 0,
+          "ok": true,
+          "comment": "Done",
+          "margin_free": 10006.69,
           "volume": 0.5,
-          "sl": 4933.023,
-          "tp": 4936.623
+          "sl": 4930.52,
+          "tp": 4934.12
         }
       },
       "errors": [
-        "open_position failed: order_send failed: retcode=None ()"
+        "open_position failed: order_send failed: retcode=10027 (AutoTrading disabled by client)"
       ]
     },
     "forex": {
@@ -42,17 +42,17 @@
       "status": "failed",
       "steps": {
         "order_check": {
-          "retcode": null,
-          "ok": false,
-          "comment": "",
-          "margin_free": null,
+          "retcode": 0,
+          "ok": true,
+          "comment": "Done",
+          "margin_free": 10006.06,
           "volume": 0.01,
           "sl": 1.11928,
           "tp": 1.12178
         }
       },
       "errors": [
-        "open_position failed: order_send failed: retcode=None ()"
+        "open_position failed: order_send failed: retcode=10027 (AutoTrading disabled by client)"
       ]
     }
   },
