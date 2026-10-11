@@ -267,15 +267,15 @@
     },
     {
       "id": "CHART",
-      "status": "doing",
-      "note": "Building Candlestick Chart: Lightweight Charts integration, timeframe chips (M1..D1), pair switcher, live price tag, Lagos time axis, and live re-theming.",
-      "evidence": "Drafting site/js/pages/chart.js."
+      "status": "done",
+      "note": "Engineered full-screen capable candlestick chart with Lightweight Charts 4.2.1, timeframe chips (M1..D1), pair switcher, position overlay lines, and live re-theming in chart.js.",
+      "evidence": "site/js/pages/chart.js verified."
     },
     {
       "id": "TRAIN",
-      "status": "todo",
-      "note": "CFD model training playbook generator, data readiness verification, and in-memory token dispatch.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building Train Pairs: Forex and synthetics registry filter, data release readiness gating, zero-exploration CFD prompt generator, and Actions dispatch.",
+      "evidence": "Drafting site/js/pages/train.js."
     },
     {
       "id": "MODELS",
