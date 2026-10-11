@@ -62,3 +62,8 @@
 - Serial backfill (38165717985) dispatched; lab green; state file holds the exact next command chain.
 
 ## Checkpoint: serial backfill healthy (1 running / 11 queued / 0 failed); next_step in BUILD_STATE.json.
+
+## Session 3 — started 2026-10-11, resuming at D (Section 1b candle fix)
+- Cancelled stale hourly-tick run 38165717985 per Section 1b instructions (hourly ticks 503-throttled at scale).
+- Dispatched updated probe-dukascopy.yml to test 2-request/day prebuilt candle files (BID_candles_min_1.bi5, ASK_candles_min_1.bi5) across multiple dates and headers, testing LZMA decompress and struct unpacking.
+- Next: read probe logs, verify candle decoder output, then update data pipeline to use candle files (or fallback route per section 1b).

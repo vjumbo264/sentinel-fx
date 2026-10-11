@@ -12,43 +12,80 @@ jobs:
         with: { node-version: "20" }
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - name: B2 diag - curl single bi5 hourly files (status, headers, size)
-        run: |
-          for U in \
-            "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/05/14/10h_ticks.bi5" \
-            "https://datafeed.dukascopy.com/datafeed/EURUSD/2026/09/09/10h_ticks.bi5" \
-            "https://freeserv.dukascopy.com/2.0/datafeed/EURUSD/2026/09/09/10h_ticks.bi5"; do
-            echo "=== $U ==="
-            curl -sS --max-time 60 -D /tmp/h.txt -o /tmp/probe.bin -w "HTTP %{http_code} size=%{size_download} time=%{time_total}s\n" "$U" || echo "CURL_FAILED $?"
-            echo "--- response headers ---"; head -15 /tmp/h.txt 2>/dev/null || echo "no headers"
-            ls -l /tmp/probe.bin 2>/dev/null; rm -f /tmp/probe.bin
-          done
-      - name: B2 diag - python urllib + LZMA decode of one bi5 file
+      - name: Probe Dukascopy pre-built candle bi5 endpoints and decode
         run: |
           python3 - <<'PYEOF'
-          import urllib.request, lzma
-          for url in [
-            "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/05/14/10h_ticks.bi5",
-            "https://datafeed.dukascopy.com/datafeed/EURUSD/2026/09/09/10h_ticks.bi5",
-            "https://freeserv.dukascopy.com/2.0/datafeed/EURUSD/2026/09/09/10h_ticks.bi5",
-          ]:
-              print("===", url)
-              try:
-                  req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-                  raw = urllib.request.urlopen(req, timeout=20).read()
-                  print("downloaded", len(raw), "bytes, head:", raw[:8].hex())
+          import urllib.request, lzma, struct, time
+
+          headers_list = [
+              {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
+              {"User-Agent": "Dukascopy-API/1.0"},
+              {"User-Agent": "Mozilla/5.0"}
+          ]
+
+          test_urls = [
+              # Item D step 1 test URLs (zero-based month: Jan is 00, Sep is 08, May is 04)
+              "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/00/15/BID_candles_min_1.bi5",
+              "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/00/15/ASK_candles_min_1.bi5",
+              "https://datafeed.dukascopy.com/datafeed/EURUSD/2023/04/15/BID_candles_min_1.bi5",
+              "https://datafeed.dukascopy.com/datafeed/EURUSD/2023/04/15/ASK_candles_min_1.bi5",
+              "https://datafeed.dukascopy.com/datafeed/EURUSD/2026/08/09/BID_candles_min_1.bi5",
+              "https://datafeed.dukascopy.com/datafeed/EURUSD/2026/08/09/ASK_candles_min_1.bi5",
+              # 1-based month variants just in case
+              "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/01/15/BID_candles_min_1.bi5",
+              "https://datafeed.dukascopy.com/datafeed/EURUSD/2023/05/15/BID_candles_min_1.bi5",
+              # Hourly tick comparison
+              "https://datafeed.dukascopy.com/datafeed/EURUSD/2026/08/09/10h_ticks.bi5",
+              "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/00/15/10h_ticks.bi5",
+          ]
+
+          for url in test_urls:
+              print(f"\n=== PROBING {url} ===")
+              success = False
+              for h_idx, hdrs in enumerate(headers_list):
                   try:
-                      d = lzma.decompress(raw, format=lzma.FORMAT_ALONE)
-                      print("LZMA_ALONE ok:", len(d), "bytes ->", len(d)//20, "20-byte records")
-                  except Exception as e1:
-                      print("LZMA_ALONE fail:", e1)
-                      d = lzma.decompress(raw)
-                      print("LZMA auto ok:", len(d), "bytes ->", len(d)//20, "records")
-              except Exception as e:
-                  print("ERROR", type(e).__name__, e)
+                      req = urllib.request.Request(url, headers=hdrs)
+                      with urllib.request.urlopen(req, timeout=15) as resp:
+                          raw = resp.read()
+                          status = resp.status
+                          print(f"  [Header {h_idx}] HTTP {status}, raw size={len(raw)}")
+                          if not raw:
+                              print("  -> Empty response body")
+                              break
+                          
+                          # Try decompressing
+                          decomp = None
+                          try:
+                              decomp = lzma.decompress(raw, format=lzma.FORMAT_ALONE)
+                              print(f"  -> LZMA_ALONE success! Decompressed bytes={len(decomp)}")
+                          except Exception as e_alone:
+                              try:
+                                  decomp = lzma.decompress(raw)
+                                  print(f"  -> LZMA auto success! Decompressed bytes={len(decomp)}")
+                              except Exception as e_auto:
+                                  print(f"  -> LZMA decode failed: alone={e_alone}, auto={e_auto}")
+                          
+                          if decomp:
+                              print(f"  -> Modulo checks: len%20={len(decomp)%20}, len%24={len(decomp)%24}, len%28={len(decomp)%28}, len%32={len(decomp)%32}")
+                              # Test 20-byte record (tick: ms, ask, bid, ask_v, bid_v)
+                              if len(decomp) >= 20 and len(decomp) % 20 == 0:
+                                  sample = struct.unpack_from('>iiiff', decomp, 0)
+                                  print(f"     First 20-byte unpack (>iiiff): {sample}")
+                              # Test 24-byte record (>IIIIIf: sec, open, high, low, close, vol or >iiiiif)
+                              if len(decomp) >= 24 and len(decomp) % 24 == 0:
+                                  sample24 = struct.unpack_from('>iiiiif', decomp, 0)
+                                  print(f"     First 24-byte unpack (>iiiiif): {sample24}")
+                                  sample24_u = struct.unpack_from('>IIIIIf', decomp, 0)
+                                  print(f"     First 24-byte unpack (>IIIIIf): {sample24_u}")
+                              # Test 28-byte record
+                              if len(decomp) >= 28 and len(decomp) % 28 == 0:
+                                  sample28 = struct.unpack_from('>IIIIIff', decomp, 0)
+                                  print(f"     First 28-byte unpack (>IIIIIff): {sample28}")
+                          success = True
+                          break
+                  except Exception as ex:
+                      print(f"  [Header {h_idx}] Error: {ex}")
+                  time.sleep(1.0)
+              if not success:
+                  print(f"  ALL attempts failed for {url}")
           PYEOF
-      - name: B2 diag - dukascopy-node one-month range (throttle probe)
-        run: |
-          npx --yes dukascopy-node -i eurusd -from 2026-09-01 -to 2026-10-01 -t m1 -p bid -v -f csv -dir /tmp/dk -r 5 -rp 3000 -s || echo "DUKA_NODE_EXIT $?"
-          find /tmp/dk -type f 2>/dev/null | head -5
-          for f in $(find /tmp/dk -name '*.csv' 2>/dev/null); do wc -c "$f"; head -3 "$f"; done

@@ -8,3 +8,4 @@ dist/
 .env
 *.log
 .sentinel_env
+bun.lock
