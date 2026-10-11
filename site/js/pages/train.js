@@ -1,7 +1,7 @@
 /**
  * SENTINEL-FX · CFD Model Training Desk (Playbook Generator)
- * Replaces legacy binary options trainer with pure CFD architecture.
- * Multi-select pair selector, data release gating, and prompt generator.
+ * Real symbols from registry, real data readiness gated on data/index.json.
+ * Zero fabricated rows or fake spread constants.
  */
 
 import { icons, pairAvatar } from "../icons.js";
@@ -10,41 +10,53 @@ import { api } from "../api.js";
 import { sfxBusy, showToast } from "../ui.js";
 
 const SYMBOL_REGISTRY = [
-  // Majors
-  { sym: "frxEURUSD", name: "EUR / USD", cat: "majors", digits: 5, spread: 15, ready: true, rows: "525,600 rows" },
-  { sym: "frxGBPUSD", name: "GBP / USD", cat: "majors", digits: 5, spread: 20, ready: true, rows: "525,600 rows" },
-  { sym: "frxUSDJPY", name: "USD / JPY", cat: "majors", digits: 3, spread: 18, ready: true, rows: "525,600 rows" },
-  { sym: "frxAUDUSD", name: "AUD / USD", cat: "majors", digits: 5, spread: 16, ready: true, rows: "525,600 rows" },
-  { sym: "frxUSDCAD", name: "USD / CAD", cat: "majors", digits: 5, spread: 19, ready: false },
-  { sym: "frxUSDCHF", name: "USD / CHF", cat: "majors", digits: 5, spread: 18, ready: false },
-  { sym: "frxNZDUSD", name: "NZD / USD", cat: "majors", digits: 5, spread: 22, ready: false },
+  // Forex Majors
+  { sym: "frxEURUSD", name: "EUR / USD", cat: "majors", digits: 5 },
+  { sym: "frxGBPUSD", name: "GBP / USD", cat: "majors", digits: 5 },
+  { sym: "frxUSDJPY", name: "USD / JPY", cat: "majors", digits: 3 },
+  { sym: "frxAUDUSD", name: "AUD / USD", cat: "majors", digits: 5 },
+  { sym: "frxUSDCAD", name: "USD / CAD", cat: "majors", digits: 5 },
+  { sym: "frxUSDCHF", name: "USD / CHF", cat: "majors", digits: 5 },
+  { sym: "frxNZDUSD", name: "NZD / USD", cat: "majors", digits: 5 },
 
   // Minors & Crosses
-  { sym: "frxEURGBP", name: "EUR / GBP", cat: "minors", digits: 5, spread: 17, ready: false },
-  { sym: "frxEURJPY", name: "EUR / JPY", cat: "minors", digits: 3, spread: 21, ready: false },
-  { sym: "frxGBPJPY", name: "GBP / JPY", cat: "minors", digits: 3, spread: 28, ready: true, rows: "525,600 rows" },
-  { sym: "frxEURAUD", name: "EUR / AUD", cat: "minors", digits: 5, spread: 24, ready: false },
-  { sym: "frxAUDJPY", name: "AUD / JPY", cat: "minors", digits: 3, spread: 22, ready: false },
-  { sym: "frxEURCAD", name: "EUR / CAD", cat: "minors", digits: 5, spread: 25, ready: false },
-  { sym: "frxEURCHF", name: "EUR / CHF", cat: "minors", digits: 5, spread: 20, ready: false },
+  { sym: "frxEURGBP", name: "EUR / GBP", cat: "minors", digits: 5 },
+  { sym: "frxEURJPY", name: "EUR / JPY", cat: "minors", digits: 3 },
+  { sym: "frxGBPJPY", name: "GBP / JPY", cat: "minors", digits: 3 },
+  { sym: "frxEURAUD", name: "EUR / AUD", cat: "minors", digits: 5 },
+  { sym: "frxAUDJPY", name: "AUD / JPY", cat: "minors", digits: 3 },
+  { sym: "frxEURCAD", name: "EUR / CAD", cat: "minors", digits: 5 },
+  { sym: "frxEURCHF", name: "EUR / CHF", cat: "minors", digits: 5 },
 
   // Metals
-  { sym: "frxXAUUSD", name: "Gold / USD", cat: "metals", digits: 2, spread: 35, ready: false },
+  { sym: "frxXAUUSD", name: "Gold / USD", cat: "metals", digits: 2 },
 
   // Synthetics
-  { sym: "R_100", name: "Volatility 100 Index", cat: "synthetics", digits: 2, spread: 25, ready: true, rows: "525,600 rows" },
-  { sym: "R_50", name: "Volatility 50 Index", cat: "synthetics", digits: 4, spread: 15, ready: true, rows: "525,600 rows" },
-  { sym: "R_25", name: "Volatility 25 Index", cat: "synthetics", digits: 3, spread: 12, ready: false },
-  { sym: "R_10", name: "Volatility 10 Index", cat: "synthetics", digits: 3, spread: 10, ready: false },
-  { sym: "1HZ100V", name: "Volatility 100 (1s)", cat: "synthetics", digits: 2, spread: 25, ready: false }
+  { sym: "R_100", name: "Volatility 100 Index", cat: "synthetics", digits: 2 },
+  { sym: "R_50", name: "Volatility 50 Index", cat: "synthetics", digits: 4 },
+  { sym: "R_25", name: "Volatility 25 Index", cat: "synthetics", digits: 3 },
+  { sym: "R_10", name: "Volatility 10 Index", cat: "synthetics", digits: 3 },
+  { sym: "1HZ100V", name: "Volatility 100 (1s)", cat: "synthetics", digits: 2 }
 ];
 
 export const trainView = {
-  currentCategory: "majors", // 'majors' | 'minors' | 'metals' | 'synthetics' | 'all'
+  currentCategory: "majors", // "majors" | "minors" | "metals" | "synthetics" | "all"
   selectedSymbols: new Set(["frxEURUSD"]),
+  dataIndex: {},
 
   async render(container) {
     this.container = container;
+    
+    // Load real data index
+    try {
+      const res = await fetch("./data/index.json");
+      if (res.ok) {
+        this.dataIndex = await res.json();
+      }
+    } catch (_) {
+      this.dataIndex = {};
+    }
+
     this.updateDom();
   },
 
@@ -57,9 +69,9 @@ export const trainView = {
     });
 
     const selectedArray = Array.from(this.selectedSymbols);
-    const allSelectedReady = selectedArray.every(sym => {
-      const found = SYMBOL_REGISTRY.find(s => s.sym === sym);
-      return found && found.ready;
+    const allSelectedReady = selectedArray.length > 0 && selectedArray.every(sym => {
+      const info = this.dataIndex[sym];
+      return info && (info.rows || info.ready);
     });
 
     this.container.innerHTML = `
@@ -70,7 +82,7 @@ export const trainView = {
           <h2 class="card-title" style="margin-bottom:var(--space-1);">CFD MODEL TRAINING GENERATOR</h2>
           <p style="font-size:var(--text-sm); color:var(--text-secondary); line-height:1.5; margin-bottom:var(--space-3);">
             SENTINEL-FX trains specialized single-pair AI committees whose sole objective is to compound balance.
-            Select pairs with confirmed historical candle datasets, generate the training prompt, and hand it to any AI model.
+            Select pairs with confirmed historical candle datasets in releases, generate the training prompt, and execute with your preferred LLM.
           </p>
 
           <!-- CATEGORY FILTER CHIPS -->
@@ -97,6 +109,9 @@ export const trainView = {
         <div style="display:flex; flex-direction:column; gap:var(--space-2);">
           ${filtered.map(item => {
             const isChecked = this.selectedSymbols.has(item.sym);
+            const dataInfo = this.dataIndex[item.sym];
+            const isReady = !!(dataInfo && (dataInfo.rows || dataInfo.ready));
+            const rowsText = dataInfo && dataInfo.rows ? `${Number(dataInfo.rows).toLocaleString()} rows` : "";
 
             return `
               <div class="card" style="padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">
@@ -109,20 +124,19 @@ export const trainView = {
                       <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">${item.sym.replace(/^frx/, "")}</span>
                     </div>
                     <div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:2px;">
-                      Spread: ${item.spread} pts &bull; Precision: ${item.digits}d
+                      Precision: ${item.digits}d · Status: ${isReady ? "Dataset Ready" : "Data Not Downloaded"}
                     </div>
                   </div>
                 </div>
 
-                <!-- Status & Action Button -->
                 <div>
-                  ${item.ready ? `
+                  ${isReady ? `
                     <span class="badge-profit" style="font-size:11px; padding:4px 8px;">
-                      ${icons.check("w-3 h-3")} Ready (${item.rows})
+                      ${icons.check("w-3 h-3")} Ready ${rowsText ? "(" + rowsText + ")" : ""}
                     </span>
                   ` : `
                     <button class="btn btn-secondary btn-sm btn-fetch-data" data-sym="${item.sym}" style="min-height:32px; padding:0 8px; font-size:12px;">
-                      Fetch Candles
+                      Fetch Data
                     </button>
                   `}
                 </div>
@@ -136,15 +150,13 @@ export const trainView = {
           <div>
             <span style="font-weight:700; font-size:var(--text-sm);">${this.selectedSymbols.size} Selected</span>
             <span style="font-size:var(--text-xs); color:var(--text-muted); display:block;">
-              ${allSelectedReady ? "All selected pairs data ready" : "Some pairs require candle downloads"}
+              ${allSelectedReady ? "All selected pairs confirmed in data index" : "Data not downloaded: fetch candles first"}
             </span>
           </div>
 
-          <div style="display:flex; gap:var(--space-2);">
-            <button id="btn-copy-train-prompt" class="btn btn-primary btn-sm" ${allSelectedReady && this.selectedSymbols.size > 0 ? "" : "disabled"} style="min-height:38px;">
-              ${icons.copy("w-4 h-4")} <span>Copy AI Training Prompt</span>
-            </button>
-          </div>
+          <button id="btn-copy-playbook" class="btn btn-primary" ${!allSelectedReady ? "disabled" : ""} style="min-height:42px;">
+            ${icons.copy("w-4 h-4")} <span>Copy Playbook Prompt</span>
+          </button>
         </div>
 
       </div>
@@ -157,62 +169,48 @@ export const trainView = {
     // Category chips
     document.querySelectorAll(".cat-chip").forEach(btn => {
       btn.addEventListener("click", () => {
-        this.currentCategory = btn.getAttribute("data-cat");
-        this.updateDom();
+        const cat = btn.getAttribute("data-cat");
+        if (cat) {
+          this.currentCategory = cat;
+          this.updateDom();
+        }
       });
     });
 
     // Checkboxes
     document.querySelectorAll(".pair-checkbox").forEach(box => {
       box.addEventListener("change", (e) => {
-        const sym = e.target.getAttribute("data-sym");
-        if (e.target.checked) {
-          this.selectedSymbols.add(sym);
-        } else {
-          this.selectedSymbols.delete(sym);
+        const sym = box.getAttribute("data-sym");
+        if (sym) {
+          if (e.target.checked) this.selectedSymbols.add(sym);
+          else this.selectedSymbols.delete(sym);
+          this.updateDom();
         }
-        this.updateDom();
       });
     });
 
-    // Fetch data single button
+    // Fetch data workflow dispatch
     document.querySelectorAll(".btn-fetch-data").forEach(btn => {
       btn.addEventListener("click", () => {
         const sym = btn.getAttribute("data-sym");
         sfxBusy(btn, async () => {
           await api.dispatchWorkflow("fetch-candles.yml", "main", { symbol: sym });
-        }, { pending: `Fetching ${sym}...`, ok: "Fetch workflow queued" });
+        }, {
+          pending: `Queuing fetch for ${sym}...`,
+          ok: `Fetch workflow dispatched for ${sym}`
+        });
       });
     });
 
-    // Copy Prompt Button
-    const copyBtn = document.getElementById("btn-copy-train-prompt");
+    // Copy Prompt
+    const copyBtn = document.getElementById("btn-copy-playbook");
     if (copyBtn) {
       copyBtn.addEventListener("click", () => {
-        sfxBusy(copyBtn, async () => {
-          const prompt = this.generateCfdPrompt(Array.from(this.selectedSymbols));
-          await navigator.clipboard.writeText(prompt);
-        }, { pending: "Generating playbook...", ok: "Prompt copied to clipboard!" });
+        const syms = Array.from(this.selectedSymbols).join(", ");
+        const promptText = `# SENTINEL-FX CFD TRAINING PLAYBOOK\n\nInstruments: ${syms}\nObjective: Compound balance with zero martingale. Mandatory server-side SL on every position.\n\nFollow TRAIN_PROMPT.md architecture.`;
+        navigator.clipboard.writeText(promptText);
+        showToast("Training prompt copied to clipboard", "success");
       });
     }
-  },
-
-  generateCfdPrompt(symbols) {
-    const symList = symbols.join(", ");
-    return `# SENTINEL-FX CFD AI Training Playbook v3
-## Target Instruments: [${symList}]
-Objective: Maximize Compounding Growth with Mandatory Server-Side Stop Loss.
-
-You are training a specialized CFD AI model committee for SENTINEL-FX on Deriv MT5.
-Your sole mission is to grow the allocated balance with zero blowups.
-
-### Invariants:
-1. Every trade MUST emit a valid server-side Stop Loss (SL) at order time.
-2. Max risk per trade: 1.0% of allocated balance.
-3. Hybrid Committee: Policy Node (BUY, SELL, HOLD, STAY_OUT) + Confluence Threshold >= 0.70.
-4. Two-Stage News Filter: Halt entries 15 minutes prior to High-Impact calendar releases.
-5. Walk-Forward Stability: Test against post-trained out-of-sample candles.
-
-Produce the self-contained bundle \`.sfxmodel.zip\` with \`plan.py\` implementing \`evaluate_cfd_setup(candles, news_state)\`.`;
   }
 };

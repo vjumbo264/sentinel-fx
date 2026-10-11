@@ -393,7 +393,7 @@ export const chartView = {
         }
 
         if (data.market_closed) {
-          this.setStatus("closed");
+          this.setStatus("closed", "Market closed · Displaying latest available candles");
         } else {
           this.setStatus("live");
         }
@@ -401,55 +401,25 @@ export const chartView = {
         this.drawPositionLines();
         this.chart.timeScale().fitContent();
       } else {
-        // If worker candle endpoint returns fallback or closed
-        this.useSyntheticFallbackCandles();
+        const msg = data && data.error ? data.error : "No candles returned from server";
+        if (data && data.market_closed) {
+          this.setStatus("closed", "Market currently closed");
+        } else {
+          this.setStatus("error", msg);
+        }
       }
     } catch (err) {
-      console.warn("Worker candle fetch note:", err.message);
-      this.useSyntheticFallbackCandles(err.message);
-    }
-  },
-
-  useSyntheticFallbackCandles(errorNote = "") {
-    // Generate realistic candles so the user always sees a functioning chart
-    const now = Math.floor(Date.now() / 1000);
-    const count = 120;
-    const gran = this.currentGranularity;
-    const isForex = this.currentPair.includes("USD") || this.currentPair.includes("EUR");
-    let price = isForex ? 1.0850 : 250.0;
-    const candles = [];
-
-    for (let i = count; i >= 0; i--) {
-      const time = now - i * gran;
-      const change = (Math.random() - 0.495) * (isForex ? 0.0012 : 1.5);
-      const open = price;
-      const close = open + change;
-      const high = Math.max(open, close) + Math.random() * (isForex ? 0.0006 : 0.8);
-      const low = Math.min(open, close) - Math.random() * (isForex ? 0.0006 : 0.8);
-      price = close;
-
-      candles.push({
-        time,
-        open: Number(open.toFixed(isForex ? 5 : 2)),
-        high: Number(high.toFixed(isForex ? 5 : 2)),
-        low: Number(low.toFixed(isForex ? 5 : 2)),
-        close: Number(close.toFixed(isForex ? 5 : 2))
-      });
-    }
-
-    if (this.candleSeries) {
-      this.candleSeries.setData(candles);
-      this.lastCandle = candles[candles.length - 1];
-      const lastPriceEl = document.getElementById("chart-last-price");
-      if (lastPriceEl && this.lastCandle) {
-        lastPriceEl.textContent = this.lastCandle.close;
+      const errMsg = err.message || String(err);
+      const isClosed = errMsg.toLowerCase().includes("closed");
+      if (isClosed) {
+        this.setStatus("closed", "Market closed");
+      } else {
+        this.setStatus("error", errMsg);
       }
-      this.drawPositionLines();
-      this.chart.timeScale().fitContent();
     }
-
-    this.setStatus("closed", errorNote || "Market closed — historical candles shown");
   },
+
+  
 
   drawPositionLines() {
     // Clear existing lines

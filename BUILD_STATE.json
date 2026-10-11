@@ -335,13 +335,13 @@
     },
     {
       "id": "PURGE",
-      "status": "doing",
-      "note": "Delete all fake data generators, sample positions, demo toggles, and invented version strings across site/.",
-      "evidence": ""
+      "status": "done",
+      "note": "Deleted all fake data generators, sample positions, demo review toggles, fake candles generator, hardcoded news text, and invented version strings.",
+      "evidence": "Grep for 1.08, 525,600, v2.4.0, sample, mock, fake, demo-data across site/ confirmed zero fake data code remaining; site/data populated from real registry."
     },
     {
       "id": "FOUNDATION",
-      "status": "todo",
+      "status": "doing",
       "note": "Fix icon sizing (.icon classes + width/height attributes), robust api.js with 401 handler, and clean store.",
       "evidence": ""
     },

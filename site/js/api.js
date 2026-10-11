@@ -2,6 +2,7 @@
  * SENTINEL-FX · API Client Layer
  * Resilient communications with Cloudflare Worker API & GitHub Actions.
  * Exponential backoff for GET queries, in-memory auth header, timeout protection.
+ * Strict real-data only: zero fake data flags or mock toggles.
  */
 
 const API_BASE = "https://sentinel-fx-worker.vjumbo264.workers.dev";
@@ -10,10 +11,7 @@ const GITHUB_REPO = "vjumbo264/sentinel-fx";
 class ApiClient {
   constructor() {
     this.token = this.loadToken();
-    this.demoData = false;
-    try {
-      this.demoData = localStorage.getItem("sentinel_demo_data") === "true";
-    } catch (_) {}
+    this.onUnauthorized = null;
   }
 
   loadToken() {
@@ -35,19 +33,12 @@ class ApiClient {
     } catch (_) {}
   }
 
-  setDemoData(enabled) {
-    this.demoData = !!enabled;
-    try {
-      localStorage.setItem("sentinel_demo_data", String(this.demoData));
-    } catch (_) {}
-  }
-
   getHeaders() {
     const headers = {
       "Content-Type": "application/json"
     };
     if (this.token) {
-      headers["Authorization"] = `Bearer ${this.token}`;
+      headers["Authorization"] = "Bearer " + this.token;
     }
     return headers;
   }
@@ -87,6 +78,11 @@ class ApiClient {
       try {
         const res = await this.fetchWithTimeout(url, opts);
         if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            if (this.onUnauthorized) {
+              try { this.onUnauthorized(res.status); } catch (_) {}
+            }
+          }
           const errData = await res.json().catch(() => ({}));
           const errMsg = errData.error || `HTTP ${res.status}: ${res.statusText}`;
           throw new Error(errMsg);
@@ -94,63 +90,51 @@ class ApiClient {
         return await res.json();
       } catch (err) {
         attempt++;
-        if (attempt > retries || opts.method === "POST" || opts.method === "PUT") {
+        if (attempt > retries || opts.method === "POST" || opts.method === "PUT" || opts.method === "DELETE") {
           throw err;
         }
-        // Exponential backoff
         await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 400));
       }
     }
   }
 
-  // Probe public health
   async checkHealth() {
     return this.request("/api/health");
   }
 
-  // Probe Site Auth
   async checkAuth() {
     return this.request("/api/auth/check");
   }
 
-  // System State (heartbeat, pairs, daily stats)
   async getState() {
     return this.request("/api/state");
   }
 
-  // Session allocations, model ledgers, overrides
   async getSession() {
     return this.request("/api/session");
   }
 
-  // Closed & open trades
   async getTrades() {
     return this.request("/api/trades");
   }
 
-  // Registered models and forward metrics
   async getPairs() {
     return this.request("/api/pairs");
   }
 
-  // Market Candlesticks for charting
   async getCandles(symbol = "frxEURUSD", granularity = 60, count = 300) {
-    const sym = symbol.startsWith("frx") ? symbol : `frx${symbol}`;
-    return this.request(`/api/candles?symbol=${encodeURIComponent(sym)}&granularity=${granularity}&count=${count}`);
+    return this.request(`/api/candles?symbol=${encodeURIComponent(symbol)}&granularity=${granularity}&count=${count}`);
   }
 
-  // High-impact economic news calendar
   async getNews() {
     return this.request("/api/news");
   }
 
-  // Execution and system logs
   async getLogs(level = null, limit = 100) {
     const q = level ? `?level=${level}&limit=${limit}` : `?limit=${limit}`;
     return this.request(`/api/logs${q}`);
   }
 
-  // Save risk & bot settings
   async saveSettings(settings) {
     return this.request("/api/settings", {
       method: "POST",
@@ -158,7 +142,6 @@ class ApiClient {
     });
   }
 
-  // Update pair status/parameters
   async updatePair(pairData) {
     return this.request("/api/pairs/update", {
       method: "POST",
@@ -166,14 +149,12 @@ class ApiClient {
     });
   }
 
-  // Reset Demo Balance ($10,000.00)
   async resetDemoBalance() {
     return this.request("/api/account/reset-demo-balance", {
       method: "POST"
     });
   }
 
-  // Equal-Split balance allocation across enabled models
   async allocateSession(balance, mode = "demo") {
     return this.request("/api/session/allocate", {
       method: "POST",
@@ -181,7 +162,6 @@ class ApiClient {
     });
   }
 
-  // Owner override (pause, resume, stop_all)
   async overrideSession(symbol, action, note = "") {
     return this.request("/api/session/override", {
       method: "POST",
@@ -189,7 +169,6 @@ class ApiClient {
     });
   }
 
-  // Upload model bundle to staging release
   async uploadStagingAsset(assetName, buffer) {
     const url = `${API_BASE}/api/upload/staging-asset?name=${encodeURIComponent(assetName)}`;
     const headers = {
@@ -210,17 +189,16 @@ class ApiClient {
     return res.json();
   }
 
-  // Dispatch GitHub Action workflow
   async dispatchWorkflow(workflowFile, ref = "main", inputs = {}) {
     if (!this.token) {
-      throw new Error("GitHub PAT required to dispatch workflows. Enter token in Settings.");
+      throw new Error("GitHub PAT required to dispatch workflows.");
     }
 
     const url = `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${workflowFile}/dispatches`;
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${this.token}`,
+        "Authorization": "Bearer " + this.token,
         "Accept": "application/vnd.github+json",
         "Content-Type": "application/json"
       },
@@ -234,13 +212,12 @@ class ApiClient {
     return { ok: true, workflow: workflowFile };
   }
 
-  // Get workflow runs
   async getWorkflowRuns(workflowFile) {
     const url = `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${workflowFile}/runs?per_page=5`;
     const headers = {
       "Accept": "application/vnd.github+json"
     };
-    if (this.token) headers["Authorization"] = `Bearer ${this.token}`;
+    if (this.token) headers["Authorization"] = "Bearer " + this.token;
 
     const res = await fetch(url, { headers });
     if (!res.ok) return { workflow_runs: [] };

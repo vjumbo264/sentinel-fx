@@ -59,7 +59,7 @@ export const homeView = {
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--space-2);">
             <div>
               <div class="card-title">ACCOUNT VALUATION</div>
-              <div class="hero-balance tabular">${formatCurrency(s.balance)}</div>
+              <div class="hero-balance tabular">${s.balance !== null ? formatCurrency(s.balance) : "—"}</div>${s.balance === null ? `<div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:2px;">Awaiting MT5 runner heartbeat</div>` : ""}
             </div>
             <div style="display:flex; gap:var(--space-2); align-items:center;">
               <span class="${pnlClass} tabular" style="font-size:var(--text-sm); padding:6px 10px;">
@@ -226,33 +226,31 @@ export const homeView = {
           </div>
 
           <div style="display:flex; flex-direction:column; gap:var(--space-2);">
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:var(--radius-sm); background:var(--bg-surface-elevated);">
-              <div style="display:flex; align-items:center; gap:var(--space-3);">
-                <span style="background:#dc2626; color:#fff; font-size:11px; font-weight:800; padding:3px 6px; border-radius:4px;">USD</span>
-                <div>
-                  <div style="font-weight:600; font-size:var(--text-sm);">US Core CPI (YoY)</div>
-                  <div style="font-size:var(--text-xs); color:var(--text-muted);">Affects: EURUSD, GBPUSD, USDJPY, XAUUSD</div>
-                </div>
+            ${(!s.news || s.news.length === 0) ? `
+              <div style="text-align:center; padding:var(--space-6); color:var(--text-muted); font-size:var(--text-sm);">
+                No upcoming economic calendar events scheduled.
               </div>
-              <div style="text-align:right;">
-                <div class="tabular" style="font-weight:600; font-size:var(--text-sm); color:var(--warning);">13:30 Lagos</div>
-                <div style="font-size:11px; color:var(--text-muted);">Defense Active</div>
-              </div>
-            </div>
-
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:var(--radius-sm); background:var(--bg-surface-elevated);">
-              <div style="display:flex; align-items:center; gap:var(--space-3);">
-                <span style="background:#2563eb; color:#fff; font-size:11px; font-weight:800; padding:3px 6px; border-radius:4px;">EUR</span>
-                <div>
-                  <div style="font-weight:600; font-size:var(--text-sm);">ECB Interest Rate Decision</div>
-                  <div style="font-size:var(--text-xs); color:var(--text-muted);">Affects: EURUSD, EURGBP, EURJPY</div>
-                </div>
-              </div>
-              <div style="text-align:right;">
-                <div class="tabular" style="font-weight:600; font-size:var(--text-sm);">14:15 Lagos</div>
-                <div style="font-size:11px; color:var(--text-muted);">Defense Active</div>
-              </div>
-            </div>
+            ` : `
+              ${s.news.slice(0, 5).map(ev => {
+                const pairs = typeof ev.affected_pairs === "string" ? JSON.parse(ev.affected_pairs || "[]") : (ev.affected_pairs || []);
+                const impactClass = (ev.impact || "").toLowerCase() === "high" ? "#dc2626" : ((ev.impact || "").toLowerCase() === "medium" ? "#eab308" : "#3b82f6");
+                return `
+                  <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:var(--radius-sm); background:var(--bg-surface-elevated);">
+                    <div style="display:flex; align-items:center; gap:var(--space-3);">
+                      <span style="background:${impactClass}; color:#fff; font-size:11px; font-weight:800; padding:3px 6px; border-radius:4px;">${ev.currency || "ALL"}</span>
+                      <div>
+                        <div style="font-weight:600; font-size:var(--text-sm);">${ev.title}</div>
+                        ${pairs.length > 0 ? `<div style="font-size:var(--text-xs); color:var(--text-muted);">Affects: ${pairs.join(", ")}</div>` : ""}
+                      </div>
+                    </div>
+                    <div style="text-align:right;">
+                      <div class="tabular" style="font-weight:600; font-size:var(--text-sm); color:var(--warning);">${ev.utc_time ? formatLagosTime(ev.utc_time) : ""}</div>
+                      <div style="font-size:11px; color:var(--text-muted);">Impact: ${ev.impact || "standard"}</div>
+                    </div>
+                  </div>
+                `;
+              }).join("")}
+            `}
           </div>
         </section>
 

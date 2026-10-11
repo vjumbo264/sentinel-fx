@@ -38,10 +38,7 @@ export const historyView = {
     const s = store.state;
     let trades = s.history || [];
 
-    // Fallback sample closed trades for demonstration if database has 0 historical entries
-    if (trades.length === 0 && s.demoReviewMode) {
-      trades = this.getSampleHistory();
-    }
+    
 
     // Filter trades
     const filtered = trades.filter((t) => {
@@ -240,14 +237,5 @@ export const historyView = {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  },
-
-  getSampleHistory() {
-    return [
-      { id: 9011, contract_id: "T-9011", pair: "frxEURUSD", side: "BUY", stake: 0.15, pnl: 34.20, open_utc: "2026-10-10T12:00:00Z", close_utc: "2026-10-10T13:45:00Z", reason: "Target TP reached at 1.08750" },
-      { id: 9010, contract_id: "T-9010", pair: "frxGBPJPY", side: "SELL", stake: 0.10, pnl: 48.50, open_utc: "2026-10-10T09:15:00Z", close_utc: "2026-10-10T11:20:00Z", reason: "Trend exhaustion + trailing stop" },
-      { id: 9009, contract_id: "T-9009", pair: "frxUSDJPY", side: "BUY", stake: 0.10, pnl: -12.40, open_utc: "2026-10-10T06:30:00Z", close_utc: "2026-10-10T07:10:00Z", reason: "Server Stop Loss triggered cleanly" },
-      { id: 9008, contract_id: "T-9008", pair: "frxEURUSD", side: "BUY", stake: 0.20, pnl: 52.10, open_utc: "2026-10-09T14:00:00Z", close_utc: "2026-10-09T16:30:00Z", reason: "Breakout continuation target achieved" }
-    ];
   }
 };

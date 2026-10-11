@@ -2,6 +2,7 @@
  * SENTINEL-FX · Central Reactive Store & Polling Supervisor
  * Tracks MT5 runner heartbeat, open CFD positions, model ledgers, and trade history.
  * Automatically halts polling when the tab is hidden to save battery & data.
+ * Pure real data: zero demo/sample/mock injection.
  */
 
 import { api } from "./api.js";
@@ -9,11 +10,12 @@ import { api } from "./api.js";
 class Store {
   constructor() {
     this.state = {
-      isAuth: false,
-      mode: "demo", // 'demo' | 'real'
-      balance: 10000.00,
-      equity: 10000.00,
-      freeMargin: 10000.00,
+      isAuth: !!api.token,
+      authError: null,
+      mode: "demo", // "demo" | "real"
+      balance: null,
+      equity: null,
+      freeMargin: null,
       marginLevel: 0,
       usedMargin: 0,
       todayPnl: 0,
@@ -21,7 +23,7 @@ class Store {
       todayWins: 0,
       heartbeat: null,
       runnerActive: false,
-      runnerHandoverSeconds: 13800, // 3h50m countdown
+      runnerHandoverSeconds: 13800, // 3h50m countdown window
       positions: [],
       history: [],
       models: [],
@@ -31,27 +33,49 @@ class Store {
       logs: [],
       loading: true,
       lastError: null,
-      lastUpdated: null,
-      demoReviewMode: api.demoData
+      lastUpdated: null
     };
 
     this.subscribers = new Set();
     this.pollInterval = null;
     this.pollFreq = 4000; // 4 seconds
 
-    // Visibility API support to avoid background thrashing
+    // Hook unauthorized callback to gate app
+    api.onUnauthorized = (status) => {
+      this.setAuth(false, "Authentication expired or unauthorized. Please connect your GitHub PAT.");
+    };
+
+    // Visibility API support to avoid background polling thrashing
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         this.stopPolling();
       } else {
-        this.fetchSnapshot();
-        this.startPolling();
+        if (this.state.isAuth) {
+          this.fetchSnapshot();
+          this.startPolling();
+        }
       }
     });
 
-    // Initialize initial snapshot
-    this.fetchSnapshot();
-    this.startPolling();
+    // Initial load if token is available
+    if (this.state.isAuth) {
+      this.fetchSnapshot();
+      this.startPolling();
+    } else {
+      this.state.loading = false;
+    }
+  }
+
+  setAuth(isAuth, authError = null) {
+    this.state.isAuth = !!isAuth;
+    this.state.authError = authError;
+    if (!isAuth) {
+      this.stopPolling();
+    } else {
+      this.startPolling();
+      this.fetchSnapshot();
+    }
+    this.notify();
   }
 
   subscribe(fn) {
@@ -81,12 +105,15 @@ class Store {
   }
 
   async fetchSnapshot() {
+    if (!this.state.isAuth) return;
+
     try {
-      const [sysState, sessionData, tradesData, pairsData] = await Promise.allSettled([
+      const [sysState, sessionData, tradesData, pairsData, newsData] = await Promise.allSettled([
         api.getState(),
         api.getSession(),
         api.getTrades(),
-        api.getPairs()
+        api.getPairs(),
+        api.getNews()
       ]);
 
       if (sysState.status === "fulfilled" && sysState.value) {
@@ -96,8 +123,8 @@ class Store {
 
         this.state.heartbeat = hb;
         this.state.runnerActive = !!isLive;
-        this.state.mode = hb.mode || "demo";
-        this.state.balance = Number(hb.balance ?? 10000.00);
+        this.state.mode = hb.mode || (d.settings && d.settings.mode) || "demo";
+        this.state.balance = hb.balance !== null && hb.balance !== undefined ? Number(hb.balance) : null;
 
         if (d.today) {
           this.state.todayPnl = Number(d.today.pnl || 0);
@@ -114,7 +141,6 @@ class Store {
 
       if (tradesData.status === "fulfilled" && tradesData.value) {
         const allTrades = tradesData.value.trades || [];
-        // Separate open positions vs closed trades
         const open = [];
         const closed = [];
         allTrades.forEach((t) => {
@@ -124,38 +150,42 @@ class Store {
               symbol: t.pair,
               side: (t.side || "BUY").toUpperCase(),
               volume: Number(t.stake || 0.01),
-              openPrice: Number(t.open_price || t.entry_price || 1.0850),
-              currentPrice: Number(t.current_price || t.open_price || 1.0855),
+              openPrice: Number(t.open_price || t.entry_price || 0),
+              currentPrice: Number(t.current_price || t.open_price || 0),
               sl: Number(t.sl || 0),
               tp: Number(t.tp || 0),
               pnl: Number(t.pnl || 0),
               openTime: t.open_utc,
               modelId: t.pair,
-              reason: t.reason || "Momentum + Volatility Confluence"
+              reason: t.reason || "Automated MT5 Execution"
             });
           } else {
             closed.push(t);
           }
         });
 
-        // Compute simulated or live equity & margin
-        let openPnl = open.reduce((acc, p) => acc + (p.pnl || 0), 0);
+        const openPnl = open.reduce((acc, p) => acc + (p.pnl || 0), 0);
         this.state.positions = open;
         this.state.history = closed;
-        this.state.equity = this.state.balance + openPnl;
-        this.state.usedMargin = open.reduce((acc, p) => acc + (p.volume * 1000 * 0.01), 0);
-        this.state.freeMargin = Math.max(0, this.state.equity - this.state.usedMargin);
-        this.state.marginLevel = this.state.usedMargin > 0 ? (this.state.equity / this.state.usedMargin) * 100 : 0;
+        if (this.state.balance !== null) {
+          this.state.equity = this.state.balance + openPnl;
+          this.state.usedMargin = open.reduce((acc, p) => acc + (p.volume * 1000 * 0.01), 0);
+          this.state.freeMargin = Math.max(0, this.state.equity - this.state.usedMargin);
+          this.state.marginLevel = this.state.usedMargin > 0 ? (this.state.equity / this.state.usedMargin) * 100 : 0;
+        } else {
+          this.state.equity = null;
+          this.state.usedMargin = 0;
+          this.state.freeMargin = null;
+          this.state.marginLevel = 0;
+        }
       }
 
       if (pairsData.status === "fulfilled" && pairsData.value) {
         this.state.models = pairsData.value.pairs || [];
       }
 
-      // If Demo Review Mode is explicitly turned on in settings and there are 0 positions,
-      // provide realistic CFD sample positions so Victor can review every state cleanly.
-      if (this.state.demoReviewMode && this.state.positions.length === 0) {
-        this.applyDemoReviewData();
+      if (newsData.status === "fulfilled" && newsData.value) {
+        this.state.news = newsData.value.events || [];
       }
 
       this.state.loading = false;
@@ -167,48 +197,6 @@ class Store {
       this.state.lastError = err.message || String(err);
       this.notify();
     }
-  }
-
-  applyDemoReviewData() {
-    this.state.positions = [
-      {
-        ticket: 8124901,
-        symbol: "EURUSD",
-        side: "BUY",
-        volume: 0.20,
-        openPrice: 1.08420,
-        currentPrice: 1.08645,
-        sl: 1.08250,
-        tp: 1.08950,
-        pnl: 45.00,
-        pips: 22.5,
-        openTime: new Date(Date.now() - 3600000 * 2).toISOString(),
-        modelId: "EURUSD-v2",
-        reason: "H1 200 EMA pullback rejection + Volatility filter green"
-      },
-      {
-        ticket: 8124908,
-        symbol: "GBPJPY",
-        side: "SELL",
-        volume: 0.15,
-        openPrice: 198.320,
-        currentPrice: 198.140,
-        sl: 198.600,
-        tp: 197.500,
-        pnl: 18.25,
-        pips: 18.0,
-        openTime: new Date(Date.now() - 1800000).toISOString(),
-        modelId: "GBPJPY-v2",
-        reason: "London breakout failure + RSI Bearish divergence"
-      }
-    ];
-    this.state.equity = 10063.25;
-    this.state.usedMargin = 350.00;
-    this.state.freeMargin = 9713.25;
-    this.state.marginLevel = 2875.2;
-    this.state.todayPnl = 84.50;
-    this.state.todayTrades = 5;
-    this.state.todayWins = 4;
   }
 }
 

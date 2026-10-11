@@ -106,16 +106,7 @@ export const settingsView = {
               </label>
             </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg-surface-elevated); border-radius:var(--radius-sm);">
-              <div>
-                <div style="font-weight:600; font-size:var(--text-sm);">Demo Data for Design Review</div>
-                <div style="font-size:var(--text-xs); color:var(--text-muted);">Renders realistic sample CFD orders if market is flat/closed for testing.</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="toggle-demo-data" ${api.demoData ? "checked" : ""}>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
+
           </div>
         </section>
 
@@ -155,7 +146,7 @@ export const settingsView = {
             </div>
             <div style="display:flex; justify-content:space-between; padding:8px 0;">
               <span style="color:var(--text-muted);">Release Build Version</span>
-              <span class="tabular" style="font-weight:700;">v2.4.2-CFD-PREMIUM</span>
+              <span class="tabular" style="font-weight:700;"><span id="settings-build-id" class="tabular" style="font-weight:600;"></span></span>
             </div>
           </div>
         </section>
@@ -176,16 +167,7 @@ export const settingsView = {
     if (btnLight) btnLight.addEventListener("click", () => { themeController.savePreference("light"); this.updateDom(); });
     if (btnDark) btnDark.addEventListener("click", () => { themeController.savePreference("dark"); this.updateDom(); });
 
-    // Demo data toggle
-    const demoToggle = document.getElementById("toggle-demo-data");
-    if (demoToggle) {
-      demoToggle.addEventListener("change", (e) => {
-        api.setDemoData(e.target.checked);
-        store.state.demoReviewMode = e.target.checked;
-        store.fetchSnapshot();
-        showToast(`Demo review data ${e.target.checked ? "enabled" : "disabled"}`, "info");
-      });
-    }
+
 
     // Save PAT button
     const savePatBtn = document.getElementById("btn-save-pat");
