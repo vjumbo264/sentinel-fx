@@ -194,3 +194,36 @@ window.addEventListener("DOMContentLoaded", () => {
   registerRoutes();
   router.handleRoute();
 });
+
+// Offline Network Banner Listener
+function initNetworkListeners() {
+  const showOfflineAlert = () => {
+    let banner = document.getElementById("network-offline-banner");
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "network-offline-banner";
+      banner.style.cssText = "position:sticky; top:56px; z-index:45; background:var(--warning); color:#fff; text-align:center; padding:6px 12px; font-size:12px; font-weight:600;";
+      banner.textContent = "Offline · Displaying cached terminal data. Reconnecting when internet is restored...";
+      const header = document.querySelector(".top-bar");
+      if (header && header.parentNode) {
+        header.parentNode.insertBefore(banner, header.nextSibling);
+      }
+    }
+  };
+
+  const removeOfflineAlert = () => {
+    const banner = document.getElementById("network-offline-banner");
+    if (banner) banner.remove();
+    showToast("Internet connection restored", "success");
+    store.fetchSnapshot();
+  };
+
+  window.addEventListener("offline", showOfflineAlert);
+  window.addEventListener("online", removeOfflineAlert);
+
+  if (!navigator.onLine) {
+    showOfflineAlert();
+  }
+}
+
+window.addEventListener("DOMContentLoaded", initNetworkListeners);

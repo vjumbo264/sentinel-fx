@@ -297,15 +297,15 @@
     },
     {
       "id": "STATES",
-      "status": "doing",
-      "note": "Building Settings, offline banner, error boundary states, connection recovery, and loading skeletons.",
-      "evidence": "Drafting site/js/pages/settings.js and connection banner."
+      "status": "done",
+      "note": "Engineered Settings, offline network banner, error retry boundaries, and loading states in settings.js & app.js.",
+      "evidence": "site/js/pages/settings.js and offline event listeners verified."
     },
     {
       "id": "THEME",
-      "status": "todo",
-      "note": "Automatic OS light/dark scheme switching, theme picker, live chart re-theming, and contrast enforcement.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Validating automatic OS light/dark switching, dual theme-color meta tags, zero flash of unstyled theme, and live chart retheming.",
+      "evidence": "site/js/theme.js and tokens.css contrast verified."
     },
     {
       "id": "A11Y",
