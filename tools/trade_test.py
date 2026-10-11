@@ -47,7 +47,12 @@ def lifecycle(b,symbol,is_forex=False):
     assert close['retcode']==10009 and close['deal'],close
     result['steps']['close_'+str(p['ticket'])]=close
   time.sleep(2);assert not any(p['ticket'] in opened for p in b.get_open_positions(symbol,MAGIC)),'positions still open'
-  deals=[d for d in b.get_history_deals(start,MAGIC) if d['position_id'] in opened]
+  deals=[]
+  for attempt in range(10):
+   deals=[d for d in b.get_history_deals(start,MAGIC) if d['position_id'] in opened]
+   if len(deals)>=5:break
+   time.sleep(2)
+  result['steps']['history_count']=len(deals)
   assert len(deals)>=5 and all(d['ticket'] and d['order'] for d in deals),'missing broker history'
   result['steps']['deals']=deals
   pnl=sum(d['profit']+d['swap']+d['commission']+d['fee'] for d in deals)

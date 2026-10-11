@@ -875,7 +875,14 @@ class MT5Broker(BrokerBase):
 
     def get_history_deals(self, since_utc: datetime, magic: Optional[int] = None) -> List[Dict[str, Any]]:
         mt5 = self._get_api()
-        deals = mt5.history_deals_get(since_utc, datetime.now(timezone.utc)) or []
+        start = int(since_utc.timestamp())
+        end = int(datetime.now(timezone.utc).timestamp()) + 60
+        if self._conn:
+            deals = self._conn.eval(f"MetaTrader5.history_deals_get({start}, {end})")
+        else:
+            deals = mt5.history_deals_get(start, end)
+        if deals is None:
+            raise BrokerError(f"history_deals_get failed: {mt5.last_error()}")
         out = []
         for d in deals:
             d_magic = int(getattr(d, "magic", 0))

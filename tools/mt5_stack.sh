@@ -15,7 +15,8 @@ ACTION="${1:-start}"
 CONTAINER_NAME="${MT5_CONTAINER_NAME:-mt5-stack}"
 PORT="${MT5_PORT:-18812}"
 LOGIN="${MT5_DEMO_LOGIN:-${MT5_LOGIN:-41286446}}"
-PASSWORD="${MT5_PASSWORD:?MT5_PASSWORD secret is required}"
+PASSWORD="${MT5_PASSWORD:-}"
+if [ "$ACTION" != "stop" ] && [ -z "$PASSWORD" ]; then echo "MT5_PASSWORD secret required"; exit 1; fi
 SERVER="${MT5_DEMO_SERVER:-${MT5_SERVER:-Deriv-Demo}}"
 TIMEOUT_S="${MT5_START_TIMEOUT:-120}"
 
