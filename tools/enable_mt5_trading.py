@@ -18,9 +18,6 @@ c.execute('import MetaTrader5, os, subprocess, configparser, time')
 c.namespace['sfx_path']=str(ti.path);c.namespace['sfx_data']=str(ti.data_path)
 c.namespace['sfx_login']=login;c.namespace['sfx_password']=password;c.namespace['sfx_server']=server
 c.execute('''
-MetaTrader5.shutdown()
-subprocess.run(['taskkill','/IM','terminal64.exe','/F'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-time.sleep(2)
 for filename in [os.path.join(sfx_data,'config','common.ini'),os.path.join(sfx_path,'config','common.ini')]:
     os.makedirs(os.path.dirname(filename),exist_ok=True)
     cfg=configparser.ConfigParser(strict=False);cfg.optionxform=str
@@ -37,18 +34,33 @@ for filename in [os.path.join(sfx_data,'config','common.ini'),os.path.join(sfx_p
 startup=os.path.join(sfx_path,'sfx-startup.ini')
 with open(startup,'w',encoding='utf-16') as f:
     f.write('[Common]\\nLogin='+str(sfx_login)+'\\nPassword='+sfx_password+'\\nServer='+sfx_server+'\\n[Experts]\\nAllowLiveTrading=1\\nEnabled=1\\nAllowDllImport=1\\nAccount=0\\nProfile=0\\n')
-subprocess.Popen([os.path.join(sfx_path,'terminal64.exe'),'/config:'+startup],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 ''')
-for attempt in range(30):
+if not mt5.terminal_info().trade_allowed:
+ # Stopping the terminal also stops this image's Wine RPyC bridge. Enable
+ # through the actual terminal UI, without killing the bridge mid-request.
+ c.execute('''
+import ctypes
+u=ctypes.windll.user32
+handles=[]
+callback=ctypes.WINFUNCTYPE(ctypes.c_bool,ctypes.c_void_p,ctypes.c_void_p)
+@callback
+def collect(hwnd,param):
+    text=ctypes.create_unicode_buffer(512);u.GetWindowTextW(hwnd,text,512)
+    if u.IsWindowVisible(hwnd) and ('MetaTrader' in text.value or 'Deriv' in text.value):handles.append(hwnd)
+    return True
+u.EnumWindows(collect,0)
+for hwnd in handles:
+    u.ShowWindow(hwnd,9);u.SetForegroundWindow(hwnd);time.sleep(.3)
+    u.keybd_event(0x11,0,0,0);u.keybd_event(0x45,0,0,0);u.keybd_event(0x45,0,2,0);u.keybd_event(0x11,0,2,0)
+    time.sleep(2)
+    if MetaTrader5.terminal_info().trade_allowed:break
+''')
  time.sleep(2)
- if mt5.initialize(timeout=10000) and mt5.login(login=login,password=password,server=server):
-  ti=mt5.terminal_info()
-  if ti and ti.trade_allowed:break
-else:
+if not mt5.terminal_info().trade_allowed:
  # Independent method: toggle the AlgoTrading toolbar using the live Wine display.
  name=os.environ.get('MT5_CONTAINER_NAME','mt5-stack')
  subprocess.run(['docker','exec','-u','root',name,'bash','-lc','apt-get update -qq && apt-get install -qq -y xdotool'],check=True,timeout=180)
- subprocess.run(['docker','exec',name,'bash','-lc',"export DISPLAY=${DISPLAY:-:0}; W=$(xdotool search --name 'MetaTrader|Deriv' | head -1); test -n \"$W\"; xdotool windowactivate --sync \"$W\"; xdotool key --clearmodifiers ctrl+e"],check=True,timeout=30)
+ subprocess.run(['docker','exec',name,'bash','-lc',"export DISPLAY=${DISPLAY:-:0}; W=$(xdotool search --name 'MetaTrader|Deriv' | head -1); test -n \"$W\"; xdotool windowfocus --sync \"$W\"; xdotool key --clearmodifiers ctrl+e"],check=True,timeout=30)
  time.sleep(3)
 a=mt5.account_info();ti=mt5.terminal_info()
 assert a and int(a.trade_mode)==0 and int(a.login)==login,'Refusing non-demo account after restart'
