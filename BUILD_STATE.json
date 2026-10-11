@@ -237,15 +237,15 @@
     },
     {
       "id": "DESIGN",
-      "status": "doing",
-      "note": "Building CSS design tokens (tokens.css), typography system, components.css, and inline SVG icon system.",
-      "evidence": "Tokens and component CSS architecture drafting."
+      "status": "done",
+      "note": "Engineered design tokens (tokens.css) with live light/dark contrast, components.css, and pure inline SVG icon set in icons.js.",
+      "evidence": "site/styles/tokens.css, site/styles/components.css, site/js/icons.js verified."
     },
     {
       "id": "SHELL",
-      "status": "todo",
-      "note": "Mobile bottom navigation bar, desktop side rail, safe-area support, persistent header, and routing engine.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building application shell: top bar contract, mobile bottom bar, desktop rail, responsive layout, and client router.",
+      "evidence": "Drafting site/index.html, js/router.js, js/theme.js, and js/ui.js."
     },
     {
       "id": "DASH",
