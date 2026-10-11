@@ -413,9 +413,9 @@
     },
     {
       "id": "VERIFY",
-      "status": "doing",
-      "note": "End-to-end verification against real worker and live Cloudflare Pages deployment with build ID.",
-      "evidence": ""
+      "status": "done",
+      "note": "End-to-end verification complete against live Cloudflare Pages deployment (https://sentinel-fx.pages.dev) and real Cloudflare Worker (https://sentinel-fx-worker.vjumbo264.workers.dev). Tested valid & invalid PAT auth, real state/trades/pairs/news/session responses, zero fake data grep proof (0 matches), icon sizing bounds, and buildId visible in Settings and rail.",
+      "evidence": "docs/ui/verification_report.json created; live build-198d4a5 deployed to Cloudflare Pages; all 15 ui_redo steps complete."
     }
   ]
 }

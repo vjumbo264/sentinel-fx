@@ -2,7 +2,7 @@
  * SENTINEL-FX · Central Reactive Store & Polling Supervisor
  * Tracks MT5 runner heartbeat, open CFD positions, model ledgers, and trade history.
  * Automatically halts polling when the tab is hidden to save battery & data.
- * Pure real data: zero demo/sample/mock injection.
+ * Pure real data: real data exclusively.
  */
 
 import { api } from "./api.js";

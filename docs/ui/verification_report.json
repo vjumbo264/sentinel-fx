@@ -1,0 +1,141 @@
+{
+  "timestamp": "2026-10-11T07:24:58.015Z",
+  "assets": {
+    "/": {
+      "status": 200,
+      "bytes": 9791
+    },
+    "/styles/tokens.css": {
+      "status": 200,
+      "bytes": 9022
+    },
+    "/styles/components.css": {
+      "status": 200,
+      "bytes": 19136
+    },
+    "/js/app.js": {
+      "status": 200,
+      "bytes": 8055
+    },
+    "/js/version.js": {
+      "status": 200,
+      "bytes": 179
+    },
+    "/js/pages/login.js": {
+      "status": 200,
+      "bytes": 6721
+    },
+    "/js/pages/home.js": {
+      "status": 200,
+      "bytes": 15912
+    },
+    "/js/pages/trades.js": {
+      "status": 200,
+      "bytes": 11909
+    },
+    "/js/pages/history.js": {
+      "status": 200,
+      "bytes": 10679
+    },
+    "/js/pages/chart.js": {
+      "status": 200,
+      "bytes": 17000
+    },
+    "/js/pages/models.js": {
+      "status": 200,
+      "bytes": 9036
+    },
+    "/js/pages/train.js": {
+      "status": 200,
+      "bytes": 10681
+    },
+    "/js/pages/upload.js": {
+      "status": 200,
+      "bytes": 7797
+    },
+    "/js/pages/risk.js": {
+      "status": 200,
+      "bytes": 13664
+    },
+    "/js/pages/settings.js": {
+      "status": 200,
+      "bytes": 9374
+    },
+    "/data/symbols.json": {
+      "status": 200,
+      "bytes": 11141
+    },
+    "/data/tracked_pairs.json": {
+      "status": 200,
+      "bytes": 1168
+    },
+    "/data/index.json": {
+      "status": 200,
+      "bytes": 3
+    }
+  },
+  "endpoints": {
+    "auth_valid": {
+      "status": 200,
+      "ok": true,
+      "response": {
+        "ok": true,
+        "repo": "vjumbo264/sentinel-fx"
+      }
+    },
+    "auth_invalid": {
+      "status": 401,
+      "ok": true
+    },
+    "health": {
+      "status": 200,
+      "ok": true,
+      "response": {
+        "ok": true,
+        "service": "sentinel-fx-worker",
+        "utc": "2026-10-11T07:24:59Z"
+      }
+    },
+    "state": {
+      "status": 200,
+      "ok": true
+    },
+    "trades": {
+      "status": 200,
+      "ok": true,
+      "response": {
+        "trades": []
+      }
+    },
+    "session": {
+      "status": 200,
+      "ok": true,
+      "response": {
+        "session": null,
+        "ledger": [],
+        "overrides": []
+      }
+    },
+    "pairs": {
+      "status": 200,
+      "ok": true
+    },
+    "news": {
+      "status": 200,
+      "ok": true
+    }
+  },
+  "checks": {
+    "zero_fake_data": {
+      "ok": true,
+      "count": 0
+    },
+    "icon_system": {
+      "ok": true
+    },
+    "deployed_build_id": {
+      "ok": true,
+      "content": "/**\n * SENTINEL-FX · Real Build ID Stamped at Deploy Time\n */\nexport const BUILD_INFO = {\n  buildId: \"build-198d4a5\",\n  timestamp: \"2026-10-11T07:23:27.906Z\",\n  branch: \"main\"\n};"
+    }
+  }
+}

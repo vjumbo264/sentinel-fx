@@ -1,7 +1,7 @@
 /**
  * SENTINEL-FX · CFD Model Training Desk (Playbook Generator)
  * Real symbols from registry, real data readiness gated on data/index.json.
- * Zero fabricated rows or fake spread constants.
+ * Zero fabricated rows or synthetic spread constants.
  */
 
 import { icons, pairAvatar } from "../icons.js";

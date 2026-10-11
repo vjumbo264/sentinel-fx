@@ -2,7 +2,7 @@
  * SENTINEL-FX · API Client Layer
  * Resilient communications with Cloudflare Worker API & GitHub Actions.
  * Exponential backoff for GET queries, in-memory auth header, timeout protection.
- * Strict real-data only: zero fake data flags or mock toggles.
+ * Strict real-data only: real endpoints only.
  */
 
 const API_BASE = "https://sentinel-fx-worker.vjumbo264.workers.dev";
