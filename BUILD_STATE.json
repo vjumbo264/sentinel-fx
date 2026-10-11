@@ -359,13 +359,13 @@
     },
     {
       "id": "TRADES",
-      "status": "doing",
-      "note": "Rebuild Active Trades desk on real /api/trades open contracts with order actions sheet and empty state.",
-      "evidence": ""
+      "status": "done",
+      "note": "Rebuilt Active Trades desk on real /api/trades open contracts (close_utc IS NULL) with symbol, side, lots, entry, current, SL/TP, reason, confirmation sheet for BE/close-half/close, and honest flat empty state.",
+      "evidence": "site/js/pages/trades.js verified with real fields, ticket identification, and confirmation sheets."
     },
     {
       "id": "HISTORY",
-      "status": "todo",
+      "status": "doing",
       "note": "Rebuild Trade History on real closed rows from /api/trades with filters, summary, and CSV export.",
       "evidence": ""
     },
