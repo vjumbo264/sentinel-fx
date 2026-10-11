@@ -627,10 +627,10 @@
   }
  ],
  "notebook": {
-  "updated_utc": "2026-10-11T18:53:30Z",
+  "updated_utc": "2026-10-11T18:54:23Z",
   "session": 2,
   "current": "D",
-  "next_step": "1) gh api repos/vjumbo264/sentinel-fx/actions/runs/38165565445 (cancel if still throttled); 2) dispatch dukascopy-backfill.yml EURUSD from=2024-01-01 to=2025-01-01 (now SERIAL max-parallel 1, pause 2.5s) - the 503s were self-inflicted parallelism; 3) when month jobs go green and frxEURUSD shard lands in data-01, dispatch full 16-pair backfill from 2020-01-01; 4) item T: run indicator_lab on the REAL release pair CSV and add the training==live parity test in tests/.",
+  "next_step": "1) gh api repos/vjumbo264/sentinel-fx/actions/runs/38165717985/jobs - confirm SERIAL EURUSD-2024 backfill months go green (no 503 storm) and frxEURUSD shard publishes to data-01 via publish_data.py; if a month still 503s, raise --pause to 4s and redispatch just that month. 2) Then dispatch full 16-pair backfill from 2020-01-01 (pairs=all). 3) Item T: python tools/indicator_lab.py --csv <real frxEURUSD release CSV> + add tests/test_parity.py (training==live feature parity). 4) Items S,A,R,N,P,W,E2E per mission section 3.",
   "items": {
    "D": {
     "status": "doing",
@@ -662,6 +662,10 @@
      {
       "what": "forex-history 38164983264 root cause = persistent HTTP 503 from datafeed.dukascopy.com under concurrent month jobs + rapid retries (log lines captured). backfill 38165565445 queued with SAME flaw (max-parallel 3)",
       "result": "FIX committed: max-parallel 1, pause 2.5s, base_pause 4s, retries 10. Backfill must be REDISPATCHED to pick up the fix."
+     },
+     {
+      "what": "Serialized backfill (max-parallel 1, pause 2.5s, retries 10, base 4s) committed and redispatched as run 38165717985 after cancelling throttled run 38165565445",
+      "result": "run in progress at checkpoint; month-job results pending"
      }
     ],
     "evidence": [
@@ -783,7 +787,8 @@
    "2026-10-11T18:49:21Z Session 2: month-run (38164983264) still in progress; proceeding with backfill workflow + T/R scaffolds. Lab NaN-warmup bug found and fixed (sma/stddev warmup poisoned scores).",
    "2026-10-11T18:51:25Z Lab broadcast root cause = np.diff inside prims shortened composed arrays; fixed by tail alignment in compose() and scoring. Backfill dispatch 404 = transient workflow indexing; retry.",
    "2026-10-11T18:52:47Z Lab cost_vec off-by-one fixed (np.diff is N-1; aligned with leading 1.0 entry). backfill EURUSD-2024 running. forex-history failed - log line extraction next.",
-   "2026-10-11T18:53:30Z D root cause CONFIRMED from logs: 503 storm from self-inflicted parallelism (3 month jobs x rapid retry). Dukascopy is NOT blocking single paced requests (probe proved decode). Fix = serialize. This is attempt 3 of the throttling tuning."
+   "2026-10-11T18:53:30Z D root cause CONFIRMED from logs: 503 storm from self-inflicted parallelism (3 month jobs x rapid retry). Dukascopy is NOT blocking single paced requests (probe proved decode). Fix = serialize. This is attempt 3 of the throttling tuning.",
+   "2026-10-11T18:54:23Z Serial backfill dispatched (38165717985). Lab green (kept=3). All work checkpointed; successor resumes from BUILD_STATE.json notebook.next_step."
   ],
   "known_problems": [
    "No Dukascopy multi-year forex history in releases (only 100k-row MT5 fallback for frxEURUSD)",

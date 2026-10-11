@@ -57,3 +57,6 @@
 - forex-history failure = HTTP 503 storm from datafeed.dukascopy.com caused by SELF-INFLICTED parallelism (3 concurrent month jobs, rapid retries). Probe proved a single paced request decodes fine.
 - FIX: backfill serialized (max-parallel 1), pause 2.5s, retries 10, base 4s. Lab off-by-one FIXED (kept=3, best=0.002219 verified).
 - NEXT (exact, in BUILD_STATE.json): cancel throttled run, REDISPATCH serial backfill, then full 16-pair backfill, then item T parity test.
+
+## Session 2 — end-of-turn checkpoint
+- Serial backfill (38165717985) dispatched; lab green; state file holds the exact next command chain.
