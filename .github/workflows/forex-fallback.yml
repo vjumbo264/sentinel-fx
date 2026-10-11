@@ -1,0 +1,51 @@
+name: forex-fallback
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  broker-history:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MT5_PASSWORD: ${{ secrets.MT5_PASSWORD }}
+      MT5_DEMO_LOGIN: ${{ secrets.MT5_DEMO_LOGIN }}
+      MT5_DEMO_SERVER: ${{ secrets.MT5_DEMO_SERVER }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fifth independent source attempt - alternate hosts and daily candle endpoint
+        run: |
+          mkdir -p out
+          for URL in \
+            'https://www.dukascopy.com/datafeed/EURUSD/2026/09/09/01h_ticks.bi5' \
+            'https://datafeed.dukascopy.com/datafeed/EURUSD/2026/09/09/BID_candles_min_1.bi5' \
+            'http://datafeed.dukascopy.com/datafeed/EURUSD/2026/09/09/01h_ticks.bi5'; do
+            echo "ATTEMPT alternate $URL" | tee -a out/source-attempts.log
+            curl --max-time 25 -sS -D out/probe-headers.txt -o out/probe.bin -w 'HTTP %{http_code} bytes=%{size_download}\n' "$URL" | tee -a out/source-attempts.log || true
+            head -10 out/probe-headers.txt | tee -a out/source-attempts.log
+          done
+      - uses: ./.github/actions/mt5-stack
+        with:
+          action: start
+          password: ${{ secrets.MT5_PASSWORD }}
+          login: ${{ secrets.MT5_DEMO_LOGIN }}
+          server: ${{ secrets.MT5_DEMO_SERVER }}
+      - name: Download actual broker history - fallback explicitly labelled
+        run: python tools/fetch_mt5_history.py
+      - name: Verify immutable release upload and atomically update index
+        run: python tools/publish_data.py out/frxEURUSD_60s.csv.gz
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: forex-fallback-evidence
+          path: |
+            out/*.report.json
+            out/source-attempts.log
+      - uses: ./.github/actions/mt5-stack
+        if: always()
+        with:
+          action: stop

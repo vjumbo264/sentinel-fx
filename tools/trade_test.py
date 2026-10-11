@@ -10,7 +10,7 @@ MAGIC=999201
 
 def post(path,payload):
  secret=os.environ.get('BOT_SHARED_SECRET');assert secret,'BOT_SHARED_SECRET missing; cannot verify D1'
- req=urllib.request.Request(os.environ.get('WORKER_URL','https://sentinel-fx-worker.vjumbo264.workers.dev')+path,data=json.dumps(payload).encode(),headers={'X-Bot-Secret':secret,'Content-Type':'application/json'})
+ req=urllib.request.Request(os.environ.get('WORKER_URL','https://sentinel-fx-worker.vjumbo264.workers.dev')+path,data=json.dumps(payload).encode(),headers={'X-Bot-Secret':secret,'Content-Type':'application/json','Accept':'application/json','User-Agent':'sentinel-trade-test/3.0'})
  with urllib.request.urlopen(req,timeout=30) as response:return json.load(response)
 
 def lifecycle(b,symbol,is_forex=False):

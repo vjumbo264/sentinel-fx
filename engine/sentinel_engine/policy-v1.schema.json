@@ -1,0 +1,270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vjumbo264/sentinel-fx/blob/main/engine/sentinel_engine/policy-v1.schema.json",
+  "title": "sentinel.policy.v1",
+  "$defs": {
+    "Action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "reason"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "hold",
+            "open",
+            "add",
+            "reduce",
+            "reverse",
+            "move_stop",
+            "close"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "side": {
+          "enum": [
+            "long",
+            "short"
+          ]
+        },
+        "risk_fraction": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "stop_distance": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "distance",
+              "fraction"
+            ],
+            "properties": {
+              "distance": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "fraction": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "position_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fraction": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "new_stop_distance": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "to_breakeven": {
+          "const": true
+        },
+        "trail": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "open",
+                  "add"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "risk_fraction"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "open"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "side"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "add",
+                  "reduce",
+                  "reverse",
+                  "move_stop",
+                  "close"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "position_ref"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "reduce"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "fraction"
+            ]
+          }
+        }
+      ]
+    },
+    "Observation": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "market",
+        "costs",
+        "session",
+        "news",
+        "equity",
+        "drawdown",
+        "pool_share",
+        "positions",
+        "recent_results",
+        "last_action_result"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "sentinel.policy.v1"
+        },
+        "market": {
+          "type": "object"
+        },
+        "costs": {
+          "type": "object"
+        },
+        "session": {
+          "type": "object"
+        },
+        "news": {
+          "type": "object"
+        },
+        "equity": {
+          "type": "number",
+          "minimum": 0
+        },
+        "drawdown": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pool_share": {
+          "type": "number",
+          "minimum": 0
+        },
+        "positions": {
+          "type": "array"
+        },
+        "recent_results": {
+          "type": "array"
+        },
+        "last_action_result": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    },
+    "ActionResult": {
+      "type": "object",
+      "required": [
+        "status",
+        "reason",
+        "clamped",
+        "tickets"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "filled",
+            "partial",
+            "rejected"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "clamped": {
+          "type": "object"
+        },
+        "tickets": {
+          "type": "array"
+        },
+        "price": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "type": "object",
+  "required": [
+    "schema_version",
+    "actions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sentinel.policy.v1"
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Action"
+      }
+    }
+  }
+}

@@ -29,33 +29,29 @@ def _sha256(b: bytes) -> str:
 
 
 def _scan_onnx(b: bytes) -> list[str]:
-    """Reject custom operator domains and external-data references without
-    executing anything. Best-effort protobuf parse of ModelProto."""
-    problems = []
+    problems=[]
     try:
-        import onnx  # optional; only needed to load ONNX bundles
-        m = onnx.load_model_from_string(b)
-        for op in m.opset_import:
-            dom = (op.domain or "").strip()
-            if dom not in ("", "ai.onnx", "ai.onnx.ml"):
-                problems.append(f"custom ONNX opset domain: {dom!r}")
-        for node in m.graph.node:
-            if node.domain not in ("", "ai.onnx", "ai.onnx.ml"):
-                problems.append(f"custom ONNX node domain: {node.domain!r}")
-        if m.graph.HasField("metadata_props"):
-            for p in m.graph.metadata_props:
-                if p.key == "model_bytes" and p.value == "":
-                    pass
-        for t in list(m.graph.initializer):
-            if t.data_location == 1:  # EXTERNAL
-                problems.append(f"ONNX external-data tensor: {t.name}")
-    except ImportError:
-        # onnx not installed: fall back to a byte-level sniff for the
-        # external-data marker so obviously-unsafe files are still rejected.
-        if b"external_data" in b[:65536] and b"location" in b[:65536]:
-            problems.append("possible ONNX external-data reference (unverified, onnx not installed)")
-    except Exception as e:
-        problems.append(f"ONNX parse failed: {e}")
+        import onnx
+        model=onnx.load_model_from_string(b)
+        for op in model.opset_import:
+            if (op.domain or '') not in ('','ai.onnx','ai.onnx.ml'):problems.append('custom ONNX opset domain')
+        def tensor(t):
+            if t.data_location==onnx.TensorProto.EXTERNAL or t.external_data:problems.append('ONNX external-data tensor: '+t.name)
+        def graph(g):
+            for t in g.initializer:tensor(t)
+            for t in g.sparse_initializer:tensor(t.values);tensor(t.indices)
+            for node in g.node:
+                if (node.domain or '') not in ('','ai.onnx','ai.onnx.ml'):problems.append('custom ONNX node domain')
+                for a in node.attribute:
+                    if a.type==onnx.AttributeProto.TENSOR:tensor(a.t)
+                    elif a.type==onnx.AttributeProto.TENSORS:
+                        for t in a.tensors:tensor(t)
+                    elif a.type==onnx.AttributeProto.GRAPH:graph(a.g)
+                    elif a.type==onnx.AttributeProto.GRAPHS:
+                        for nested in a.graphs:graph(nested)
+        graph(model.graph)
+        if model.functions:problems.append('custom ONNX local functions forbidden')
+    except Exception as error:problems.append('ONNX safety verification failed: '+str(error))
     return problems
 
 
@@ -70,6 +66,8 @@ def verify_bundle(path: str) -> tuple[bool, list[str]]:
         p = n.replace("\\", "/")
         if p.startswith("/") or ".." in p.split("/"):
             problems.append(f"path traversal entry: {n}")
+        if not n.endswith("/") and not p.lower().endswith(ALLOWED_MODEL_EXT):
+            problems.append(f"non-data file: {n}")
         if p.lower().endswith(BANNED_EXT):
             problems.append(f"banned file type: {n}")
     if "manifest.json" not in names:
@@ -82,6 +80,8 @@ def verify_bundle(path: str) -> tuple[bool, list[str]]:
     if manifest.get("schema_version") != SCHEMA_VERSION:
         problems.append(f"schema_version != {SCHEMA_VERSION}")
     listed = {}
+    if not isinstance(manifest.get("files"), list):
+        return False, problems + ["manifest files must include explicit hashes and sizes"]
     for f in manifest.get("files", []):
         if isinstance(f, dict):
             listed[f.get("path", "")] = f
@@ -96,7 +96,7 @@ def verify_bundle(path: str) -> tuple[bool, list[str]]:
             continue
         b = zf.read(n)
         f = listed[n]
-        if f.get("sha256") and f.get("sha256") != _sha256(b):
+        if not f.get("sha256") or f.get("sha256") != _sha256(b):
             problems.append(f"sha256 mismatch: {n}")
         if f.get("size") is not None and f.get("size") != len(b):
             problems.append(f"size mismatch: {n}")

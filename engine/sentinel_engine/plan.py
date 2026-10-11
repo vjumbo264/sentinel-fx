@@ -1,196 +1,97 @@
+"""Causal data-only graph evaluator. Terminal policy is a REAL learned model.
+A classifier/score vector selects an action list from a declarative catalogue.
+Catalogue distances/risk units are normalized, never broker prices or lots.
+ONNX or LightGBM support multi-output action scores. No constant policy nodes.
 """
-sentinel_engine.plan — analysis_plan.json evaluator (MODEL task M4).
+import time,copy
+import numpy as np
+from .policy_schema import VERSION,validate_actions
+from .observation import vectorize
+ALLOWED_TYPES={'feature_group','analyst','router','head','calibrator','policy','news'}
+class PlanError(ValueError):pass
 
-Executes the trader's analysis process as a declarative, ACYCLIC graph of
-data nodes (never code): feature_group -> router/screen -> analyst(s) ->
-head -> calibrator -> decision. Every analyst/head references a model file in
-the bundle; every node declares the data it needs and its causal lookback.
+def _check_acyclic(nodes):
+ order=[];seen=set()
+ def visit(nid,stack):
+  if nid in stack:raise PlanError('cycle at '+nid)
+  if nid not in nodes:raise PlanError('unknown dependency '+nid)
+  if nid in seen:return
+  for dep in nodes[nid].get('inputs',[]):visit(dep,stack|{nid})
+  seen.add(nid);order.append(nid)
+ for nid in nodes:visit(nid,set())
+ return order
 
-Node types
-  feature_group : {"id","type":"feature_group","dsl":[...],"window":N}
-  analyst       : {"id","type":"analyst","model":"<file>","inputs":[ids],
-                   "features":[...],"budget_ms":N}
-  router        : {"id","type":"router","table":[{when:{...},use:[ids]}],
-                   "default":[ids]}
-  head          : {"id","type":"head","model":"<file>","inputs":[analyst ids]}
-  calibrator    : {"id","type":"calibrator","method":"isotonic|platt",
-                   "table":[[lo,hi,mapped],...]}
-  decision      : {"id","type":"decision"}  (terminal; reads decision.json)
+def validate_plan(plan):
+ errors=[];listed=plan.get('nodes',[])
+ if not isinstance(listed,list) or not listed:return ['empty plan']
+ nodes={n.get('id'):n for n in listed}
+ if len(nodes)!=len(listed):errors.append('duplicate node IDs')
+ if len(nodes)>64:errors.append('plan has more than 64 nodes')
+ for nid,n in nodes.items():
+  if not isinstance(nid,str) or n.get('type') not in ALLOWED_TYPES:errors.append('invalid node '+str(nid))
+  if n.get('type') in ('analyst','head','policy') and not n.get('model'):errors.append(str(nid)+': learned model required')
+  if n.get('type')=='policy':
+   if n.get('schema_version')!=VERSION:errors.append(str(nid)+': policy schema version required')
+   if not n.get('action_catalog'):errors.append(str(nid)+': action catalogue required')
+ if sum(n.get('type')=='policy' for n in listed)!=1:errors.append('exactly one terminal learned policy required')
+ try:_check_acyclic(nodes)
+ except Exception as e:errors.append(str(e))
+ return errors
 
-evaluate(bundle, df, ctx) -> {action, side, p_win, stake_multiplier, reason,
-                              opinions[], state}
-Any model/feature failure, timeout or invalid output -> SKIP (fail closed).
-"""
-from __future__ import annotations
-import time
+def predict_model(model,x):
+ if hasattr(model,'predict'):out=model.predict(np.asarray([x],dtype=np.float64))
+ else:
+  inp=model.get_inputs()[0];dtype=np.float32 if 'float' in inp.type and 'double' not in inp.type else np.float64
+  out=model.run(None,{inp.name:np.asarray([x],dtype=dtype)})[0]
+ out=np.asarray(out,dtype=float).reshape(-1)
+ if not np.isfinite(out).all():raise PlanError('NaN or infinite learned output')
+ return out
 
-MAX_PLAN_NODES = 64
-ALLOWED_TYPES = {"feature_group", "analyst", "router", "head",
-                 "calibrator", "decision", "policy"}
-
-
-class PlanError(Exception):
-    pass
-
-
-def _check_acyclic(nodes: dict) -> list[str]:
-    order, seen = [], set()
-
-    def visit(nid, stack):
-        if nid in stack:
-            raise PlanError(f"cycle at {nid}")
-        if nid in seen:
-            return
-        node = nodes.get(nid)
-        if node is None:
-            raise PlanError(f"unknown node {nid}")
-        for dep in node.get("inputs", []) + node.get("features", []):
-            if dep in nodes:
-                visit(dep, stack | {nid})
-        seen.add(nid)
-        order.append(nid)
-
-    for nid in nodes:
-        visit(nid, set())
-    return order
-
-
-def validate_plan(plan: dict) -> list[str]:
-    problems = []
-    nodes = {n["id"]: n for n in plan.get("nodes", [])}
-    if len(nodes) > MAX_PLAN_NODES:
-        problems.append(f"plan too large ({len(nodes)} nodes)")
-    for nid, n in nodes.items():
-        t = n.get("type")
-        if t not in ALLOWED_TYPES:
-            problems.append(f"{nid}: disallowed node type {t!r}")
-        if t in ("analyst", "head") and not n.get("model") and not n.get("rule"):
-            problems.append(f"{nid}: model file not declared")
-    if not any(n.get("type") in ("decision", "policy") for n in nodes.values()):
-        problems.append("no decision or policy node")
-    try:
-        _check_acyclic(nodes)
-    except PlanError as e:
-        problems.append(str(e))
-    return problems
-
-
-def evaluate(bundle, df, ctx=None, latency_ms: int = 600) -> dict:
-    """Run the plan over the LAST bar of df. Fail closed on any error."""
-    ctx = dict(ctx or {})
-    t0 = time.monotonic()
-    out = {"action": "skip", "side": None, "p_win": None,
-           "stake_multiplier": 0.0, "reason": "plan not evaluated",
-           "opinions": [], "state": {}}
-    try:
-        nodes = {n["id"]: n for n in bundle.plan.get("nodes", [])}
-        order = _check_acyclic(nodes)
-        values: dict = {}
-        opinions = []
-        for nid in order:
-            if (time.monotonic() - t0) * 1000 > latency_ms:
-                raise PlanError("latency budget exceeded")
-            n = nodes[nid]
-            t = n["type"]
-            if t == "feature_group":
-                from .dsl import compute_features
-                values[nid] = compute_features(n.get("dsl", []), df)
-            elif t == "router":
-                chosen = list(n.get("default", []))
-                for row in n.get("table", []):
-                    when = row.get("when", {})
-                    if all(ctx.get(k) == v for k, v in when.items()):
-                        chosen = row.get("use", chosen)
-                        break
-                values[nid] = chosen
-            elif t == "analyst":
-                router = next((values[r] for r in values
-                               if nodes[r]["type"] == "router"), None)
-                if router is not None and nid not in router:
-                    opinions.append({"id": nid, "skipped": True})
-                    continue
-                feats = None
-                for src in n.get("inputs", []):
-                    if src in values and hasattr(values[src], "iloc"):
-                        feats = values[src]
-                if feats is None:
-                    raise PlanError(f"{nid}: no feature input")
-                import numpy as np
-                cols = n.get("features") or list(feats.columns)
-                row = feats.iloc[-1]
-                X = np.array([[float(row.get(c, 0.0) or 0.0) for c in cols]])
-                mdl = bundle.model(n["model"])
-                p = (mdl.predict(X)[0] if hasattr(mdl, "predict")
-                     else mdl.run(None, {"input": X})[0][0][0])
-                p = float(max(0.0, min(1.0, p)))
-                op = {"id": nid, "p_up": round(p, 4),
-                      "direction": "up" if p >= 0.5 else "down",
-                      "strength": round(abs(p - 0.5) * 2, 4)}
-                opinions.append(op)
-                values[nid] = op
-            elif t == "head":
-                import numpy as np
-                ins = [values[i] for i in n.get("inputs", [])
-                       if isinstance(values.get(i), dict)]
-                X = np.array([[o["p_up"] for o in ins]])
-                mdl = bundle.model(n["model"])
-                p = (mdl.predict(X)[0] if hasattr(mdl, "predict")
-                     else mdl.run(None, {"input": X})[0][0][0])
-                values[nid] = float(max(0.0, min(1.0, p)))
-            elif t == "calibrator":
-                raw = next((values[i] for i in reversed(order)
-                            if isinstance(values.get(i), float)), None)
-                if raw is None:
-                    raise PlanError("calibrator: no head probability")
-                mapped = raw
-                for lo, hi, m in n.get("table", []):
-                    if lo <= raw < hi:
-                        mapped = m
-                        break
-                values[nid] = float(mapped)
-            elif t == "decision":
-                pcal = next((values[i] for i in reversed(order)
-                             if isinstance(values.get(i), float)), None)
-                if pcal is None:
-                    raise PlanError("decision: no calibrated probability")
-                dec = bundle.decision
-                # calibrator maps P(up); p_win is for the CHOSEN side
-                side = "CALL" if pcal >= 0.5 else "PUT"
-                pwin = pcal if side == "CALL" else 1.0 - pcal
-                mult = 1.0
-                for lo, hi, m in dec.get("stake_map", []):
-                    if lo <= pwin < hi:
-                        mult = m
-                        break
-                agree = sum(1 for o in opinions if not o.get("skipped")
-                            and o["direction"] == ("up" if side == "CALL" else "down"))
-                total = sum(1 for o in opinions if not o.get("skipped"))
-                out.update({
-                    "action": "trade", "side": side, "p_win": round(pwin, 4),
-                    "stake_multiplier": mult,
-                    "reason": f"{agree} of {total} analysts agree; "
-                              f"p_win {pwin:.3f}",
-                    "opinions": opinions, "state": ctx})
-            elif t == "policy":
-                p_win = float(n.get("confidence") or n.get("p_win", 0.65))
-                action = n.get("action", "BUY")
-                side = n.get("side", "BUY")
-                vol = float(n.get("volume", 0.01))
-                sl = float(n.get("sl", 1.0500)) if n.get("sl") is not None else None
-                tp = float(n.get("tp", 1.0600)) if n.get("tp") is not None else None
-                out.update({
-                    "action": action,
-                    "side": side,
-                    "volume": vol,
-                    "sl": sl,
-                    "tp": tp,
-                    "p_win": round(p_win, 4),
-                    "reason": n.get("reason", "policy confluence execution"),
-                    "opinions": opinions,
-                    "state": ctx
-                })
-        return out
-    except Exception as e:  # fail closed
-        out["reason"] = f"plan error -> SKIP ({type(e).__name__}: {e})"
-        out["action"] = "skip"
-        return out
+def evaluate(bundle,df,ctx=None,latency_ms=600):
+ ctx=ctx or {};t0=time.monotonic();result={'schema_version':VERSION,'actions':[],'reason':'','opinions':[],'error':None}
+ try:
+  errors=validate_plan(bundle.plan)
+  if errors:raise PlanError('; '.join(errors))
+  obs=ctx.get('observation')
+  if obs is None:raise PlanError('Observation required; no broker/default context fallback')
+  data=obs.to_dict() if hasattr(obs,'to_dict') else obs
+  nodes={n['id']:n for n in bundle.plan['nodes']};values={};opinions=[]
+  for nid in _check_acyclic(nodes):
+   if (time.monotonic()-t0)*1000>latency_ms:raise PlanError('latency budget exceeded')
+   node=nodes[nid];kind=node['type']
+   if kind=='feature_group':
+    from .dsl import compute_features
+    values[nid]=compute_features(node.get('dsl',[]),df)
+   elif kind=='router':
+    chosen=node.get('default',[])
+    for rule in node.get('table',[]):
+     if all(ctx.get(k)==v for k,v in rule.get('when',{}).items()):chosen=rule.get('use',chosen);break
+    values[nid]=chosen
+   elif kind in ('analyst','head'):
+    x=[]
+    for dep in node.get('inputs',[]):
+     value=values[dep]
+     if hasattr(value,'iloc'):x.extend(value[node.get('features') or list(value.columns)].iloc[-1].to_numpy(dtype=float).tolist())
+     else:x.extend(np.asarray(value,dtype=float).reshape(-1).tolist())
+    if not x:x=vectorize(obs).tolist()
+    if not np.isfinite(x).all():raise PlanError('nonfinite analyst features')
+    values[nid]=predict_model(bundle.model(node['model']),x);opinions.append({'id':nid,'scores':values[nid].tolist()})
+   elif kind=='calibrator':
+    raw=float(values[node['inputs'][0]][0]);values[nid]=np.asarray([next((v for lo,hi,v in node.get('table',[]) if lo<=raw<hi),raw)])
+   elif kind=='news':values[nid]=data['news']
+   elif kind=='policy':
+    x=vectorize(obs).tolist()
+    for dep in node.get('inputs',[]):
+     if isinstance(values[dep],np.ndarray):x.extend(values[dep].reshape(-1).tolist())
+    scores=predict_model(bundle.model(node['model']),x);catalog=node['action_catalog']
+    if len(scores)!=len(catalog):raise PlanError('model output dimension differs from action catalogue')
+    chosen=int(np.argmax(scores));actions=copy.deepcopy(catalog[chosen])
+    for action in actions:
+     if action.get('position_ref')=='oldest':
+      ps=data['positions']
+      if not ps:action.clear();action.update(type='hold',reason='Management intent has no owned position')
+      else:action['position_ref']=max(ps,key=lambda p:p['time_open_minutes'])['position_ref']
+    validate_actions(actions);result.update(actions=actions,reason='; '.join(a['reason'] for a in actions),opinions=opinions,scores=scores.tolist())
+  return result
+ except Exception as error:
+  result.update(actions=[],reason='Fail closed: '+str(error),error=type(error).__name__+': '+str(error));return result

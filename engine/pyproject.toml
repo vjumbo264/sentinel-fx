@@ -12,6 +12,9 @@ license = { text = "MIT" }
 dependencies = [
     "numpy>=1.24",
     "pandas>=2.0",
+    "onnx>=1.16",
+    "onnxruntime>=1.18",
+    "lightgbm>=4.0",
 ]
 
 [project.optional-dependencies]
@@ -25,3 +28,6 @@ sfx = "sentinel_engine.sfx:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["sentinel_engine*"]
+
+[tool.setuptools.package-data]
+sentinel_engine = ["*.md", "*.schema.json"]
