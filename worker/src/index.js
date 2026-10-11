@@ -20,18 +20,38 @@ const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
 const DATA_CACHE_TTL_MS = 45 * 1000; // 45s short cache
 const _dataCache = new Map(); // path -> { body, status, at }
 
-async function fetchRepoFile(path) {
+async function fetchRepoFile(path, token) {
   const cached = _dataCache.get(path);
   if (cached && Date.now() - cached.at < DATA_CACHE_TTL_MS) return cached;
-  const r = await fetch(`${RAW_BASE}/${path}`, {
-    headers: { "User-Agent": "sentinel-fx-worker", "Accept": "application/vnd.github.raw" },
-  });
-  if (!r.ok) {
-    const out = { body: null, status: r.status, at: Date.now(), error: `upstream ${r.status} for ${path}` };
-    _dataCache.set(path, out);
-    return out;
+  // Primary: GitHub Contents API with the caller's own PAT (reliable from
+  // Workers; raw.githubusercontent.com aggressively rate-limits Worker IPs).
+  const attempts = [];
+  if (token) {
+    attempts.push([`https://api.github.com/repos/${GITHUB_REPO}/contents/${path}?ref=main`, {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github.raw",
+      "User-Agent": "sentinel-fx-worker",
+    }]);
   }
-  const out = { body: await r.text(), status: 200, at: Date.now() };
+  attempts.push([`${RAW_BASE}/${path}`, { "User-Agent": "sentinel-fx-worker" }]);
+  if (path === "data/index.json") {
+    attempts.push([`https://github.com/${GITHUB_REPO}/releases/download/data-01/index.json`, { "User-Agent": "sentinel-fx-worker" }]);
+  }
+  let lastErr = "no attempt";
+  for (const [u, headers] of attempts) {
+    try {
+      const r = await fetch(u, { headers });
+      if (r.ok) {
+        const out = { body: await r.text(), status: 200, at: Date.now() };
+        _dataCache.set(path, out);
+        return out;
+      }
+      lastErr = `upstream ${r.status} for ${u}`;
+    } catch (e) {
+      lastErr = String(e && e.message || e);
+    }
+  }
+  const out = { body: null, status: 502, at: Date.now(), error: lastErr };
   _dataCache.set(path, out);
   return out;
 }
@@ -39,7 +59,7 @@ async function fetchRepoFile(path) {
 async function serveRepoData(request, path) {
   const a = await verifySiteAuth(request);
   if (!a) return err("unauthorized", 401);
-  const got = await fetchRepoFile(path);
+  const got = await fetchRepoFile(path, a.token);
   if (got.body === null || got.body === undefined) {
     return err(`data unavailable: ${got.error}`, 502);
   }
