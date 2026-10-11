@@ -341,13 +341,13 @@
     },
     {
       "id": "FOUNDATION",
-      "status": "doing",
-      "note": "Fix icon sizing (.icon classes + width/height attributes), robust api.js with 401 handler, and clean store.",
-      "evidence": ""
+      "status": "done",
+      "note": "Fixed icon blowout with .icon, .icon-*, .w-*, .h-* rules in components.css and width/height attributes in icons.js; verified api.js timeout & retry; verified store reactive state.",
+      "evidence": "site/styles/components.css and site/js/icons.js updated; verified SVGs have bounded dimensions and responsive CSS classes."
     },
     {
       "id": "LOGIN",
-      "status": "todo",
+      "status": "doing",
       "note": "First-run login gate with /api/auth/check validation, safe localStorage PAT handling, and 401 redirect.",
       "evidence": ""
     },
