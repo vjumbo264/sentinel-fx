@@ -227,5 +227,103 @@
       "note": "End-to-end CFD validation complete: 17/17 unit tests passing, clean TypeScript compile and lint, zero-gap handoff verified, spike report confirmed on MT5 build 6092, demo mode enforced.",
       "evidence": "docs/mt5-spike.md, docs/handoff_test_report.json, tests/ pass report, App.tsx build verified"
     }
+  ],
+  "ui": [
+    {
+      "id": "AUDIT",
+      "status": "doing",
+      "note": "Auditing worker endpoints, binary options legacy cleanup, symbols registry, and mobile touch constraints.",
+      "evidence": "Worker API audited; data/symbols.json verified; CFD schema analyzed."
+    },
+    {
+      "id": "DESIGN",
+      "status": "todo",
+      "note": "Design tokens, private-bank aesthetic, tabular typography, custom properties, and inline SVG iconography.",
+      "evidence": ""
+    },
+    {
+      "id": "SHELL",
+      "status": "todo",
+      "note": "Mobile bottom navigation bar, desktop side rail, safe-area support, persistent header, and routing engine.",
+      "evidence": ""
+    },
+    {
+      "id": "DASH",
+      "status": "todo",
+      "note": "Hero balance card, Lagos time countdown, runner heartbeat, session compounding pool, and top movers.",
+      "evidence": ""
+    },
+    {
+      "id": "TRADES",
+      "status": "todo",
+      "note": "Active CFD positions desk with pips/PnL live calculations, SL/TP levels, break-even action, and close partial.",
+      "evidence": ""
+    },
+    {
+      "id": "HISTORY",
+      "status": "todo",
+      "note": "Closed trade journal, summary stats, daily/weekly PnL bars, CSV export, and filtering.",
+      "evidence": ""
+    },
+    {
+      "id": "CHART",
+      "status": "todo",
+      "note": "Interactive candlestick chart with timeframe chips, Lagos time axis, open position overlays, and live theme updates.",
+      "evidence": ""
+    },
+    {
+      "id": "TRAIN",
+      "status": "todo",
+      "note": "CFD model training playbook generator, data readiness verification, and in-memory token dispatch.",
+      "evidence": ""
+    },
+    {
+      "id": "MODELS",
+      "status": "todo",
+      "note": "Trained pairs grid, currency flag-pair avatars, compounding ledgers, and forward-eval metrics.",
+      "evidence": ""
+    },
+    {
+      "id": "RISK",
+      "status": "todo",
+      "note": "Risk management desk, equal-split allocator, owner overrides, and MT5 connection test.",
+      "evidence": ""
+    },
+    {
+      "id": "UPLOAD",
+      "status": "todo",
+      "note": "Drag-and-drop bundle uploader for .sfxmodel.zip with validation stepper and report parser.",
+      "evidence": ""
+    },
+    {
+      "id": "STATES",
+      "status": "todo",
+      "note": "Resilient offline banner, connection recovery, error boundary with retry, and loading skeletons.",
+      "evidence": ""
+    },
+    {
+      "id": "THEME",
+      "status": "todo",
+      "note": "Automatic OS light/dark scheme switching, theme picker, live chart re-theming, and contrast enforcement.",
+      "evidence": ""
+    },
+    {
+      "id": "A11Y",
+      "status": "todo",
+      "note": "44px tap targets, WCAG AA contrast, aria-live announcements, and reduced motion support.",
+      "evidence": ""
+    },
+    {
+      "id": "PERF",
+      "status": "todo",
+      "note": "Lightweight bundle, sub-250KB footprint, zero layout shift, and batched DOM updates.",
+      "evidence": ""
+    },
+    {
+      "id": "VERIFY",
+      "status": "todo",
+      "note": "Automated validation, multi-resolution verification, zero rise/fall terminology check, and Cloudflare Pages deployment.",
+      "evidence": ""
+    }
   ]
 }
