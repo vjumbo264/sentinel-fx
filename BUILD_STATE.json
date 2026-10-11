@@ -460,20 +460,20 @@
   {
    "id": "G1",
    "status": "doing",
-   "note": "MT5 stack composite action wired into bot.yml+trade-test.yml; PROVEN container start+login on runs 38129230441 & 38130437280 (balance USD 10007.18, Lev 1:1000). Backoff+3-fail circuit breaker in bot.yml. STILL PENDING: 10-min live bot heartbeat; bot.yml workflow_dispatch returns 422 (GitHub shows \"no workflow_dispatch trigger\" - YAML trigger not registering, needs owner attention/enable).",
-   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38130437280"
+   "note": "Stack+login PROVEN twice (runs 38129230441, 38130437280: rpyc-classic backend, balance USD 10007.18, Lev 1:1000). bot.yml dispatch API returns 422 \"no workflow_dispatch trigger\" even though the YAML on main declares it \u2014 GitHub-side registration issue; bot runs do occur via schedule/push chain. 10-min Worker heartbeat still unproven.",
+   "evidence": "runs 38129230441, 38130437280; 422 body captured"
   },
   {
    "id": "G2",
    "status": "doing",
-   "note": "HUGE progress: RPyC eval-namespace fix WORKED. Run 38130437280: order_check now returns REAL retcode=0 \"Done\" (was None). order_send now returns REAL retcode=10027 \"AutoTrading disabled by client\" (was None). Time offset code has \u00b114h/30m sanity. Remaining: enable AutoTrading in terminal (added ini-enable to mt5_stack.sh; redispatched).",
-   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38130437280 (order_check retcode=0 Done; order_send retcode=10027 AutoTrading disabled)"
+   "note": "RPyC eval-namespace fix PROVEN: order_check now returns real retcode=0 \"Done\" on both symbols (run 38130437280). order_send now returns real retcode=10027 \"AutoTrading disabled by client\" \u2014 a terminal-side toggle, not a code bug; ini-enable added to mt5_stack.sh and re-dispatched on fixed main. Full order lifecycle (tickets, SL modify, partial close, history deals) PENDING until AutoTrading enabled.",
+   "evidence": "runs 38130437280 & 38130612838: order_check retcode=0 Done; order_send retcode=10027"
   },
   {
    "id": "G3",
    "status": "doing",
-   "note": "Synthetic R_10 PROVEN (run 38128792662, 525798 rows). Forex Dukascopy run 38130438816 FAILED with NameError: subprocess not defined in tools/fetch_candles.py:230 - fixed (added import), redispatched. Empty-result crash already guarded.",
-   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38130438816 (NameError subprocess - fixed + redispatched)"
+   "note": "R_10 synthetic PROVEN (run 38128792662, 525798 rows, atomic swap, index updated). frxEURUSD Dukascopy: two failures were code bugs now fixed on main (missing subprocess import \u2014 NameError at fetch_candles.py:230). Re-dispatched on fixed main; awaiting green run.",
+   "evidence": "runs 38130438816/38130614388 (NameError subprocess \u2014 fixed); R_10 run 38128792662 OK"
   },
   {
    "id": "G4",
