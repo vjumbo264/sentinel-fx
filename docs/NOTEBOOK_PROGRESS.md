@@ -60,3 +60,5 @@
 
 ## Session 2 — end-of-turn checkpoint
 - Serial backfill (38165717985) dispatched; lab green; state file holds the exact next command chain.
+
+## Checkpoint: serial backfill healthy (1 running / 11 queued / 0 failed); next_step in BUILD_STATE.json.

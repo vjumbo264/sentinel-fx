@@ -627,10 +627,10 @@
   }
  ],
  "notebook": {
-  "updated_utc": "2026-10-11T18:54:23Z",
+  "updated_utc": "2026-10-11T18:55:01Z",
   "session": 2,
   "current": "D",
-  "next_step": "1) gh api repos/vjumbo264/sentinel-fx/actions/runs/38165717985/jobs - confirm SERIAL EURUSD-2024 backfill months go green (no 503 storm) and frxEURUSD shard publishes to data-01 via publish_data.py; if a month still 503s, raise --pause to 4s and redispatch just that month. 2) Then dispatch full 16-pair backfill from 2020-01-01 (pairs=all). 3) Item T: python tools/indicator_lab.py --csv <real frxEURUSD release CSV> + add tests/test_parity.py (training==live feature parity). 4) Items S,A,R,N,P,W,E2E per mission section 3.",
+  "next_step": "Watch serial backfill run 38165717985 (EURUSD 2024, 12 months, max-parallel 1 \u2014 month 1 in progress, 0 failures). If a month 503s: bump --pause to 4s and redispatch that month. When all 12 green and frxEURUSD shard lands in data-01: dispatch pairs=all from=2020-01-01. Then item T parity test (tests/test_parity.py) on the real release CSV; then S/A/R/N/P/W/E2E per section 3.",
   "items": {
    "D": {
     "status": "doing",
@@ -788,7 +788,8 @@
    "2026-10-11T18:51:25Z Lab broadcast root cause = np.diff inside prims shortened composed arrays; fixed by tail alignment in compose() and scoring. Backfill dispatch 404 = transient workflow indexing; retry.",
    "2026-10-11T18:52:47Z Lab cost_vec off-by-one fixed (np.diff is N-1; aligned with leading 1.0 entry). backfill EURUSD-2024 running. forex-history failed - log line extraction next.",
    "2026-10-11T18:53:30Z D root cause CONFIRMED from logs: 503 storm from self-inflicted parallelism (3 month jobs x rapid retry). Dukascopy is NOT blocking single paced requests (probe proved decode). Fix = serialize. This is attempt 3 of the throttling tuning.",
-   "2026-10-11T18:54:23Z Serial backfill dispatched (38165717985). Lab green (kept=3). All work checkpointed; successor resumes from BUILD_STATE.json notebook.next_step."
+   "2026-10-11T18:54:23Z Serial backfill dispatched (38165717985). Lab green (kept=3). All work checkpointed; successor resumes from BUILD_STATE.json notebook.next_step.",
+   "2026-10-11T18:55:01Z Serial backfill verified pacing correctly: 1 month in progress, 11 queued, 0 failed, no 503 storm. Resume = watch 38165717985."
   ],
   "known_problems": [
    "No Dukascopy multi-year forex history in releases (only 100k-row MT5 fallback for frxEURUSD)",
