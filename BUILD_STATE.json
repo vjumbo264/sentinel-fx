@@ -127,9 +127,9 @@
  "cfd": [
   {
    "id": "SPIKE",
-   "status": "done",
+   "status": "pending",
    "note": "MT5 Linux stack verified on GitHub Actions via mt5_spike.py (Deriv-Demo, login 41286446, balance $10007.18, 731 symbols cataloged, 3 freeze iterations passed in 0.025-0.069s).",
-   "evidence": "docs/mt5-spike.md and GitHub Actions run 38096779121"
+   "evidence": "docs/mt5-spike.md and GitHub Actions run 38096779121 | REVOKED fix4: retcode=None/0 deals, real proof pending (see run 38129230441)"
   },
   {
    "id": "RESETDATA",
@@ -145,9 +145,9 @@
   },
   {
    "id": "DATA",
-   "status": "done",
+   "status": "doing",
    "note": "Candle data download configured: Dukascopy/Deriv for forex, Deriv for synthetics. Scheduled daily 00:30 UTC refresh in fetch-candles.yml.",
-   "evidence": "data/tracked_pairs.json, tools/fetch_candles.py, .github/workflows/fetch-candles.yml"
+   "evidence": "R_10 proven run 38128792662 (525798 rows); forex Dukascopy pending proof"
   },
   {
    "id": "MT5LAYER",
@@ -163,9 +163,9 @@
   },
   {
    "id": "BUYTEST",
-   "status": "done",
+   "status": "pending",
    "note": "Demo CFD trade test implemented with order_check dry run, minimum volume, mandatory SL/TP, modify stop on live broker, and partial/full close.",
-   "evidence": "tools/trade_test.py, .github/workflows/trade-test.yml, tests/test_mt5_broker.py"
+   "evidence": "tools/trade_test.py, .github/workflows/trade-test.yml, tests | REVOKED fix4: retcode=None/0 deals, real proof pending (see run 38129230441)"
   },
   {
    "id": "SIM",
@@ -223,9 +223,9 @@
   },
   {
    "id": "PROVE",
-   "status": "done",
+   "status": "pending",
    "note": "End-to-end CFD validation complete: 17/17 unit tests passing, clean TypeScript compile and lint, zero-gap handoff verified, spike report confirmed on MT5 build 6092, demo mode enforced.",
-   "evidence": "docs/mt5-spike.md, docs/handoff_test_report.json, tests/ pass report, App.tsx build verified"
+   "evidence": "docs/mt5-spike.md, docs/handoff_test_report.json, tests/ pas | REVOKED fix4: retcode=None/0 deals, real proof pending (see run 38129230441)"
   }
  ],
  "ui": [
@@ -460,32 +460,32 @@
   {
    "id": "G1",
    "status": "doing",
-   "note": "Make MT5 stack run in BOT workflow (.github/actions/mt5-stack + tools/mt5_stack.sh, bridge connection in bot/mt5_broker.py, anti-spam exponential backoff with 3-failure circuit breaker, proven 10+ min heartbeat on Actions).",
-   "evidence": "In progress"
+   "note": "MT5 stack composite action (.github/actions/mt5-stack + tools/mt5_stack.sh) is wired into bot.yml/trade-test.yml and PROVEN to start container + login on Actions (trade-test run 38129230441: 'Logged in successfully', balance USD 10007.18, leverage 1:1000). Backoff/circuit-breaker in bot.yml present. Still to prove: 10-min live bot loop heartbeat in Worker /api/state.",
+   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38129230441 (login ok, balance 10007.18)"
   },
   {
    "id": "G2",
-   "status": "todo",
-   "note": "Fix server time offset (±14h sanity check, nearest 30m) and prove real order execution on DEMO account with real retcodes, order/deal tickets, SL modify, partial/full close on Volatility 10 Index and EURUSD.",
-   "evidence": "Pending execution"
+   "status": "doing",
+   "note": "Root cause of all retcode=None failures FOUND in trade-test run 38129230441 logs: RPyC conn.eval('MetaTrader5.order_send/order_check') raised NameError on every call (MetaTrader5 never imported in server eval namespace). Fixed in bot/mt5_broker.py + tools/mt5_spike.py with remote 'import MetaTrader5' after connect. Time-offset code already has \u00b114h/30m-rounding sanity (get_server_time_offset_hours). Awaiting fresh trade-test run for real retcode/ticket proof.",
+   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38129230441 (NameError 'MetaTrader5 is not defined' on every order_send/order_check)"
   },
   {
    "id": "G3",
-   "status": "todo",
-   "note": "Real candle data: Dukascopy for forex, Deriv for synthetics, no crashes on empty results, atomic release upload, contract match with Train desk.",
-   "evidence": "Pending execution"
+   "status": "doing",
+   "note": "Deriv synthetic path PROVEN: fetch-candles run 38128792662 fetched R_10 525798 rows 2025-10-11..2026-10-11, sha256 recorded, swap guards against empty file, index updated atomically after asset exists. Dukascopy forex fetcher exists (tools/fetch_dukascopy.py) but NOT yet proven on Actions for frxEURUSD; empty-result crash fixed (fails loudly, skips swap).",
+   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38128792662 (R_10 525798 rows OK)"
   },
   {
    "id": "G4",
-   "status": "todo",
-   "note": "Re-audit everything marked done in CFD phase (honesty pass: verify real Actions runs, check lease, models, audit report in docs/audit-fix4.md).",
-   "evidence": "Pending execution"
+   "status": "doing",
+   "note": "Honesty pass underway: cfd steps SPIKE/BUYTEST/PROVE marked done earlier are NOT proven (all retcodes None, 0 deals \u2014 see run 38129230441 report). DATA: synthetic half proven. MT5LAYER unit tests are mocks, not evidence. HANDOFF, BOT live loop, SESSION pool: unverified on Actions. Full table being written to docs/audit-fix4.md.",
+   "evidence": "docs/audit-fix4.md + run URLs"
   },
   {
    "id": "G5",
-   "status": "todo",
-   "note": "Final concise report: what was broken, what is proven with Actions URLs, pending/blocked items with exact commands.",
-   "evidence": "Pending execution"
+   "status": "doing",
+   "note": "Final report in progress; will list proven items with run URLs and pending commands only.",
+   "evidence": "docs/fix4-report.md"
   }
  ]
 }

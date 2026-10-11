@@ -221,6 +221,14 @@ class MT5Broker(BrokerBase):
             except Exception:
                 pass
             self._conn = conn
+            # Root-cause fix (E2): conn.eval("MetaTrader5.order_send(...)") raised
+            # NameError on every call because MetaTrader5 was never imported into
+            # the RPyC server's eval global namespace -> all retcodes came back None.
+            # Import it remotely once so eval-based order calls resolve correctly.
+            try:
+                conn.execute("import MetaTrader5")
+            except Exception as imp_err:
+                logger.warning(f"Remote 'import MetaTrader5' note: {imp_err}")
             self._mt5 = conn.modules.MetaTrader5
             self._backend_name = "rpyc-classic"
             logger.info(f"[MT5Broker] Successfully connected via backend: {self._backend_name} on {self.host}:{self.port}")

@@ -49,6 +49,10 @@ def get_mt5_connection(host: str = "localhost", port: int = 18812, timeout: int 
                 conn.modules.sys.path.append("C:\\Program Files\\MetaTrader 5")
             except Exception:
                 pass
+            try:
+                conn.execute("import MetaTrader5")
+            except Exception as _e:
+                print(f"[WARN] remote import MetaTrader5: {_e}")
             mt5 = conn.modules.MetaTrader5
             return mt5, "rpyc-classic", conn
         except Exception as e:
