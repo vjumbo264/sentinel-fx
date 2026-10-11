@@ -2,11 +2,11 @@
  "R_10": {
   "asset": "R_10_60s.csv.gz",
   "first_epoch": 1760163305,
-  "last_checked_utc": "2026-10-11T08:57:14Z",
-  "last_epoch": 1791709020,
+  "last_checked_utc": "2026-10-11T11:37:44Z",
+  "last_epoch": 1791718620,
   "release_tag": "data-01",
-  "rows": 525762,
-  "sha256": "46b0f2cb51ab39a58813cb62aa8f2b684e622e65deb6be88d08b371063750b67",
+  "rows": 525922,
+  "sha256": "05d2fa9bbb023872af253bf05c176dd117c9b5df5a0788803464ce70af5da9fe",
   "source": "auth-otp"
  },
  "R_100": {
