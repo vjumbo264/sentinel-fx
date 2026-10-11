@@ -329,13 +329,13 @@
   "ui_redo": [
     {
       "id": "AUDIT",
-      "status": "doing",
-      "note": "Auditing all worker endpoints, bot writers, and current site sources to map real data contracts.",
-      "evidence": ""
+      "status": "done",
+      "note": "Audited all 16 Worker endpoints, bot writers in main.py, and real data shapes. Documented in docs/ui/api-map.md.",
+      "evidence": "docs/ui/api-map.md created; verified /api/health, /api/auth/check, /api/state, /api/trades, /api/news, /api/session against live Worker."
     },
     {
       "id": "PURGE",
-      "status": "todo",
+      "status": "doing",
       "note": "Delete all fake data generators, sample positions, demo toggles, and invented version strings across site/.",
       "evidence": ""
     },
