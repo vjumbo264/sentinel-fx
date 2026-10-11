@@ -1,26 +1,8 @@
 {
-  "timestamp_utc": "2026-10-11T10:01:53.020886+00:00",
-  "account": {
-    "login": 41286446,
-    "server": "Deriv-Demo",
-    "currency": "USD",
-    "balance": 10007.18,
-    "equity": 10007.18,
-    "profit": 0.0,
-    "margin": 0.0,
-    "margin_free": 10007.18,
-    "margin_level": 0.0,
-    "leverage": 1000,
-    "margin_mode": "ACCOUNT_MARGIN_MODE_RETAIL_HEDGING",
-    "trade_allowed": true,
-    "trade_expert": true
-  },
-  "server_time_utc_offset_hours": 0.0,
+  "status": "failed",
   "tests": {
     "synthetic": {
       "symbol": "Volatility 10 Index",
-      "is_forex": false,
-      "status": "failed",
       "steps": {
         "order_check": {
           "retcode": 0,
@@ -28,33 +10,123 @@
           "comment": "Done",
           "margin_free": 10006.69,
           "volume": 0.5,
-          "sl": 4930.52,
-          "tp": 4934.12
+          "sl": 4943.854,
+          "tp": 4955.322
+        },
+        "open_1": {
+          "ok": true,
+          "order": 4753155635,
+          "ticket": 4753155635,
+          "deal": 4725455297,
+          "symbol": "Volatility 10 Index",
+          "side": "BUY",
+          "volume": 0.5,
+          "price": 4947.802,
+          "sl": 4943.854,
+          "tp": 4955.322,
+          "magic": 999201,
+          "comment": "sfx:lifecycl:0",
+          "retcode": 10009
+        },
+        "open_2": {
+          "ok": true,
+          "order": 4753155646,
+          "ticket": 4753155646,
+          "deal": 4725455309,
+          "symbol": "Volatility 10 Index",
+          "side": "BUY",
+          "volume": 1.0,
+          "price": 4947.74,
+          "sl": 4943.854,
+          "tp": 4955.322,
+          "magic": 999201,
+          "comment": "sfx:lifecycl:1",
+          "retcode": 10009
+        },
+        "positions": [
+          {
+            "ticket": 4753155635,
+            "symbol": "Volatility 10 Index",
+            "type": "BUY",
+            "volume": 0.5,
+            "price_open": 4947.802,
+            "price_current": 4947.552,
+            "sl": 4943.854,
+            "tp": 4955.322,
+            "profit": -0.13,
+            "swap": 0.0,
+            "time": 1791722403,
+            "magic": 999201,
+            "comment": "sfx:lifecycl:0"
+          },
+          {
+            "ticket": 4753155646,
+            "symbol": "Volatility 10 Index",
+            "type": "BUY",
+            "volume": 1.0,
+            "price_open": 4947.74,
+            "price_current": 4947.552,
+            "sl": 4943.854,
+            "tp": 4955.322,
+            "profit": -0.19,
+            "swap": 0.0,
+            "time": 1791722404,
+            "magic": 999201,
+            "comment": "sfx:lifecycl:1"
+          }
+        ],
+        "modify_stop": {
+          "ok": true,
+          "retcode": 10009,
+          "ticket": 4753155635,
+          "sl": 4940.094,
+          "tp": 4955.322
+        },
+        "partial_close": {
+          "ok": true,
+          "retcode": 10009,
+          "ticket": 4753155646,
+          "deal": 4725455349,
+          "volume_closed": 0.5,
+          "price": 4947.468
+        },
+        "close_4753155635": {
+          "ok": true,
+          "retcode": 10009,
+          "ticket": 4753155635,
+          "deal": 4725455372,
+          "volume_closed": 0.5,
+          "price": 4947.611
+        },
+        "close_4753155646": {
+          "ok": true,
+          "retcode": 10009,
+          "ticket": 4753155646,
+          "deal": 4725455378,
+          "volume_closed": 0.5,
+          "price": 4947.611
         }
       },
-      "errors": [
-        "open_position failed: order_send failed: retcode=10027 (AutoTrading disabled by client)"
-      ]
+      "status": "failed",
+      "error": "missing broker history"
     },
     "forex": {
       "symbol": "EURUSD",
-      "is_forex": true,
-      "status": "failed",
       "steps": {
         "order_check": {
           "retcode": 0,
           "ok": true,
           "comment": "Done",
-          "margin_free": 10006.06,
+          "margin_free": 10005.76,
           "volume": 0.01,
-          "sl": 1.11928,
-          "tp": 1.12178
+          "sl": 1.11513,
+          "tp": 1.13028
         }
       },
-      "errors": [
-        "open_position failed: order_send failed: retcode=10027 (AutoTrading disabled by client)"
-      ]
+      "status": "pending",
+      "resume_command": "python tools/trade_test.py --forex-only --forex-symbol EURUSD --demo"
     }
   },
-  "status": "failed"
+  "terminal_trade_allowed": true,
+  "server_offset_hours": 0.0
 }
