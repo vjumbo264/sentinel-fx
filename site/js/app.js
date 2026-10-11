@@ -11,6 +11,7 @@ import { router } from "./router.js";
 import { sfxBusy, showToast, showConfirmSheet, formatLagosTime } from "./ui.js";
 
 // Page Views
+import { loginView } from "./pages/login.js";
 import { homeView } from "./pages/home.js";
 import { tradesView } from "./pages/trades.js";
 import { chartView } from "./pages/chart.js";
@@ -175,6 +176,7 @@ function bindStoreToShell() {
 }
 
 function registerRoutes() {
+  router.register("login", loginView);
   router.register("dash", homeView);
   router.register("trades", tradesView);
   router.register("chart", chartView);

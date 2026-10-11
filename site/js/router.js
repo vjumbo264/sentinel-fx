@@ -1,7 +1,11 @@
 /**
- * SENTINEL-FX · Client-Side Hash Router
- * Deep-linkable hash routes, scroll position restoration, and active state sync.
+ * SENTINEL-FX · Client-Side Hash Router with Auth Gate
+ * Deep-linkable hash routes, scroll position restoration, active state sync,
+ * and first-run login gating.
  */
+
+import { store } from "./store.js";
+import { loginView } from "./pages/login.js";
 
 class Router {
   constructor() {
@@ -27,26 +31,36 @@ class Router {
   }
 
   async handleRoute() {
-    // Save previous scroll position
-    if (this.currentRoute) {
+    const appView = document.getElementById("app-view");
+    if (!appView) return;
+
+    // Gate unauthenticated sessions
+    if (!store.state.isAuth) {
+      this.currentRoute = "login";
+      this.updateNavLinks("login");
+      this.setNavVisibility(false);
+      await loginView.render(appView);
+      window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
+
+    this.setNavVisibility(true);
+
+    if (this.currentRoute && this.currentRoute !== "login") {
       this.scrollPositions[this.currentRoute] = window.scrollY;
     }
 
-    const routeName = this.getCleanRoute();
-    const page = this.routes[routeName] || this.routes["dash"];
+    let routeName = this.getCleanRoute();
+    if (routeName === "login") routeName = "dash";
 
+    const page = this.routes[routeName] || this.routes["dash"];
     this.currentRoute = routeName;
 
-    // Update navigation active states
     this.updateNavLinks(routeName);
-
-    const appView = document.getElementById("app-view");
-    if (!appView) return;
 
     if (page && typeof page.render === "function") {
       try {
         await page.render(appView);
-        // Restore scroll position or scroll to top
         const savedScroll = this.scrollPositions[routeName] || 0;
         window.scrollTo({ top: savedScroll, behavior: "instant" });
       } catch (err) {
@@ -62,18 +76,34 @@ class Router {
     }
   }
 
+  setNavVisibility(visible) {
+    const rail = document.querySelector(".desktop-rail");
+    const bottomNav = document.querySelector(".bottom-nav");
+    const modePill = document.getElementById("top-mode-pill");
+    const refreshBtn = document.getElementById("btn-top-refresh");
+
+    if (rail) rail.style.display = visible ? "" : "none";
+    if (bottomNav) bottomNav.style.display = visible ? "" : "none";
+    if (modePill) modePill.style.display = visible ? "" : "none";
+    if (refreshBtn) refreshBtn.style.display = visible ? "" : "none";
+    
+    // adjust body padding on desktop when nav is hidden
+    if (!visible) {
+      document.body.style.paddingLeft = "0";
+      document.body.style.paddingBottom = "0";
+    } else {
+      document.body.style.paddingLeft = "";
+      document.body.style.paddingBottom = "";
+    }
+  }
+
   updateNavLinks(activeRoute) {
-    // Desktop Rail
     document.querySelectorAll(".rail-link").forEach((link) => {
       const target = link.getAttribute("href")?.replace(/^#\/?/, "");
-      if (target === activeRoute) {
-        link.classList.add("active");
-      } else {
-        link.classList.remove("active");
-      }
+      if (target === activeRoute) link.classList.add("active");
+      else link.classList.remove("active");
     });
 
-    // Mobile Bottom Nav
     document.querySelectorAll(".bottom-tab").forEach((tab) => {
       const target = tab.getAttribute("data-route");
       if (target === activeRoute || (activeRoute === "dash" && target === "dash")) {

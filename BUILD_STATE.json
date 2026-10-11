@@ -347,13 +347,13 @@
     },
     {
       "id": "LOGIN",
-      "status": "doing",
-      "note": "First-run login gate with /api/auth/check validation, safe localStorage PAT handling, and 401 redirect.",
-      "evidence": ""
+      "status": "done",
+      "note": "Built first-run login screen in site/js/pages/login.js with PAT input, /api/auth/check validation, safe localStorage, 401 redirect gate, and Settings logout action.",
+      "evidence": "site/js/pages/login.js created; router.js and app.js auth gate wired; settings.js logout action added; tested PAT auth check."
     },
     {
       "id": "DASH",
-      "status": "todo",
+      "status": "doing",
       "note": "Rebuild Home dashboard on real /api/state and /api/news with honest empty states and no fake figures.",
       "evidence": ""
     },

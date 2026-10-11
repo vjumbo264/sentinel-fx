@@ -110,21 +110,24 @@ export const settingsView = {
           </div>
         </section>
 
-        <!-- 3. GITHUB PAT & ACCESS -->
+        <!-- 3. AUTHENTICATION & ACCESS -->
         <section class="card" style="padding:var(--space-4);">
           <div class="card-header">
-            <span class="card-title">GITHUB PATENTIALS</span>
-            <span style="font-size:11px; color:var(--profit); font-weight:600;">Browser Session Only</span>
+            <span class="card-title">AUTHENTICATION &amp; ACCESS</span>
+            <span style="font-size:11px; color:var(--profit); font-weight:600;">Connected</span>
           </div>
 
           <p style="font-size:var(--text-xs); color:var(--text-secondary); margin-bottom:var(--space-3); line-height:1.5;">
-            Used strictly by your phone to dispatch GitHub Action workflows (<code>bot.yml</code>, <code>fetch-candles.yml</code>) and authorize Worker queries. It is never transmitted to any third party.
+            Authenticated with verified push access to <code>vjumbo264/sentinel-fx</code>. Your token is stored only in browser local storage and never logged or exposed.
           </p>
 
-          <div style="display:flex; gap:var(--space-2); margin-bottom:var(--space-2);">
-            <input type="password" id="input-pat" class="input" placeholder="github_pat_..." value="${api.token}">
-            <button id="btn-save-pat" class="btn btn-primary btn-sm" style="min-height:44px; padding:0 var(--space-4);">
-              Save
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); padding:10px 12px; background:var(--bg-surface-elevated); border-radius:var(--radius-sm); margin-bottom:var(--space-3);">
+            <div>
+              <div style="font-weight:600; font-size:var(--text-sm);">GitHub PAT Session</div>
+              <div style="font-size:var(--text-xs); color:var(--text-muted);">Gated via /api/auth/check</div>
+            </div>
+            <button id="btn-logout" class="btn btn-danger btn-sm" style="min-height:36px;">
+              ${icons.logOut("w-4 h-4")} <span>Disconnect / Logout</span>
             </button>
           </div>
         </section>
@@ -169,16 +172,22 @@ export const settingsView = {
 
 
 
-    // Save PAT button
-    const savePatBtn = document.getElementById("btn-save-pat");
-    const patInput = document.getElementById("input-pat");
-    if (savePatBtn && patInput) {
-      savePatBtn.addEventListener("click", () => {
-        sfxBusy(savePatBtn, async () => {
-          const val = patInput.value.trim();
-          api.setToken(val);
-          await api.checkAuth();
-        }, { pending: "Verifying PAT...", ok: "Token validated & saved" });
+    // Logout button
+    const logoutBtn = document.getElementById("btn-logout");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", () => {
+        showConfirmSheet({
+          title: "Disconnect & Logout?",
+          description: "This will remove your GitHub PAT from this browser and return you to the login screen.",
+          confirmText: "Logout",
+          confirmVariant: "danger",
+          onConfirm: () => {
+            api.setToken("");
+            store.setAuth(false, "Logged out successfully.");
+            router.navigate("login");
+            showToast("Logged out successfully", "info");
+          }
+        });
       });
     }
   }
