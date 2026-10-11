@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-11T09:33:46.746261+00:00",
+  "timestamp_utc": "2026-10-11T09:41:35.209177+00:00",
   "account": {
     "login": 41286446,
     "server": "Deriv-Demo",
@@ -28,8 +28,8 @@
           "comment": "",
           "margin_free": null,
           "volume": 0.5,
-          "sl": 4931.889,
-          "tp": 4935.489
+          "sl": 4933.023,
+          "tp": 4936.623
         }
       },
       "errors": [
