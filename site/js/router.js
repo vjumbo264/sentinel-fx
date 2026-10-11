@@ -58,6 +58,10 @@ class Router {
 
     this.updateNavLinks(routeName);
 
+    // F3: pull a fresh snapshot (forced notify) BEFORE rendering so pages mount
+    // with current data and never need to re-render themselves on later poll ticks.
+    try { await store.fetchSnapshot(true); } catch (_) {}
+
     if (page && typeof page.render === "function") {
       try {
         await page.render(appView);

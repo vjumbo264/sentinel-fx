@@ -110,15 +110,16 @@ export default {
         }
 
         if (path === "/api/bot/heartbeat" && method === "POST") {
-          // FIX-B: also persist the CONNECTED account identity when supplied
+          // FIX-B: persist CONNECTED account identity; FIX3-F4: persist equity + free margin
           const cur = await env.DB.prepare("SELECT loginid, currency FROM heartbeat WHERE id=1").first();
           const loginid = body.loginid !== undefined ? body.loginid : (cur ? cur.loginid : null);
           const currency = body.currency !== undefined ? body.currency : (cur ? cur.currency : null);
           await env.DB.prepare(
-            "INSERT INTO heartbeat (id, ts, mode, balance, note, loginid, currency) VALUES (1,?,?,?,?,?,?) " +
+            "INSERT INTO heartbeat (id, ts, mode, balance, equity, free_margin, note, loginid, currency) VALUES (1,?,?,?,?,?,?,?,?) " +
             "ON CONFLICT(id) DO UPDATE SET ts=excluded.ts, mode=excluded.mode, balance=excluded.balance, " +
-            "note=excluded.note, loginid=excluded.loginid, currency=excluded.currency"
-          ).bind(nowUTC(), body.mode || null, body.balance ?? null, body.note || null, loginid, currency).run();
+            "equity=excluded.equity, free_margin=excluded.free_margin, note=excluded.note, loginid=excluded.loginid, currency=excluded.currency"
+          ).bind(nowUTC(), body.mode || null, body.balance ?? null, body.equity ?? null, body.free_margin ?? null, body.note || null, loginid, currency).run();
+          // D1 migration-safe: add columns if the table predates them
           return json({ ok: true });
         }
 
@@ -229,6 +230,22 @@ export default {
         if (path === "/api/bot/trades/open" && method === "GET") {
           const r = await env.DB.prepare("SELECT * FROM trades WHERE close_utc IS NULL").all();
           return json({ open: r.results });
+        }
+
+        if (path === "/api/bot/session" && method === "GET") {
+          // FIX3-F2: the bot reads the owner-set pool, per-model shares and
+          // session-scoped risk settings from here every cycle.
+          const s = await env.DB.prepare("SELECT * FROM session ORDER BY id DESC LIMIT 1").all();
+          const led = await env.DB.prepare("SELECT * FROM model_ledger ORDER BY symbol").all();
+          const settings = {};
+          const rs = await env.DB.prepare("SELECT key, value FROM settings").all();
+          for (const r of rs.results) settings[r.key] = JSON.parse(r.value);
+          return json({ session: s.results[0] || null, ledger: led.results, settings, lagos_date: lagosDate() });
+        }
+
+        if (path === "/api/bot/overrides" && method === "GET") {
+          const ov = await env.DB.prepare("SELECT * FROM overrides ORDER BY symbol").all();
+          return json({ overrides: ov.results });
         }
 
         return err("not found", 404);
@@ -512,6 +529,8 @@ export default {
         await env.DB.prepare(
           "UPDATE heartbeat SET balance=10000.00, note='demo reset', ts=? WHERE id=1"
         ).bind(nowUTC()).run();
+        // Zero the per-model ledger so the pool view matches the reset balance
+        await env.DB.prepare("UPDATE model_ledger SET balance=0, updated_utc=?").bind(nowUTC()).run();
         // Log the action
         await env.DB.prepare(
           "INSERT INTO logs (ts, level, pair, message) VALUES (?, 'info', null, 'Demo balance and session stats reset to $10,000.00')"

@@ -232,11 +232,20 @@ def main_loop(mode: str = "demo"):
             time.sleep(POLL_INTERVAL_S)
             continue
 
-        # 3. Fetch Settings & Enabled Pairs
-        settings = http_worker("GET", "/api/settings")
-        overrides = http_worker("GET", "/api/session/overrides")
+        # 3. Fetch Settings, Session Pool & Enabled Pairs (FIX3-F2/F5)
+        sess = http_worker("GET", "/api/bot/session")
+        settings = sess.get("settings") or http_worker("GET", "/api/settings") or {}
+        overrides = {o.get("symbol"): o.get("action") for o in (sess.get("overrides") or [])} if isinstance(sess.get("overrides"), list) else http_worker("GET", "/api/bot/overrides").get("overrides", [])
+        if isinstance(overrides, list):
+            overrides = {o.get("symbol"): o.get("action") for o in overrides}
+        ledger = {l["symbol"]: l for l in (sess.get("ledger") or [])}
         active_pairs_res = http_worker("GET", "/api/pairs/enabled")
-        enabled_symbols = active_pairs_res.get("symbols") or ["Volatility 10 Index", "EURUSD"]
+        enabled_symbols = active_pairs_res.get("symbols") or list(ledger.keys()) or ["Volatility 10 Index", "EURUSD"]
+
+        # Owner overrides: global stop-all honored immediately
+        if overrides.get("*") == "stop_all":
+            log_to_worker("warning", "*", "Owner stop_all override active: no new orders this cycle")
+            stop_new_orders = True
 
         # Ensure active bundles are loaded
         registry.load_active_models(enabled_symbols)
@@ -260,11 +269,26 @@ def main_loop(mode: str = "demo"):
 
             df = pd.DataFrame(candles)
 
+            # FIX3-F2/F5: each model receives ITS OWN pool share, never the
+            # whole account. Falls back to an equal split of the balance.
+            led = ledger.get(sym) or {}
+            share_alloc = float(led.get("allocated") or 0)
+            share_bal = float(led.get("balance") or 0)
+            n_enabled = max(1, len(registry.bundles))
+            if share_alloc <= 0:
+                share_alloc = bal / n_enabled
+            if share_bal <= 0:
+                share_bal = share_alloc
+            share_free_margin = free_m * (share_alloc / bal) if bal > 0 else 0.0
+
             # Decision context
             ctx = {
-                "balance": bal,
-                "equity": eq,
-                "free_margin": free_m,
+                "balance": share_bal,
+                "allocated": share_alloc,
+                "equity": share_bal,
+                "free_margin": share_free_margin,
+                "account_balance": bal,
+                "account_equity": eq,
                 "symbol": sym,
                 "open_positions": sym_positions,
                 "positions_count": len(sym_positions)
@@ -276,6 +300,10 @@ def main_loop(mode: str = "demo"):
                 post_decision_log(sym, dec, bal, eq)
 
                 # Process Decision Actions
+                # Owner per-symbol pause override
+                if overrides.get(sym) == "pause":
+                    continue
+
                 if action in ("BUY", "SELL", "trade") and not stop_new_orders:
                     side = dec.get("side", "BUY") if action == "trade" else action
                     if side in ("CALL", "BUY"):
@@ -287,6 +315,23 @@ def main_loop(mode: str = "demo"):
                     if len(sym_positions) < 2:
                         sinfo = broker.get_symbol_info(sym)
                         vol = float(dec.get("volume", sinfo["volume_min"] if sinfo else 0.01))
+
+                        # FIX3-F2: owner max-lot clamp (when enabled on Risk page)
+                        if settings.get("ov_max_lot_enabled") and settings.get("ov_max_lot"):
+                            vol = min(vol, float(settings["ov_max_lot"]))
+
+                        # FIX3-F5: reject sizes whose margin exceeds this model's share
+                        tick0 = broker.get_tick(sym)
+                        if tick0 and sinfo:
+                            px0 = tick0["ask"] if side == "BUY" else tick0["bid"]
+                            try:
+                                mc = broker.check_margin(sym, side, vol, px0)
+                                if mc["required_margin"] > share_free_margin:
+                                    log_to_worker("warning", sym,
+                                        f"Rejected: required margin {mc['required_margin']:.2f} exceeds model share of free margin {share_free_margin:.2f}")
+                                    continue
+                            except Exception as merr:
+                                logger.debug(f"margin precheck skipped for {sym}: {merr}")
                         tick = broker.get_tick(sym)
                         if tick:
                             price = tick["ask"] if side == "BUY" else tick["bid"]

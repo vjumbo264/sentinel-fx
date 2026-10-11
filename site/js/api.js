@@ -206,10 +206,41 @@ class ApiClient {
     });
 
     if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Workflow dispatch failed (${res.status}): ${errText}`);
+      // F1: surface GitHub's error readably (message + per-input errors), never a raw JSON dump
+      const raw = await res.text();
+      let detail = "";
+      try {
+        const j = JSON.parse(raw);
+        detail = j.message || "";
+        if (j.errors) {
+          const errs = Array.isArray(j.errors) ? j.errors : [j.errors];
+          const bits = errs.map((e) => (typeof e === "string" ? e : (e.message || e.code || ""))).filter(Boolean);
+          if (bits.length) detail += (detail ? " — " : "") + bits.join("; ");
+        }
+      } catch (_) {
+        detail = raw.slice(0, 160);
+      }
+      throw new Error(`Workflow dispatch failed (${res.status}): ${detail || res.statusText}`);
     }
     return { ok: true, workflow: workflowFile };
+  }
+
+  /**
+   * Latest dispatch of a workflow on main, optionally only runs created after `sinceIso`.
+   * Used by the Train desk to show queued/running/finished inline on the symbol row.
+   */
+  async getLatestWorkflowRun(workflowFile, sinceIso = null) {
+    try {
+      const data = await this.getWorkflowRuns(workflowFile);
+      const runs = (data.workflow_runs || []).filter((r) => {
+        if (r.head_branch !== "main") return false;
+        if (sinceIso && new Date(r.created_at).getTime() < new Date(sinceIso).getTime() - 60000) return false;
+        return true;
+      });
+      return runs[0] || null; // API returns newest first
+    } catch (_) {
+      return null;
+    }
   }
 
   async getWorkflowRuns(workflowFile) {

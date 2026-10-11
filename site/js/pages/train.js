@@ -2,12 +2,21 @@
  * SENTINEL-FX · CFD Model Training Desk (Playbook Generator)
  * Real symbols from registry, real data readiness gated on data/index.json.
  * Zero fabricated rows or synthetic spread constants.
+ *
+ * F1: "Fetch Data" dispatches fetch-candles.yml with EXACTLY the inputs the
+ *     workflow declares (symbols / granularity / mode), shows queued/running/
+ *     finished inline on the row, and flips to Ready only when the data index
+ *     confirms the asset. GitHub API errors surface as readable text.
+ * F3: page state (active chip, selections, fetch status) survives poll ticks;
+ *     poll notifications never rebuild this page (no store subscription).
+ * F4: chip bar is a non-overlapping, nowrap, horizontally scrollable row with
+ *     a fade edge; the active chip is scrolled into view.
  */
 
 import { icons, pairAvatar } from "../icons.js";
-import { store } from "../store.js";
 import { api } from "../api.js";
 import { sfxBusy, showToast } from "../ui.js";
+import { getPageState, setPageState } from "../pageState.js";
 
 const SYMBOL_REGISTRY = [
   // Forex Majors
@@ -39,45 +48,39 @@ const SYMBOL_REGISTRY = [
   { sym: "1HZ100V", name: "Volatility 100 (1s)", cat: "synthetics", digits: 2 }
 ];
 
+const CATEGORIES = [
+  ["majors", "Forex Majors"],
+  ["minors", "Minors & Crosses"],
+  ["metals", "Metals (Gold)"],
+  ["synthetics", "Synthetics (24/7)"],
+  ["all", "All Instruments"]
+];
+
+// F1: single source of truth for the workflow_dispatch contract.
+// These names MUST match .github/workflows/fetch-candles.yml inputs.
+const FETCH_WORKFLOW = "fetch-candles.yml";
+const WF_IN = Object.freeze({ symbols: "symbols", granularity: "granularity", mode: "mode" });
+const ACTIONS_URL = `https://github.com/vjumbo264/sentinel-fx/actions/workflows/${FETCH_WORKFLOW}`;
+
 export const trainView = {
-  currentCategory: "majors", // "majors" | "minors" | "metals" | "synthetics" | "all"
-  selectedSymbols: new Set(["frxEURUSD"]),
   dataIndex: {},
+
+  ps() {
+    return getPageState("train", {
+      currentCategory: "majors",
+      selectedSymbols: ["frxEURUSD"],
+      fetchStatus: {} // sym -> { phase, text, url }
+    });
+  },
 
   async render(container) {
     this.container = container;
-    
-    // Load real data index
-    try {
-      const res = await fetch("./data/index.json");
-      if (res.ok) {
-        this.dataIndex = await res.json();
-      }
-    } catch (_) {
-      this.dataIndex = {};
-    }
+    await this.reloadIndex();
 
-    this.updateDom();
-  },
-
-  updateDom() {
-    if (!this.container) return;
-
-    const filtered = SYMBOL_REGISTRY.filter(item => {
-      if (this.currentCategory === "all") return true;
-      return item.cat === this.currentCategory;
-    });
-
-    const selectedArray = Array.from(this.selectedSymbols);
-    const allSelectedReady = selectedArray.length > 0 && selectedArray.every(sym => {
-      const info = this.dataIndex[sym];
-      return info && (info.rows || info.ready);
-    });
-
-    this.container.innerHTML = `
+    const ps = this.ps();
+    container.innerHTML = `
       <div style="display:flex; flex-direction:column; gap:var(--space-4);">
 
-        <!-- HEADER & DESCRIPTION -->
         <div class="card" style="padding:var(--space-4);">
           <h2 class="card-title" style="margin-bottom:var(--space-1);">CFD MODEL TRAINING GENERATOR</h2>
           <p style="font-size:var(--text-sm); color:var(--text-secondary); line-height:1.5; margin-bottom:var(--space-3);">
@@ -85,141 +88,240 @@ export const trainView = {
             Select pairs with confirmed historical candle datasets in releases, generate the training prompt, and execute with your preferred LLM.
           </p>
 
-          <!-- CATEGORY FILTER CHIPS -->
-          <div style="display:flex; gap:var(--space-2); overflow-x:auto; padding-top:var(--space-2); border-top:1px solid var(--border-subtle);">
-            <button class="btn btn-sm cat-chip ${this.currentCategory === "majors" ? "btn-primary" : "btn-ghost"}" data-cat="majors">
-              Forex Majors
-            </button>
-            <button class="btn btn-sm cat-chip ${this.currentCategory === "minors" ? "btn-primary" : "btn-ghost"}" data-cat="minors">
-              Minors &amp; Crosses
-            </button>
-            <button class="btn btn-sm cat-chip ${this.currentCategory === "metals" ? "btn-primary" : "btn-ghost"}" data-cat="metals">
-              Metals (Gold)
-            </button>
-            <button class="btn btn-sm cat-chip ${this.currentCategory === "synthetics" ? "btn-primary" : "btn-ghost"}" data-cat="synthetics">
-              Synthetics (24/7)
-            </button>
-            <button class="btn btn-sm cat-chip ${this.currentCategory === "all" ? "btn-primary" : "btn-ghost"}" data-cat="all">
-              All Instruments
-            </button>
+          <!-- F4: non-overlapping chip bar, horizontal scroll + fade edge -->
+          <div class="chip-fade" style="border-top:1px solid var(--border-subtle); padding-top:var(--space-2);">
+            <div class="chip-scroll" id="train-chip-row">
+              ${CATEGORIES.map(([cat, label]) => `
+                <button class="btn btn-sm cat-chip ${ps.currentCategory === cat ? "btn-primary" : "btn-ghost"}" data-cat="${cat}">${label}</button>
+              `).join("")}
+            </div>
           </div>
         </div>
 
-        <!-- PAIR TABLE / LIST -->
-        <div style="display:flex; flex-direction:column; gap:var(--space-2);">
-          ${filtered.map(item => {
-            const isChecked = this.selectedSymbols.has(item.sym);
-            const dataInfo = this.dataIndex[item.sym];
-            const isReady = !!(dataInfo && (dataInfo.rows || dataInfo.ready));
-            const rowsText = dataInfo && dataInfo.rows ? `${Number(dataInfo.rows).toLocaleString()} rows` : "";
-
-            return `
-              <div class="card" style="padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">
-                <div style="display:flex; align-items:center; gap:var(--space-3);">
-                  <input type="checkbox" class="pair-checkbox" data-sym="${item.sym}" ${isChecked ? "checked" : ""} style="width:18px; height:18px; accent-color:var(--accent-primary); cursor:pointer;">
-                  ${pairAvatar(item.sym, 34)}
-                  <div>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                      <span style="font-weight:700; font-size:var(--text-sm);">${item.name}</span>
-                      <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">${item.sym.replace(/^frx/, "")}</span>
-                    </div>
-                    <div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:2px;">
-                      Precision: ${item.digits}d · Status: ${isReady ? "Dataset Ready" : "Data Not Downloaded"}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  ${isReady ? `
-                    <span class="badge-profit" style="font-size:11px; padding:4px 8px;">
-                      ${icons.check("w-3 h-3")} Ready ${rowsText ? "(" + rowsText + ")" : ""}
-                    </span>
-                  ` : `
-                    <button class="btn btn-secondary btn-sm btn-fetch-data" data-sym="${item.sym}" style="min-height:32px; padding:0 8px; font-size:12px;">
-                      Fetch Data
-                    </button>
-                  `}
-                </div>
-              </div>
-            `;
-          }).join("")}
-        </div>
-
-        
-        <!-- OPTIONAL IN-MEMORY PUBLISH TOKEN -->
-        <div class="card" style="padding:var(--space-4);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);">
-            <div style="font-weight:600; font-size:var(--text-sm);">Optional Publish PAT (Memory-Only)</div>
-            <span style="font-size:11px; color:var(--text-muted);">Never stored in localStorage</span>
-          </div>
-          <p style="font-size:var(--text-xs); color:var(--text-secondary); line-height:1.4; margin-bottom:var(--space-3);">
-            If provided, appends an authorization block to the prompt so an automated trainer can publish the finished model bundle directly via GitHub Actions.
-          </p>
-          <input type="password" id="input-train-pat" class="input" placeholder="Optional fine-grained PAT with workflow rights..." style="font-family:var(--font-mono); font-size:var(--text-sm);">
-        </div>
-
-        <!-- STICKY BOTTOM GENERATION ACTION BAR -->
-        <div class="card" style="position:sticky; bottom:calc(68px + env(safe-area-inset-bottom, 16px)); z-index:30; background:var(--bg-surface); padding:var(--space-3) var(--space-4); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:var(--space-2); box-shadow:var(--shadow-modal);">
-          <div>
-            <span style="font-weight:700; font-size:var(--text-sm);">${this.selectedSymbols.size} Selected</span>
-            <span style="font-size:var(--text-xs); color:var(--text-muted); display:block;">
-              ${allSelectedReady ? "All selected pairs confirmed in data index" : "Data not downloaded: fetch candles first"}
-            </span>
-          </div>
-
-          <button id="btn-copy-playbook" class="btn btn-primary" ${!allSelectedReady ? "disabled" : ""} style="min-height:42px;">
-            ${icons.copy("w-4 h-4")} <span>Copy Playbook Prompt</span>
-          </button>
-        </div>
-
+        <div id="train-rows" style="display:flex; flex-direction:column; gap:var(--space-4);"></div>
       </div>
     `;
 
-    this.bindEvents();
+    this.bindStaticEvents();
+    this.updateRows();
+
+    // Restore chip row scroll + bring active chip into view (F4)
+    requestAnimationFrame(() => {
+      const active = this.container.querySelector(".cat-chip.btn-primary");
+      if (active) active.scrollIntoView({ behavior: "instant", inline: "center", block: "nearest" });
+    });
   },
 
-  bindEvents() {
-    // Category chips
-    document.querySelectorAll(".cat-chip").forEach(btn => {
+  async reloadIndex() {
+    // The data index confirms which assets actually exist in the data-01 release.
+    try {
+      const res = await fetch("./data/index.json?ts=" + Date.now());
+      this.dataIndex = res.ok ? await res.json() : {};
+    } catch (_) {
+      this.dataIndex = {};
+    }
+  },
+
+  indexEntry(sym) {
+    const e = this.dataIndex[sym];
+    if (!e || !(e.rows || e.ready)) return null;
+    const first = e.first_utc || e.first || null;
+    const last = e.last_utc || e.last || null;
+    return {
+      rows: Number(e.rows || 0),
+      first: first ? String(first).slice(0, 10) : null,
+      last: last ? String(last).slice(0, 10) : null
+    };
+  },
+
+  updateRows() {
+    const rowsEl = this.container && this.container.querySelector("#train-rows");
+    if (!rowsEl) return;
+    const ps = this.ps();
+
+    const filtered = SYMBOL_REGISTRY.filter(item =>
+      ps.currentCategory === "all" ? true : item.cat === ps.currentCategory
+    );
+
+    const selected = new Set(ps.selectedSymbols);
+    const allSelectedReady = selected.size > 0 && [...selected].every(sym => !!this.indexEntry(sym));
+
+    rowsEl.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:var(--space-2);">
+        ${filtered.map(item => {
+          const isChecked = selected.has(item.sym);
+          const entry = this.indexEntry(item.sym);
+          const st = ps.fetchStatus[item.sym];
+          const rowsText = entry ? entry.rows.toLocaleString() + " rows" : "";
+          const spanText = entry && entry.first && entry.last ? ` · ${entry.first} → ${entry.last}` : "";
+
+          return `
+            <div class="card" style="padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:var(--space-2); flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:var(--space-3); min-width:0;">
+                <input type="checkbox" class="pair-checkbox" data-sym="${item.sym}" ${isChecked ? "checked" : ""} style="width:18px; height:18px; accent-color:var(--accent-primary); cursor:pointer; flex-shrink:0;">
+                ${pairAvatar(item.sym, 32)}
+                <div style="min-width:0;">
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span style="font-weight:700; font-size:var(--text-sm);">${item.name}</span>
+                    <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">${item.sym.replace(/^frx/, "")}</span>
+                  </div>
+                  <div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:2px;">
+                    Precision: ${item.digits}d · Status: ${entry ? "Dataset Ready" : "Data Not Downloaded"}
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                ${st && !entry ? `
+                  <span id="fetch-status-${item.sym}" style="font-size:11px; color:var(--text-muted); display:inline-flex; align-items:center; gap:5px;">
+                    ${st.phase === "queued" || st.phase === "in_progress" ? '<span class="btn-spinner" aria-hidden="true"></span>' : ""}
+                    <a href="${st.url || ACTIONS_URL}" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">${st.text}</a>
+                  </span>
+                ` : ""}
+                ${entry ? `
+                  <span class="badge-profit" style="font-size:11px; padding:4px 8px; white-space:nowrap;">
+                    ${icons.check("w-3 h-3")} Ready (${rowsText}${spanText})
+                  </span>
+                ` : `
+                  <button class="btn btn-secondary btn-sm btn-fetch-data" data-sym="${item.sym}" ${st && (st.phase === "queued" || st.phase === "in_progress") ? "disabled" : ""} style="min-height:32px; padding:0 8px; font-size:12px;">
+                    Fetch Data
+                  </button>
+                `}
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+
+      <div class="card" style="padding:var(--space-4);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);">
+          <div style="font-weight:600; font-size:var(--text-sm);">Optional Publish PAT (Memory-Only)</div>
+          <span style="font-size:11px; color:var(--text-muted);">Never stored in localStorage</span>
+        </div>
+        <p style="font-size:var(--text-xs); color:var(--text-secondary); line-height:1.4; margin-bottom:var(--space-3);">
+          If provided, appends an authorization block to the prompt so an automated trainer can publish the finished model bundle directly via GitHub Actions.
+        </p>
+        <input type="password" id="input-train-pat" class="input" placeholder="Optional fine-grained PAT with workflow rights..." style="font-family:var(--font-mono); font-size:var(--text-sm);">
+      </div>
+
+      <div class="card" style="position:sticky; bottom:calc(68px + env(safe-area-inset-bottom, 16px)); z-index:30; background:var(--bg-surface); padding:var(--space-3) var(--space-4); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:var(--space-2); box-shadow:var(--shadow-modal);">
+        <div>
+          <span style="font-weight:700; font-size:var(--text-sm);">${selected.size} Selected</span>
+          <span style="font-size:var(--text-xs); color:var(--text-muted); display:block;">
+            ${allSelectedReady ? "All selected pairs confirmed in data index" : "Data not downloaded: fetch candles first"}
+          </span>
+        </div>
+        <button id="btn-copy-playbook" class="btn btn-primary" ${!allSelectedReady ? "disabled" : ""} style="min-height:42px;">
+          ${icons.copy("w-4 h-4")} <span>Copy Playbook Prompt</span>
+        </button>
+      </div>
+    `;
+
+    this.bindRowEvents();
+  },
+
+  setFetchStatus(sym, status) {
+    const ps = this.ps();
+    ps.fetchStatus[sym] = status;
+    setPageState("train", { fetchStatus: ps.fetchStatus });
+    this.updateRows();
+  },
+
+  async dispatchAndTrack(btn, sym) {
+    const entry = this.indexEntry(sym);
+    // F1: send exactly the declared workflow inputs — symbols (plural),
+    // granularity, and mode (incremental when an asset already exists, else full).
+    const inputs = {
+      [WF_IN.symbols]: sym,
+      [WF_IN.granularity]: "60",
+      [WF_IN.mode]: entry ? "incremental" : "full"
+    };
+
+    const dispatchedAt = new Date().toISOString();
+    await api.dispatchWorkflow(FETCH_WORKFLOW, "main", inputs);
+    this.setFetchStatus(sym, { phase: "queued", text: "Queued on GitHub Actions", url: ACTIONS_URL });
+
+    // Poll the workflow run state and mirror it inline on the row
+    for (let i = 0; i < 40; i++) {
+      await new Promise(r => setTimeout(r, 6000));
+      let run = null;
+      try { run = await api.getLatestWorkflowRun(FETCH_WORKFLOW, dispatchedAt); } catch (_) {}
+      if (!run) continue;
+
+      if (run.status === "queued" || run.status === "waiting") {
+        this.setFetchStatus(sym, { phase: "queued", text: "Queued", url: run.html_url });
+      } else if (run.status === "in_progress") {
+        this.setFetchStatus(sym, { phase: "in_progress", text: "Running fetch…", url: run.html_url });
+      } else if (run.status === "completed") {
+        if (run.conclusion === "success") {
+          this.setFetchStatus(sym, { phase: "completed", text: "Fetch finished — verifying index…", url: run.html_url });
+          // F1: flip to Ready ONLY when the data index confirms the asset
+          for (let j = 0; j < 10; j++) {
+            await this.reloadIndex();
+            if (this.indexEntry(sym)) {
+              const ps = this.ps();
+              delete ps.fetchStatus[sym];
+              setPageState("train", { fetchStatus: ps.fetchStatus });
+              this.updateRows();
+              showToast(`${sym} dataset confirmed in release data-01`, "success");
+              return;
+            }
+            await new Promise(r => setTimeout(r, 6000));
+          }
+          this.setFetchStatus(sym, { phase: "completed", text: "Run finished; index not updated yet — open Actions log", url: run.html_url });
+        } else {
+          this.setFetchStatus(sym, { phase: "failed", text: `Run ${run.conclusion || "failed"} — open Actions log`, url: run.html_url });
+        }
+        return;
+      }
+    }
+    this.setFetchStatus(sym, { phase: "queued", text: "Still running — open Actions", url: ACTIONS_URL });
+  },
+
+  bindStaticEvents() {
+    this.container.querySelectorAll(".cat-chip").forEach(btn => {
       btn.addEventListener("click", () => {
         const cat = btn.getAttribute("data-cat");
-        if (cat) {
-          this.currentCategory = cat;
-          this.updateDom();
-        }
+        if (!cat) return;
+        setPageState("train", { currentCategory: cat });
+        this.container.querySelectorAll(".cat-chip").forEach(b => {
+          const on = b.getAttribute("data-cat") === cat;
+          b.classList.toggle("btn-primary", on);
+          b.classList.toggle("btn-ghost", !on);
+        });
+        // F4: keep the active chip visible inside the scrollable row
+        btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+        this.updateRows();
       });
     });
+  },
 
-    // Checkboxes
-    document.querySelectorAll(".pair-checkbox").forEach(box => {
+  bindRowEvents() {
+    this.container.querySelectorAll(".pair-checkbox").forEach(box => {
       box.addEventListener("change", (e) => {
         const sym = box.getAttribute("data-sym");
-        if (sym) {
-          if (e.target.checked) this.selectedSymbols.add(sym);
-          else this.selectedSymbols.delete(sym);
-          this.updateDom();
-        }
+        const ps = this.ps();
+        const set = new Set(ps.selectedSymbols);
+        if (e.target.checked) set.add(sym); else set.delete(sym);
+        setPageState("train", { selectedSymbols: [...set] });
+        this.updateRows();
       });
     });
 
-    // Fetch data workflow dispatch
-    document.querySelectorAll(".btn-fetch-data").forEach(btn => {
+    this.container.querySelectorAll(".btn-fetch-data").forEach(btn => {
       btn.addEventListener("click", () => {
         const sym = btn.getAttribute("data-sym");
-        sfxBusy(btn, async () => {
-          await api.dispatchWorkflow("fetch-candles.yml", "main", { symbol: sym });
-        }, {
-          pending: `Queuing fetch for ${sym}...`,
-          ok: `Fetch workflow dispatched for ${sym}`
-        });
+        sfxBusy(btn, () => this.dispatchAndTrack(btn, sym), {
+          pending: `Queuing ${sym}...`,
+          ok: `Fetch dispatched for ${sym} — tracking run on the row`
+        }).catch(() => {});
       });
     });
 
-    // Copy Prompt
-    const copyBtn = document.getElementById("btn-copy-playbook");
+    const copyBtn = this.container.querySelector("#btn-copy-playbook");
     if (copyBtn) {
       copyBtn.addEventListener("click", () => {
-        const syms = Array.from(this.selectedSymbols).join(", ");
+        const syms = this.ps().selectedSymbols.join(", ");
         const promptText = `# SENTINEL-FX CFD TRAINING PLAYBOOK\n\nInstruments: ${syms}\nObjective: Compound balance with zero martingale. Mandatory server-side SL on every position.\n\nFollow TRAIN_PROMPT.md architecture.`;
         navigator.clipboard.writeText(promptText);
         showToast("Training prompt copied to clipboard", "success");

@@ -237,36 +237,42 @@ export const icons = {
 };
 
 /**
- * Currency badge helper for forex & synthetic pair avatars.
- * Returns clean inline SVG with two overlapping currency circles.
+ * Currency badge helper for forex & synthetic pair avatars (F4 redesign).
+ * Single rounded chip with the FULL instrument code so nothing clips:
+ *   frxEURUSD -> "EURUSD", frxXAUUSD -> "XAUUSD" (gold), R_100 -> "V100",
+ *   1HZ100V   -> "1sV100". No overlapping circles, no cut-off letters.
  */
-export function pairAvatar(symbol, size = 36) {
-  const clean = symbol.replace(/^frx/, "").toUpperCase();
-  let b1 = "FX", b2 = "CFD", color1 = "#2563eb", color2 = "#475569";
+const CURRENCY_COLORS = {
+  EUR: "#2563eb", GBP: "#7c3aed", USD: "#334155", JPY: "#dc2626",
+  AUD: "#0891b2", CAD: "#b91c1c", CHF: "#475569", NZD: "#059669",
+  XAU: "#b45309", XAG: "#64748b"
+};
 
-  if (clean.length === 6) {
-    b1 = clean.slice(0, 3);
-    b2 = clean.slice(3, 6);
-  } else if (clean.startsWith("R_") || clean.includes("HZ")) {
-    b1 = "VOL";
-    b2 = clean.replace(/R_/, "V").slice(0, 4);
-    color1 = "#7c3aed";
-    color2 = "#0891b2";
+export function pairAvatar(symbol, size = 36) {
+  const clean = String(symbol || "").replace(/^frx/, "").toUpperCase();
+  let code = clean;
+  let bg = "#2563eb";
+
+  if (/^[A-Z]{6}$/.test(clean)) {
+    code = clean;
+    bg = CURRENCY_COLORS[clean.slice(0, 3)] || "#2563eb";
+  } else if (clean.startsWith("R_")) {
+    code = "V" + clean.slice(2); // Volatility index, e.g. R_100 -> V100
+    bg = "#7c3aed";
+  } else if (/^1HZ\d+V$/.test(clean)) {
+    code = "1sV" + clean.replace(/^1HZ(\d+)V$/, "$1"); // 1-second volatility
+    bg = "#0891b2";
   } else if (clean.startsWith("CRASH") || clean.startsWith("BOOM")) {
-    b1 = clean.slice(0, 2);
-    b2 = clean.slice(-3);
-    color1 = "#dc2626";
-    color2 = "#16a34a";
+    code = clean;
+    bg = clean.startsWith("CRASH") ? "#dc2626" : "#16a34a";
   }
 
+  const width = Math.round(size * 1.6);
+  const fontSize = Math.max(9, Math.round(size * 0.3));
+
   return `
-    <div style="display:inline-flex; align-items:center; width:${size}px; height:${size}px; position:relative; flex-shrink:0;">
-      <div style="width:${size * 0.7}px; height:${size * 0.7}px; border-radius:50%; background:${color1}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:${size * 0.28}px; font-weight:700; position:absolute; left:0; top:0; box-shadow:0 1px 3px rgba(0,0,0,0.25); border:1.5px solid var(--bg-surface);">
-        ${b1.slice(0, 2)}
-      </div>
-      <div style="width:${size * 0.7}px; height:${size * 0.7}px; border-radius:50%; background:${color2}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:${size * 0.28}px; font-weight:700; position:absolute; right:0; bottom:0; box-shadow:0 1px 3px rgba(0,0,0,0.25); border:1.5px solid var(--bg-surface);">
-        ${b2.slice(0, 2)}
-      </div>
+    <div class="pair-avatar" title="${symbol}" style="min-width:${width}px; height:${size}px; font-size:${fontSize}px; background:${bg}; padding:0 7px;">
+      ${code}
     </div>
   `;
 }

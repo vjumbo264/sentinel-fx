@@ -17,19 +17,17 @@ import {
   showToast,
   showConfirmSheet
 } from "../ui.js";
+import { getPageState, setPageState } from "../pageState.js";
 
 export const tradesView = {
-  unsubscribe: null,
   groupBy: "symbol", // 'symbol' | 'model'
 
+  // F3: no store subscription — poll ticks never rebuild this page; the
+  // group-by toggle lives in persistent page state and survives navigation.
   async render(container) {
-    if (this.unsubscribe) this.unsubscribe();
     this.container = container;
+    this.groupBy = getPageState("trades", { groupBy: "symbol" }).groupBy;
     this.updateDom();
-
-    this.unsubscribe = store.subscribe(() => {
-      this.updateDom();
-    });
   },
 
   updateDom() {
@@ -186,10 +184,12 @@ export const tradesView = {
     if (symBtn && modelBtn) {
       symBtn.addEventListener("click", () => {
         this.groupBy = "symbol";
+        setPageState("trades", { groupBy: "symbol" });
         this.updateDom();
       });
       modelBtn.addEventListener("click", () => {
         this.groupBy = "model";
+        setPageState("trades", { groupBy: "model" });
         this.updateDom();
       });
     }
@@ -199,7 +199,8 @@ export const tradesView = {
     if (refreshBtn) {
       refreshBtn.addEventListener("click", () => {
         sfxBusy(refreshBtn, async () => {
-          await store.fetchSnapshot();
+          await store.fetchSnapshot(true);
+          this.updateDom();
         }, { pending: "Refreshing positions...", ok: "Positions updated" });
       });
     }

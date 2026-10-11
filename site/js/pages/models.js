@@ -17,13 +17,12 @@ import {
 } from "../ui.js";
 
 export const modelsView = {
-  unsubscribe: null,
   pairsData: null,
 
+  // F3: no store subscription — poll ticks never rebuild this page.
   async render(container) {
-    if (this.unsubscribe) this.unsubscribe();
     this.container = container;
-    
+
     try {
       this.pairsData = await api.getPairs();
     } catch (_) {
@@ -31,10 +30,6 @@ export const modelsView = {
     }
 
     this.updateDom();
-
-    this.unsubscribe = store.subscribe(() => {
-      this.updateDom();
-    });
   },
 
   updateDom() {
@@ -180,7 +175,9 @@ export const modelsView = {
           confirmVariant: nextState ? "primary" : "danger",
           onConfirm: async () => {
             await api.updatePair({ symbol: sym, enabled: nextState ? 1 : 0 });
-            await store.fetchSnapshot();
+            await store.fetchSnapshot(true);
+            try { this.pairsData = await api.getPairs(); } catch (_) {}
+            this.updateDom();
           }
         });
       });

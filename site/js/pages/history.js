@@ -16,21 +16,22 @@ import {
   sfxBusy,
   showToast
 } from "../ui.js";
+import { getPageState, setPageState } from "../pageState.js";
 
 export const historyView = {
-  unsubscribe: null,
   searchQuery: "",
   filterOutcome: "all", // 'all' | 'win' | 'loss'
   filterSymbol: "all",
 
+  // F3: no store subscription — poll ticks never rebuild this page.
+  // Filters/search live in persistent page state and survive navigation.
   async render(container) {
-    if (this.unsubscribe) this.unsubscribe();
     this.container = container;
+    const ps = getPageState("history", { searchQuery: "", filterOutcome: "all", filterSymbol: "all" });
+    this.searchQuery = ps.searchQuery;
+    this.filterOutcome = ps.filterOutcome;
+    this.filterSymbol = ps.filterSymbol;
     this.updateDom();
-
-    this.unsubscribe = store.subscribe(() => {
-      this.updateDom();
-    });
   },
 
   updateDom() {
@@ -186,23 +187,35 @@ export const historyView = {
   },
 
   bindEvents(currentList) {
-    // Search input
+    // Search input (F3: restore focus + caret after rebuild, persist draft)
     const searchInput = document.getElementById("input-history-search");
     if (searchInput) {
       searchInput.addEventListener("input", (e) => {
         this.searchQuery = e.target.value;
+        setPageState("history", { searchQuery: this.searchQuery });
+        const caret = e.target.selectionStart;
         this.updateDom();
+        const again = document.getElementById("input-history-search");
+        if (again) {
+          again.focus();
+          try { again.setSelectionRange(caret, caret); } catch (_) {}
+        }
       });
     }
 
-    // Outcome filters
+    // Outcome filters (persisted in page state)
     const filterAll = document.getElementById("filter-all-btn");
     const filterWin = document.getElementById("filter-win-btn");
     const filterLoss = document.getElementById("filter-loss-btn");
 
-    if (filterAll) filterAll.addEventListener("click", () => { this.filterOutcome = "all"; this.updateDom(); });
-    if (filterWin) filterWin.addEventListener("click", () => { this.filterOutcome = "win"; this.updateDom(); });
-    if (filterLoss) filterLoss.addEventListener("click", () => { this.filterOutcome = "loss"; this.updateDom(); });
+    const setOutcome = (v) => {
+      this.filterOutcome = v;
+      setPageState("history", { filterOutcome: v });
+      this.updateDom();
+    };
+    if (filterAll) filterAll.addEventListener("click", () => setOutcome("all"));
+    if (filterWin) filterWin.addEventListener("click", () => setOutcome("win"));
+    if (filterLoss) filterLoss.addEventListener("click", () => setOutcome("loss"));
 
     // CSV Export button
     const exportBtn = document.getElementById("btn-export-csv");
