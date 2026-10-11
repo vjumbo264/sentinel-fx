@@ -389,13 +389,13 @@
     },
     {
       "id": "UPLOAD",
-      "status": "doing",
-      "note": "Rebuild Model Upload stepper with real .sfxmodel.zip bundle validation.",
-      "evidence": ""
+      "status": "done",
+      "note": "Rebuilt Upload Model desk with tap/drag .sfxmodel.zip file dropzone, 3-step pipeline (Pick, Check Safety, Install disabled until validated), and plain-language validation feedback.",
+      "evidence": "site/js/pages/upload.js verified with staging upload route and sfxBusy feedback helper."
     },
     {
       "id": "RISK",
-      "status": "todo",
+      "status": "doing",
       "note": "Rebuild Risk & Auth on real session pool, overrides, MT5 mode switch and emergency kill switch.",
       "evidence": ""
     },
