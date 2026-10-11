@@ -255,15 +255,15 @@
     },
     {
       "id": "TRADES",
-      "status": "doing",
-      "note": "Building Active Trades: mobile card list, desktop table, pips/PnL calculations, SL/TP levels, break-even SL action, and close half.",
-      "evidence": "Drafting site/js/pages/trades.js."
+      "status": "done",
+      "note": "Engineered CFD positions desk with live pips/PnL calculations, execution levels, break-even SL action, and close half in trades.js.",
+      "evidence": "site/js/pages/trades.js verified."
     },
     {
       "id": "HISTORY",
-      "status": "todo",
-      "note": "Closed trade journal, summary stats, daily/weekly PnL bars, CSV export, and filtering.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building Trade History: closed trade journal, summary metrics, filters, daily PnL bars, and CSV export.",
+      "evidence": "Drafting site/js/pages/history.js."
     },
     {
       "id": "CHART",
