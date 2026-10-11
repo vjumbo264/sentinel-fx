@@ -1,0 +1,95 @@
+{
+  "report": "WCAG Contrast Verification",
+  "pairs": [
+    {
+      "pair": "Light Page vs Primary Text",
+      "theme": "light",
+      "bg": "#f8fafc",
+      "fg": "#0f172a",
+      "ratio": 17.06,
+      "wcag_aa": true,
+      "wcag_aaa": true
+    },
+    {
+      "pair": "Light Surface vs Secondary Text",
+      "theme": "light",
+      "bg": "#ffffff",
+      "fg": "#475569",
+      "ratio": 7.58,
+      "wcag_aa": true,
+      "wcag_aaa": true
+    },
+    {
+      "pair": "Light Surface vs Accent Blue",
+      "theme": "light",
+      "bg": "#ffffff",
+      "fg": "#1d4ed8",
+      "ratio": 6.7,
+      "wcag_aa": true,
+      "wcag_aaa": false
+    },
+    {
+      "pair": "Light Surface vs Profit Green",
+      "theme": "light",
+      "bg": "#ffffff",
+      "fg": "#15803d",
+      "ratio": 5.02,
+      "wcag_aa": true,
+      "wcag_aaa": false
+    },
+    {
+      "pair": "Light Surface vs Loss Red",
+      "theme": "light",
+      "bg": "#ffffff",
+      "fg": "#b91c1c",
+      "ratio": 6.47,
+      "wcag_aa": true,
+      "wcag_aaa": false
+    },
+    {
+      "pair": "Dark Page vs Primary Text",
+      "theme": "dark",
+      "bg": "#080c14",
+      "fg": "#f8fafc",
+      "ratio": 18.71,
+      "wcag_aa": true,
+      "wcag_aaa": true
+    },
+    {
+      "pair": "Dark Surface vs Secondary Text",
+      "theme": "dark",
+      "bg": "#0f172a",
+      "fg": "#cbd5e1",
+      "ratio": 12.02,
+      "wcag_aa": true,
+      "wcag_aaa": true
+    },
+    {
+      "pair": "Dark Surface vs Accent Blue",
+      "theme": "dark",
+      "bg": "#0f172a",
+      "fg": "#60a5fa",
+      "ratio": 7.02,
+      "wcag_aa": true,
+      "wcag_aaa": true
+    },
+    {
+      "pair": "Dark Surface vs Profit Green",
+      "theme": "dark",
+      "bg": "#0f172a",
+      "fg": "#4ade80",
+      "ratio": 10.25,
+      "wcag_aa": true,
+      "wcag_aaa": true
+    },
+    {
+      "pair": "Dark Surface vs Loss Red",
+      "theme": "dark",
+      "bg": "#0f172a",
+      "fg": "#f87171",
+      "ratio": 6.45,
+      "wcag_aa": true,
+      "wcag_aaa": false
+    }
+  ]
+}
