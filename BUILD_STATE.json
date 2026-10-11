@@ -630,7 +630,7 @@
   "updated_utc": "2026-10-11T19:15:00Z",
   "session": 3,
   "current": "D",
-  "next_step": "Dispatch updated probe-dukascopy.yml to test candle bi5 (BID_candles_min_1.bi5) vs tick bi5 decoding; record run URL and read logs.",
+  "next_step": "Watch probe run 38167315985 (https://github.com/vjumbo264/sentinel-fx/actions/runs/38167315985), extract logs to verify if BID_candles_min_1.bi5 exists/decodes or what HTTP status is returned.",
   "items": {
    "D": {
     "status": "doing",
@@ -674,7 +674,8 @@
     ],
     "evidence": [
      "https://github.com/vjumbo264/sentinel-fx/actions/runs/38163818415",
-     "https://github.com/vjumbo264/sentinel-fx/actions/runs/38163977306"
+     "https://github.com/vjumbo264/sentinel-fx/actions/runs/38163977306",
+     "https://github.com/vjumbo264/sentinel-fx/actions/runs/38167315985"
     ],
     "files": [
      "tools/fetch_dukascopy_bi5.py",
