@@ -11,6 +11,43 @@
  */
 
 const GITHUB_REPO = "vjumbo264/sentinel-fx";
+
+// B1: single source of truth for the candle-data index + tracked pairs.
+// The fetch workflow commits data/index.json to the repo root and publishes it
+// as a release asset; the site must read the LIVE version through the Worker,
+// never a stale copy bundled into the Pages deployment.
+const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
+const DATA_CACHE_TTL_MS = 45 * 1000; // 45s short cache
+const _dataCache = new Map(); // path -> { body, status, at }
+
+async function fetchRepoFile(path) {
+  const cached = _dataCache.get(path);
+  if (cached && Date.now() - cached.at < DATA_CACHE_TTL_MS) return cached;
+  const r = await fetch(`${RAW_BASE}/${path}`, {
+    headers: { "User-Agent": "sentinel-fx-worker", "Accept": "application/vnd.github.raw" },
+  });
+  if (!r.ok) {
+    const out = { body: null, status: r.status, at: Date.now(), error: `upstream ${r.status} for ${path}` };
+    _dataCache.set(path, out);
+    return out;
+  }
+  const out = { body: await r.text(), status: 200, at: Date.now() };
+  _dataCache.set(path, out);
+  return out;
+}
+
+async function serveRepoData(request, path) {
+  const a = await verifySiteAuth(request);
+  if (!a) return err("unauthorized", 401);
+  const got = await fetchRepoFile(path);
+  if (got.body === null || got.body === undefined) {
+    return err(`data unavailable: ${got.error}`, 502);
+  }
+  return new Response(got.body, {
+    status: 200,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...CORS },
+  });
+}
 const ALL_TRACKED = [
   "frxEURUSD", "frxGBPUSD", "frxUSDJPY", "frxAUDUSD", "frxUSDCAD",
   "frxUSDCHF", "frxNZDUSD", "frxEURGBP", "frxEURJPY", "frxGBPJPY",
@@ -720,6 +757,14 @@ export default {
       if (path === "/api/stats/daily" && method === "GET") {
         const r = await env.DB.prepare("SELECT * FROM daily_stats ORDER BY lagos_date DESC LIMIT 30").all();
         return json({ days: r.results });
+      }
+
+      // -------- live data index + tracked pairs (B1 single source of truth)
+      if (path === "/api/data/index" && method === "GET") {
+        return serveRepoData(request, "data/index.json");
+      }
+      if (path === "/api/data/tracked-pairs" && method === "GET") {
+        return serveRepoData(request, "data/tracked_pairs.json");
       }
 
       return err("not found", 404);

@@ -47,13 +47,10 @@ export const chartView = {
     this.cleanup();
     this.container = container;
     
-    // Dynamic pairs from registry
+    // Dynamic pairs from the live registry via the Worker (B1)
     try {
-      const res = await fetch("./data/tracked_pairs.json");
-      if (res.ok) {
-        const d = await res.json();
-        if (d && d.pairs) this.availablePairs = d.pairs;
-      }
+      const d = await api.getTrackedPairs();
+      if (d && d.pairs) this.availablePairs = d.pairs;
     } catch (_) {
       this.availablePairs = POPULAR_PAIRS;
     }

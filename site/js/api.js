@@ -122,6 +122,15 @@ class ApiClient {
     return this.request("/api/pairs");
   }
 
+  // B1: live candle-data index served by the Worker (never a stale bundled copy).
+  async getDataIndex() {
+    return this.request("/api/data/index");
+  }
+
+  async getTrackedPairs() {
+    return this.request("/api/data/tracked-pairs");
+  }
+
   async getCandles(symbol = "frxEURUSD", granularity = 60, count = 300) {
     return this.request(`/api/candles?symbol=${encodeURIComponent(symbol)}&granularity=${granularity}&count=${count}`);
   }
@@ -257,3 +266,4 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
+export { API_BASE };

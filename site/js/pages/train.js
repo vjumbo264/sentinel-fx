@@ -113,10 +113,11 @@ export const trainView = {
   },
 
   async reloadIndex() {
-    // The data index confirms which assets actually exist in the data-01 release.
+    // B1: the Worker serves the LIVE data index (repo root / release asset),
+    // authenticated with the login token like every other call. The stale
+    // bundled copy under site/data/ is gone.
     try {
-      const res = await fetch("./data/index.json?ts=" + Date.now());
-      this.dataIndex = res.ok ? await res.json() : {};
+      this.dataIndex = await api.getDataIndex();
     } catch (_) {
       this.dataIndex = {};
     }
@@ -153,6 +154,7 @@ export const trainView = {
           const entry = this.indexEntry(item.sym);
           const st = ps.fetchStatus[item.sym];
           const rowsText = entry ? entry.rows.toLocaleString() + " rows" : "";
+      void rowsText;
           const spanText = entry && entry.first && entry.last ? ` · ${entry.first} → ${entry.last}` : "";
 
           return `
@@ -166,7 +168,7 @@ export const trainView = {
                     <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">${item.sym.replace(/^frx/, "")}</span>
                   </div>
                   <div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:2px;">
-                    Precision: ${item.digits}d · Status: ${entry ? "Dataset Ready" : "Data Not Downloaded"}
+                    Precision: ${item.digits}d · Status: ${entry ? `Ready (${entry.rows.toLocaleString()} rows, ${entry.first} to ${entry.last})` : "Data Not Downloaded"}
                   </div>
                 </div>
               </div>

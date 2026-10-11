@@ -43,8 +43,7 @@ async function runTests() {
     "/js/pages/risk.js",
     "/js/pages/settings.js",
     "/data/symbols.json",
-    "/data/tracked_pairs.json",
-    "/data/index.json"
+    "/data/tracked_pairs.json"
   ];
 
   for (const path of pagesAssets) {

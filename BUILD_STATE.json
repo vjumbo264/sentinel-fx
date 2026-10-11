@@ -487,5 +487,64 @@
    "note": "Final report docs/fix4-report.md written with proven items + run URLs and pending commands.",
    "evidence": "docs/fix4-report.md"
   }
+ ],
+ "finish": [
+  {
+   "id": "T1",
+   "status": "doing",
+   "attempts": [
+    {
+     "what": "B1 fix: Worker /api/data/index + /api/data/tracked-pairs (live from repo, 45s cache), site reads via authenticated Worker, site/data/index.json deleted",
+     "result": "code complete, pushed for deploy"
+    }
+   ],
+   "evidence": []
+  },
+  {
+   "id": "T2",
+   "status": "doing",
+   "attempts": [
+    {
+     "what": "dispatched fetch-candles R_10 + headless live-site verification pending",
+     "result": "in progress"
+    }
+   ],
+   "evidence": []
+  },
+  {
+   "id": "T3",
+   "status": "doing",
+   "attempts": [
+    {
+     "what": "B2 diag: probe-dukascopy.yml (curl bi5 + lzma decode + dukascopy-node 1-month) dispatched for real runner evidence",
+     "result": "dispatched"
+    }
+   ],
+   "evidence": []
+  },
+  {
+   "id": "T4",
+   "status": "todo",
+   "attempts": [],
+   "evidence": []
+  },
+  {
+   "id": "T5",
+   "status": "todo",
+   "attempts": [],
+   "evidence": []
+  },
+  {
+   "id": "T6",
+   "status": "todo",
+   "attempts": [],
+   "evidence": []
+  },
+  {
+   "id": "T7",
+   "status": "todo",
+   "attempts": [],
+   "evidence": []
+  }
  ]
 }
