@@ -303,15 +303,15 @@
     },
     {
       "id": "THEME",
-      "status": "doing",
-      "note": "Validating automatic OS light/dark switching, dual theme-color meta tags, zero flash of unstyled theme, and live chart retheming.",
-      "evidence": "site/js/theme.js and tokens.css contrast verified."
+      "status": "done",
+      "note": "Verified automatic OS light/dark scheme switching, dual meta theme-color tags, zero flash script, and live chart retheming without reload.",
+      "evidence": "site/styles/tokens.css, site/js/theme.js, site/js/pages/chart.js verified."
     },
     {
       "id": "A11Y",
-      "status": "todo",
-      "note": "44px tap targets, WCAG AA contrast, aria-live announcements, and reduced motion support.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Auditing WCAG AA contrast, minimum 44px hitboxes on all interactive controls, focus-visible styles, and aria-live announcements.",
+      "evidence": "Checking touch targets and accessible attributes."
     },
     {
       "id": "PERF",
