@@ -1,0 +1,94 @@
+name: dukascopy-backfill
+on:
+  workflow_dispatch:
+    inputs:
+      pairs:
+        description: "comma list of Dukascopy instruments (EURUSD,GBPUSD,...) or 'all'"
+        required: false
+        default: "all"
+      from:
+        description: "UTC start date inclusive (backfill)"
+        required: false
+        default: "2020-01-01"
+      to:
+        description: "UTC end date exclusive"
+        required: false
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: dukascopy-backfill
+  cancel-in-progress: false
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        env:
+          PAIRS_IN: ${{ github.event.inputs.pairs || 'all' }}
+          DATE_FROM: ${{ github.event.inputs.from }}
+          DATE_TO: ${{ github.event.inputs.to }}
+        run: |
+          python - <<'PY'
+          import os, json, re
+          from datetime import date, timedelta
+          # Forex pairs both Dukascopy and Deriv MT5 offer (majors/minors/crosses + metals).
+          FOREX = ['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD',
+                   'EURGBP','EURJPY','GBPJPY','EURAUD','AUDJPY','EURCAD','EURCHF',
+                   'XAUUSD','XAGUSD']
+          req = (os.environ.get('PAIRS_IN') or 'all').strip()
+          pairs = FOREX if req == 'all' else [p.strip().upper() for p in req.split(',') if p.strip()]
+          for p in pairs:
+              assert re.match(r'^[A-Z]{6}$', p), f'invalid instrument {p!r}'
+          start = date.fromisoformat(os.environ['DATE_FROM'])
+          end = date.fromisoformat(os.environ['DATE_TO']) if os.environ['DATE_TO'] else date.today()
+          # Month-sized chunks, a few in parallel, each well under job limits.
+          include = []
+          for pair in pairs:
+              t = start
+              while t < end:
+                  nxt = date(t.year + 1, 1, 1) if t.month == 12 else date(t.year, t.month + 1, 1)
+                  stop = min(nxt, end)
+                  include.append({'pair': pair, 'from': str(t), 'to': str(stop)})
+                  t = stop
+          assert include, 'empty plan'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('matrix=' + json.dumps({'include': include}) + '\n')
+          print('jobs:', len(include))
+          PY
+  month:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PAIR: ${{ matrix.pair }}
+      FROM: ${{ matrix.from }}
+      TO: ${{ matrix.to }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/cache@v4
+        with:
+          path: .bi5-cache
+          key: bi5-${{ matrix.pair }}-${{ matrix.from }}
+          restore-keys: bi5-${{ matrix.pair }}-
+      - run: pip install --quiet requests
+      - name: Serial raw tick download -> bid/ask M1 candles
+        run: python tools/fetch_dukascopy_bi5.py --instrument "$PAIR" --from "$FROM" --to "$TO" --out out/frx${PAIR}_60s.csv.gz
+      - name: Merge into pair dataset, verify, publish immutable asset + CAS index
+        run: python tools/publish_data.py out/frx${PAIR}_60s.csv.gz
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: duka-${{ matrix.pair }}-${{ matrix.from }}
+          path: out/*.report.json

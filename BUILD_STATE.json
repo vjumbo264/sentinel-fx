@@ -627,10 +627,10 @@
   }
  ],
  "notebook": {
-  "updated_utc": "2026-10-11T18:43:04Z",
+  "updated_utc": "2026-10-11T18:49:21Z",
   "session": 2,
   "current": "D",
-  "next_step": "D attempt 3: forex-history.yml dispatched for EURUSD 2026-09-01..2026-10-01 (decode-at-scale proof); watch run, then extend to full pair matrix and publish shards per data-XX releases.",
+  "next_step": "Watch dukascopy-backfill.yml EURUSD 2024-01..2025-01 run + forex-history month run 38164983264; on green, dispatch full 16-pair multi-year backfill; then T (toolkit/lab parity) using a real release pair.",
   "items": {
    "D": {
     "status": "doing",
@@ -646,19 +646,30 @@
      {
       "what": "Session 2: pacing fix in fetch_dukascopy_bi5.py (pause 0.25s->1.6s, honor Retry-After up to 120s), syntax-checked, dispatching forex-history.yml one-month run",
       "result": "pending run URL in next commit"
+     },
+     {
+      "what": "Built dukascopy-backfill.yml (pair x month matrix, max-parallel 3, resume cache) + hardened fetch_dukascopy_bi5.py (Retry-After, 1.6s pacing, spread profile by hour, crossed-bid/ask count, proper bid/ask columns)",
+      "result": "syntax OK; smoke-tested indicator_lab (fixed NaN-warmup crash) and train_rl on CPU (10k steps/s scaffold)"
      }
     ],
     "evidence": [
      "https://github.com/vjumbo264/sentinel-fx/actions/runs/38163818415",
      "https://github.com/vjumbo264/sentinel-fx/actions/runs/38163977306"
     ],
-    "files": []
+    "files": [
+     "tools/fetch_dukascopy_bi5.py",
+     ".github/workflows/dukascopy-backfill.yml",
+     "tools/indicator_lab.py",
+     "tools/train_rl.py"
+    ]
    },
    "T": {
-    "status": "todo",
+    "status": "doing",
     "attempts": [],
     "evidence": [],
-    "files": []
+    "files": [
+     "tools/indicator_lab.py"
+    ]
    },
    "S": {
     "status": "todo",
@@ -673,10 +684,12 @@
     "files": []
    },
    "R": {
-    "status": "todo",
+    "status": "doing",
     "attempts": [],
     "evidence": [],
-    "files": []
+    "files": [
+     "tools/train_rl.py"
+    ]
    },
    "N": {
     "status": "todo",
@@ -754,7 +767,8 @@
    "2026-10-11T18:28:01Z D attempt 1: Dukascopy datafeed TCP-unreachable from Actions runner (20s connect timeout, Azure westus3). Probe workflow has a bash -e bug that skipped the other two probes; fixing and retrying with mirror host + longer timeout next.",
    "2026-10-11T18:29:03Z probe workflow fixed (bash -e bug, 60s timeout, freeserv mirror) and redispatched as attempt 2, run 38163977306; session ended before logs could be read.",
    "2026-10-11T18:30:47Z D FOUNDATION PROVEN: EURUSD bi5 hour decoded on a real runner (3132 ticks, run 38163977306). Attempt-1 TCP timeout was transient/filtering, not a blockade. Constraint is 429/503 throttling: keep serial fetch, increase pause, honor Retry-After.",
-   "2026-10-11T18:43:04Z session 2 started, resuming at D (pacing fix + month-scale proof)."
+   "2026-10-11T18:43:04Z session 2 started, resuming at D (pacing fix + month-scale proof).",
+   "2026-10-11T18:49:21Z Session 2: month-run (38164983264) still in progress; proceeding with backfill workflow + T/R scaffolds. Lab NaN-warmup bug found and fixed (sma/stddev warmup poisoned scores)."
   ],
   "known_problems": [
    "No Dukascopy multi-year forex history in releases (only 100k-row MT5 fallback for frxEURUSD)",

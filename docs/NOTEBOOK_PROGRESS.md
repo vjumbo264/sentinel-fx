@@ -39,3 +39,10 @@
 - Pacing fix committed: inter-request pause 0.25s -> 1.6s, Retry-After honored (up to 120s).
 - Next exact step: watch the dispatched forex-history.yml run (EURUSD 2026-09 month), verify
   out/*.report.json artifact and the published release shard, then extend to the full pair matrix.
+
+## Session 2 — D tooling built
+- dukascopy-backfill.yml: pair x month matrix (16 pairs, max-parallel 3, resumable cache).
+- fetch_dukascopy_bi5.py hardened: Retry-After, 1.6s pacing, spread-profile-by-hour report,
+  crossed-bid/ask count, real bid/ask O/H/L/C columns.
+- indicator_lab.py + train_rl.py scaffolds added (T, R in progress); lab NaN-warmup bug fixed.
+- Next: watch backfill + month runs, then full 16-pair backfill, then T parity test.
