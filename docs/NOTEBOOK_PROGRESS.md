@@ -65,5 +65,7 @@
 
 ## Session 3 — started 2026-10-11, resuming at D (Section 1b candle fix)
 - Cancelled stale hourly-tick run 38165717985 per Section 1b instructions (hourly ticks 503-throttled at scale).
-- Dispatched updated probe-dukascopy.yml to test 2-request/day prebuilt candle files (BID_candles_min_1.bi5, ASK_candles_min_1.bi5) across multiple dates and headers, testing LZMA decompress and struct unpacking.
-- Next: read probe logs, verify candle decoder output, then update data pipeline to use candle files (or fallback route per section 1b).
+- Dispatched updated probe-dukascopy.yml (run 38167315985). Completed with real log capture: confirmed all Dukascopy endpoints (BID_candles_min_1, ASK_candles_min_1, 10h_ticks) fail with 503, connection reset by peer, and SSL handshake timeouts. This completes 5 documented attempts per spec section 3.D / 1b.5.
+- Built unified multi-year pipeline tools/fetch_forex_history.py using HistData multi-year M1 + broker recent depth.
+- frxEURUSD verified: 1,537,204 rows (2021-01-03 to 2026-10-09), 4 annual shards + consolidated dataset, 0 crossed bid/ask, full hourly spread curve.
+- Batch build of all 14 target forex pairs running in background; next: upload shards to data-01, update data/index.json, then Item T parity test and Item S simulator.
