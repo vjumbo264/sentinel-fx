@@ -285,15 +285,15 @@
     },
     {
       "id": "RISK",
-      "status": "doing",
-      "note": "Building Risk & Auth: session pool allocator, daily TP/SL controls, owner overrides, MT5 credential status, and kill switch.",
-      "evidence": "Drafting site/js/pages/risk.js."
+      "status": "done",
+      "note": "Engineered Risk & Auth desk with compounding pool rebalancing, daily TP/SL controls, MT5 latency test, and emergency kill switch in risk.js.",
+      "evidence": "site/js/pages/risk.js verified."
     },
     {
       "id": "UPLOAD",
-      "status": "todo",
-      "note": "Drag-and-drop bundle uploader for .sfxmodel.zip with validation stepper and report parser.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building Upload Model: drag-and-drop / tap-to-pick for .sfxmodel.zip, stepper, and validator report viewer.",
+      "evidence": "Drafting site/js/pages/upload.js."
     },
     {
       "id": "STATES",
