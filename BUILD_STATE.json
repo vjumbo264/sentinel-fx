@@ -353,13 +353,13 @@
     },
     {
       "id": "DASH",
-      "status": "doing",
-      "note": "Rebuild Home dashboard on real /api/state and /api/news with honest empty states and no fake figures.",
-      "evidence": ""
+      "status": "done",
+      "note": "Rebuilt Dashboard on real /api/state, /api/news, and MT5 heartbeat. Handles null balance honestly, hides unprovided telemetry, surfaces connected loginid/currency, and maps real economic events.",
+      "evidence": "site/js/pages/home.js verified on live state: valuation card, runner supervisor, compounding allocation, dynamic news radar."
     },
     {
       "id": "TRADES",
-      "status": "todo",
+      "status": "doing",
       "note": "Rebuild Active Trades desk on real /api/trades open contracts with order actions sheet and empty state.",
       "evidence": ""
     },

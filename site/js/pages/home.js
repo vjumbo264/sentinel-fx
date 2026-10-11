@@ -112,9 +112,14 @@ export const homeView = {
                 <span style="color:var(--text-muted);">Last Heartbeat</span>
                 <span class="tabular">${s.heartbeat?.ts ? formatLagosTime(s.heartbeat.ts) : "Waiting for bot"}</span>
               </div>
+              ${s.heartbeat?.loginid ? `
+                <div style="display:flex; justify-content:space-between; font-size:var(--text-sm);">
+                  <span style="color:var(--text-muted);">Connected Account</span>
+                  <span class="tabular" style="font-weight:600;">${s.heartbeat.loginid} (${s.heartbeat.currency || "USD"})` : ""}
+                ${s.heartbeat?.loginid ? `</div>` : ""}
               <div style="display:flex; justify-content:space-between; font-size:var(--text-sm);">
                 <span style="color:var(--text-muted);">Handover Status</span>
-                <span style="color:var(--profit); font-weight:600;">Zero-Gap Protected (~3h50m cycle)</span>
+                ${s.runnerActive ? `<span style="color:var(--profit); font-weight:600;">Zero-Gap (~3h50m cycle)</span>` : `<span style="color:var(--text-muted);">Runner Idle</span>`}
               </div>
               <div style="display:flex; justify-content:space-between; font-size:var(--text-sm);">
                 <span style="color:var(--text-muted);">Execution Engine</span>
