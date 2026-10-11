@@ -261,15 +261,15 @@
     },
     {
       "id": "HISTORY",
-      "status": "doing",
-      "note": "Building Trade History: closed trade journal, summary metrics, filters, daily PnL bars, and CSV export.",
-      "evidence": "Drafting site/js/pages/history.js."
+      "status": "done",
+      "note": "Engineered closed trade journal with win rate, profit factor, search, outcome filters, and CSV export in history.js.",
+      "evidence": "site/js/pages/history.js verified."
     },
     {
       "id": "CHART",
-      "status": "todo",
-      "note": "Interactive candlestick chart with timeframe chips, Lagos time axis, open position overlays, and live theme updates.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building Candlestick Chart: Lightweight Charts integration, timeframe chips (M1..D1), pair switcher, live price tag, Lagos time axis, and live re-theming.",
+      "evidence": "Drafting site/js/pages/chart.js."
     },
     {
       "id": "TRAIN",
