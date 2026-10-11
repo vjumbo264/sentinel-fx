@@ -627,15 +627,22 @@
   }
  ],
  "notebook": {
-  "updated_utc": "2026-10-11T18:24:43Z",
+  "updated_utc": "2026-10-11T18:28:01Z",
   "session": 1,
   "current": "D",
-  "next_step": "Probe Dukascopy reachability: inspect tools/fetch_dukascopy_bi5.py + existing workflows, then dispatch an Actions probe run via GitHub API and record run URL.",
+  "next_step": "Fix probe-dukascopy.yml (add || true so one curl failure cannot kill the job, raise --max-time to 60), add freeserv.dukascopy.com mirror + dukascopy-node retry probe, redispatch via API, read logs = attempt 2/5.",
   "items": {
    "D": {
-    "status": "todo",
-    "attempts": [],
-    "evidence": [],
+    "status": "doing",
+    "attempts": [
+     {
+      "what": "Dispatched probe-dukascopy.yml (run 38163818415): curl to datafeed.dukascopy.com bi5 from Azure westus3 runner",
+      "result": "FAIL - TCP connect timed out after 20s (curl 28, HTTP 000). Job then died on 'head /tmp/h.txt' under bash -e, so python urllib and dukascopy-node probes never ran."
+     }
+    ],
+    "evidence": [
+     "https://github.com/vjumbo264/sentinel-fx/actions/runs/38163818415"
+    ],
     "files": []
    },
    "T": {
@@ -734,13 +741,15 @@
    }
   },
   "decisions": [
-   "2026-10-11T18:24:43Z session 1 started, no notebook section existed; created it. Resuming at D (Dukascopy data hub). Confirmed: frxEURUSD in data/index.json is still the MT5 copy_rates fallback (broker depth only), R_10/R_25/R_100 have ~1yr synthetic from auth-otp source."
+   "2026-10-11T18:24:43Z session 1 started, no notebook section existed; created it. Resuming at D (Dukascopy data hub). Confirmed: frxEURUSD in data/index.json is still the MT5 copy_rates fallback (broker depth only), R_10/R_25/R_100 have ~1yr synthetic from auth-otp source.",
+   "2026-10-11T18:28:01Z D attempt 1: Dukascopy datafeed TCP-unreachable from Actions runner (20s connect timeout, Azure westus3). Probe workflow has a bash -e bug that skipped the other two probes; fixing and retrying with mirror host + longer timeout next."
   ],
   "known_problems": [
    "No Dukascopy multi-year forex history in releases (only 100k-row MT5 fallback for frxEURUSD)",
    "Old binary-options trainers (tools/train_eurusd.py, tools/train_model.py) still present",
    "Site Train page / copy-prompt flow still present and must be removed",
-   "BUILD_STATE.json has stale 'finish' and 'continue' sections to consolidate"
+   "BUILD_STATE.json has stale 'finish' and 'continue' sections to consolidate",
+   "probe-dukascopy.yml step lacks '|| true' - first curl failure aborts remaining diagnostics"
   ]
  }
 }

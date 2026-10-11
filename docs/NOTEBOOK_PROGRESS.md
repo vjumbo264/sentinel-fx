@@ -10,10 +10,11 @@
   ~100k-row MT5 fallback, not Dukascopy years; no RL trainer / indicator lab / notebook / Gradio UI exist.
 
 ### In progress
-- D: Dukascopy data hub — proving runner reachability first.
+- D: probe attempt 1 FAILED — datafeed.dukascopy.com TCP-unreachable from Actions runner
+  (curl 28 timeout, run 38163818415). Probe workflow bug found: first curl failure kills the job.
 
 ### Next
-- Probe Dukascopy from Actions (dispatch workflow, read logs); harden tools/fetch_dukascopy_bi5.py.
+- Fix probe workflow (|| true, 60s timeout, add freeserv.dukascopy.com mirror), redispatch = attempt 2/5.
 
 ### Problems
 - None new yet.
