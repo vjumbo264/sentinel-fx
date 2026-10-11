@@ -214,8 +214,13 @@ export default {
           if (body.mode !== "demo") return err("acceptance sync requires demo", 400);
           await env.DB.batch([
             env.DB.prepare("CREATE TABLE IF NOT EXISTS cfd_deals (ticket INTEGER PRIMARY KEY, position_id INTEGER, symbol TEXT, net REAL NOT NULL, data TEXT NOT NULL)"),
-            env.DB.prepare("CREATE TABLE IF NOT EXISTS cfd_positions (ticket INTEGER PRIMARY KEY, data TEXT NOT NULL)")
+            env.DB.prepare("CREATE TABLE IF NOT EXISTS cfd_positions (ticket INTEGER PRIMARY KEY, data TEXT NOT NULL)"),
+            env.DB.prepare("CREATE TABLE IF NOT EXISTS cfd_ownership (position_id INTEGER PRIMARY KEY, model_symbol TEXT NOT NULL,reason TEXT)"),
+            env.DB.prepare("CREATE TABLE IF NOT EXISTS cfd_credits (ticket INTEGER PRIMARY KEY, model_symbol TEXT NOT NULL)")
           ]);
+          for (const own of body.ownership||[]) {
+            await env.DB.prepare("INSERT OR IGNORE INTO cfd_ownership VALUES (?,?,?)").bind(own.position_id,own.model_symbol,own.reason||null).run();
+          }
           const stmts = [];
           for (const d of body.deals || []) {
             if (!(d.ticket > 0 && d.position_id > 0)) return err("invalid real deal ticket", 400);
@@ -223,6 +228,15 @@ export default {
             stmts.push(env.DB.prepare("INSERT OR IGNORE INTO cfd_deals VALUES (?,?,?,?,?)").bind(d.ticket, d.position_id, d.symbol, net, JSON.stringify(d)));
           }
           if (stmts.length) await env.DB.batch(stmts);
+          for (const d of body.deals||[]) {
+            const own=await env.DB.prepare("SELECT * FROM cfd_ownership WHERE position_id=?").bind(d.position_id).first();
+            if(!own) continue;
+            // The conditional credit and dedupe marker are one atomic transaction.
+            await env.DB.batch([
+              env.DB.prepare("UPDATE model_ledger SET balance=balance+(SELECT net FROM cfd_deals WHERE ticket=?),updated_utc=? WHERE symbol=? AND NOT EXISTS (SELECT 1 FROM cfd_credits WHERE ticket=?)").bind(d.ticket,nowUTC(),own.model_symbol,d.ticket),
+              env.DB.prepare("INSERT OR IGNORE INTO cfd_credits VALUES (?,?)").bind(d.ticket,own.model_symbol)
+            ]);
+          }
           // Replacement is an authoritative broker snapshot, not generated positions.
           await env.DB.prepare("DELETE FROM cfd_positions").run();
           for (const pos of body.positions || []) {
@@ -248,18 +262,37 @@ export default {
         }
 
         if (path === "/api/bot/lock" && method === "POST") {
-          // acquire lease if free or expired
-          const cur = await env.DB.prepare("SELECT * FROM run_lock WHERE id=1").first();
-          const now = new Date();
-          if (cur && cur.lease_until && new Date(cur.lease_until) > now && cur.owner !== body.owner) {
-            return json({ acquired: false, owner: cur.owner, lease_until: cur.lease_until });
+          const now = nowUTC();
+          const lease = new Date(Date.now() + 60000).toISOString();
+          const owner = String(body.owner || "");
+          if (!owner) return err("owner required");
+          const result = await env.DB.prepare(
+            "INSERT INTO run_lock (id,owner,lease_until,updated_utc) VALUES (1,?,?,?) ON CONFLICT(id) DO UPDATE SET owner=excluded.owner,lease_until=excluded.lease_until,updated_utc=excluded.updated_utc WHERE run_lock.owner=excluded.owner OR run_lock.lease_until<=?"
+          ).bind(owner,lease,now,now).run();
+          return json({acquired:result.meta.changes===1, lease_until:lease});
+        }
+
+        if (path === "/api/bot/models" && method === "GET") {
+          const result = await env.DB.prepare("SELECT symbol FROM pairs WHERE enabled=1 AND pack_version>0").all();
+          return json({symbols:result.results.map(r=>r.symbol)});
+        }
+        if (path === "/api/bot/ready") {
+          await env.DB.prepare("CREATE TABLE IF NOT EXISTS runner_ready (owner TEXT PRIMARY KEY,ts TEXT NOT NULL,models TEXT NOT NULL)").run();
+          if (method === "POST") {
+            if (body.mode!=="demo") return err("demo only",400);
+            await env.DB.prepare("INSERT INTO runner_ready VALUES (?,?,?) ON CONFLICT(owner) DO UPDATE SET ts=excluded.ts,models=excluded.models").bind(body.owner,nowUTC(),JSON.stringify(body.models||[])).run();
+            return json({ok:true});
           }
-          const lease = new Date(now.getTime() + 60 * 1000).toISOString();
-          await env.DB.prepare(
-            "INSERT INTO run_lock (id, owner, lease_until, updated_utc) VALUES (1,?,?,?) " +
-            "ON CONFLICT(id) DO UPDATE SET owner=excluded.owner, lease_until=excluded.lease_until, updated_utc=excluded.updated_utc"
-          ).bind(body.owner || "bot", lease, nowUTC()).run();
-          return json({ acquired: true, lease_until: lease });
+          const runners = await env.DB.prepare("SELECT * FROM runner_ready WHERE ts>? ORDER BY ts DESC").bind(new Date(Date.now()-60000).toISOString()).all();
+          return json({runners:runners.results});
+        }
+        if (path === "/api/bot/transfer" && method === "POST") {
+          const ready=await env.DB.prepare("SELECT * FROM runner_ready WHERE owner=? AND ts>?").bind(body.new_owner,new Date(Date.now()-60000).toISOString()).first();
+          if (!ready) return json({transferred:false,reason:"successor not READY"});
+          const lease=new Date(Date.now()+60000).toISOString();
+          const result=await env.DB.prepare("UPDATE run_lock SET owner=?,lease_until=?,updated_utc=? WHERE id=1 AND owner=? AND lease_until>?").bind(body.new_owner,lease,nowUTC(),body.owner,nowUTC()).run();
+          if(result.meta.changes===1) await logLine(env,"handover","*","READY-before-transfer",{from:body.owner,to:body.new_owner});
+          return json({transferred:result.meta.changes===1});
         }
 
         if (path === "/api/bot/unlock" && method === "POST") {
@@ -588,58 +621,7 @@ export default {
       }
 
       if (path === "/api/account/reset-demo-balance" && method === "POST") {
-        let derivRes = null;
-        const derivToken = env.DERIV_BEARER_TOKEN;
-        const derivAppId = env.DERIV_APP_ID || "1089";
-        if (derivToken) {
-          try {
-            const accsRes = await fetch("https://api.derivws.com/trading/v1/options/accounts", {
-              headers: {
-                "Authorization": `Bearer ${derivToken}`,
-                "Deriv-App-ID": derivAppId,
-                "Accept": "application/json",
-                "User-Agent": "sentinel-fx-worker/1.0"
-              }
-            });
-            if (accsRes.ok) {
-              const accsData = await accsRes.json();
-              const demoAcc = (accsData.data || []).find(a => a.account_type === "demo");
-              if (demoAcc) {
-                const accId = demoAcc.account_id || demoAcc.loginid;
-                const resetCall = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${accId}/reset-demo-balance`, {
-                  method: "POST",
-                  headers: {
-                    "Authorization": `Bearer ${derivToken}`,
-                    "Deriv-App-ID": derivAppId,
-                    "Accept": "application/json",
-                    "User-Agent": "sentinel-fx-worker/1.0"
-                  }
-                });
-                if (resetCall.ok) {
-                  derivRes = await resetCall.json();
-                }
-              }
-            }
-          } catch (e) {
-            console.error("Deriv REST reset error:", e);
-          }
-        }
-        // Reset today's PnL and trade statistics in D1
-        await env.DB.prepare(
-          "INSERT INTO daily_stats (lagos_date, pnl, trades, wins) VALUES (?, 0, 0, 0) " +
-          "ON CONFLICT(lagos_date) DO UPDATE SET pnl=0, trades=0, wins=0"
-        ).bind(lagosDate()).run();
-        // Update heartbeat balance
-        await env.DB.prepare(
-          "UPDATE heartbeat SET balance=10000.00, note='demo reset', ts=? WHERE id=1"
-        ).bind(nowUTC()).run();
-        // Zero the per-model ledger so the pool view matches the reset balance
-        await env.DB.prepare("UPDATE model_ledger SET balance=0, updated_utc=?").bind(nowUTC()).run();
-        // Log the action
-        await env.DB.prepare(
-          "INSERT INTO logs (ts, level, pair, message) VALUES (?, 'info', null, 'Demo balance and session stats reset to $10,000.00')"
-        ).bind(nowUTC()).run();
-        return json({ ok: true, balance: 10000.00, deriv: derivRes });
+        return err("MT5 balance reset must be performed at the broker; no ledger or balance was changed",409);
       }
 
       if (path === "/api/settings" && method === "POST") {
@@ -783,8 +765,23 @@ export default {
       }
 
       if (path === "/api/trades" && method === "GET") {
-        const r = await env.DB.prepare("SELECT * FROM trades ORDER BY id DESC LIMIT 200").all();
-        return json({ trades: r.results });
+        try {
+          const active=await env.DB.prepare("SELECT data FROM cfd_positions").all();
+          const rows=await env.DB.prepare("SELECT position_id,SUM(net) net FROM cfd_deals GROUP BY position_id").all();
+          const open=active.results.map(r=>JSON.parse(r.data));const openIds=new Set(open.map(p=>p.ticket));const trades=[];
+          for(const p of open) {
+            const own=await env.DB.prepare("SELECT * FROM cfd_ownership WHERE position_id=?").bind(p.ticket).first();
+            trades.push({contract_id:p.ticket,pair:p.symbol,side:p.type,stake:p.volume,open_price:p.price_open,current_price:p.price_current,sl:p.sl,tp:p.tp,pnl:p.profit,open_utc:new Date(p.time*1000).toISOString(),close_utc:null,reason:own?.reason||p.reason||p.comment,model_id:own?.model_symbol||null,mode:"demo"});
+          }
+          for(const row of rows.results) {
+            if(openIds.has(row.position_id))continue;
+            const ds=await env.DB.prepare("SELECT data FROM cfd_deals WHERE position_id=? ORDER BY ticket").bind(row.position_id).all();const deals=ds.results.map(d=>JSON.parse(d.data));const entry=deals.find(d=>d.entry===0);const exit=deals.filter(d=>d.entry===1||d.entry===2).at(-1);
+            if(!entry||!exit)continue;
+            const own=await env.DB.prepare("SELECT * FROM cfd_ownership WHERE position_id=?").bind(row.position_id).first();
+            trades.push({contract_id:row.position_id,pair:entry.symbol,side:entry.type===0?"BUY":"SELL",stake:entry.volume,open_price:entry.price,close_price:exit.price,open_utc:new Date(entry.time*1000).toISOString(),close_utc:new Date(exit.time*1000).toISOString(),pnl:row.net,result:row.net>0?"win":"loss",reason:own?.reason||entry.comment,model_id:own?.model_symbol||null,mode:"demo"});
+          }
+          return json({trades});
+        } catch(e) { if(String(e).includes("no such table"))return json({trades:[]});throw e; }
       }
 
       if (path === "/api/news" && method === "GET") {

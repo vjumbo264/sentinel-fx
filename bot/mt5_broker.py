@@ -531,7 +531,7 @@ class MT5Broker(BrokerBase):
             "D1": getattr(mt5, "TIMEFRAME_D1", 1440),
         }
         tf_code = tf_map.get(timeframe.upper(), getattr(mt5, "TIMEFRAME_M1", 1))
-        rates = mt5.copy_rates_from_pos(symbol, tf_code, 0, count)
+        rates = mt5.copy_rates_from_pos(symbol, tf_code, 1, count)
         if rates is None or len(rates) == 0:
             return []
 
@@ -539,6 +539,7 @@ class MT5Broker(BrokerBase):
         for r in rates:
             if hasattr(r, "time"):
                 out.append({
+                    "epoch": int(r.time),
                     "time": int(r.time),
                     "open": float(r.open),
                     "high": float(r.high),
@@ -549,6 +550,7 @@ class MT5Broker(BrokerBase):
                 })
             else:
                 out.append({
+                    "epoch": int(r[0]),
                     "time": int(r[0]),
                     "open": float(r[1]),
                     "high": float(r[2]),
@@ -558,6 +560,14 @@ class MT5Broker(BrokerBase):
                     "spread": int(r[6]) if len(r) > 6 else 0
                 })
         return out
+
+    def loss_per_lot(self, symbol, side, price, stop):
+        api=self._get_api();order_type=0 if side=='BUY' else 1
+        if self._conn:
+            result=self._conn.eval(f"MetaTrader5.order_calc_profit({order_type}, {symbol!r}, 1.0, {float(price)}, {float(stop)})")
+        else:result=api.order_calc_profit(order_type,symbol,1.0,float(price),float(stop))
+        if result is None:raise BrokerError('native loss conversion unavailable')
+        return abs(float(result))
 
     def check_margin(self, symbol: str, action: str, volume: float, price: float) -> Dict[str, Any]:
         mt5 = self._get_api()

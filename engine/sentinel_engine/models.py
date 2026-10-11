@@ -39,7 +39,7 @@ class _LGBMText:
             os.unlink(path)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        return self.booster.predict(X)
+        return self.booster.predict(X, num_threads=1)
 
 
 class _TreeJSON:

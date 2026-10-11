@@ -6,10 +6,18 @@ on:
         description: "demo|real (demo default)"
         required: false
         default: "demo"
+      wall_seconds:
+        description: "Wall time; 1200 for acceptance, 13800 for regular runs"
+        required: false
+        default: "13800"
+      chain:
+        description: "Enable READY successor handover"
+        required: false
+        default: "true"
   schedule:
     - cron: "0 */4 * * *"  # backup every 4h; main driver is self-chain
 concurrency:
-  group: bot
+  group: bot-${{ github.run_id }}
   cancel-in-progress: false
 permissions:
   contents: read
@@ -23,12 +31,13 @@ jobs:
       BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
       DERIV_BEARER_TOKEN: ${{ secrets.DERIV_BEARER_TOKEN }}
       DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
-      GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT }}
+      GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT || github.token }}
       MT5_PASSWORD: ${{ secrets.MT5_PASSWORD }}
       MT5_DEMO_LOGIN: ${{ secrets.MT5_DEMO_LOGIN }}
       MT5_DEMO_SERVER: ${{ secrets.MT5_DEMO_SERVER }}
       BOT_MODE: ${{ github.event.inputs.mode || 'demo' }}
-      BOT_WALL_SECONDS: "13800"      # 3h50m total loop
+      BOT_CHAIN: ${{ inputs.chain || 'true' }}
+      BOT_WALL_SECONDS: ${{ inputs.wall_seconds || '13800' }}      # 3h50m total loop
       BOT_HANDOFF_LEAD_S: "300"      # dispatch next run 5min before stop
       BOT_STOP_OPEN_LEAD_S: "120"    # stop opening 2min before end
     steps:
@@ -59,7 +68,7 @@ jobs:
       - name: Crash-proof chain (safety dispatch)
         if: always()
         env:
-          GH_TOKEN_FOR_CHAIN: ${{ secrets.GH_CHAIN_PAT }}
+          GH_TOKEN_FOR_CHAIN: ${{ secrets.GH_CHAIN_PAT || github.token }}
           JOB_STATUS: ${{ job.status }}
           DISPATCH_MODE: ${{ github.event.inputs.mode || 'demo' }}
         run: |

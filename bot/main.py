@@ -1,387 +1,136 @@
-"""SENTINEL-FX: Autonomous MT5 CFD Live Bot Supervisor (bot/main.py)
-
-- Autonomous MT5 CFD execution driven by per-pair hybrid AI models
-- 3h50m Actions runner boundary with zero-gap handover protocol
-- Dynamic model loader from shared releases (models-01..), sha256 verification & disk cache
-- Unified feature generation and declarative plan execution via sentinel_engine.plan
-- Mandatory server-side Stop Loss on every open order
-- Risk management: owner overrides (max exposure, daily TP/SL) enforced externally
-- Fail-closed behavior on model exceptions
-- Circuit breaker: 3 consecutive model errors automatically disables pair and alerts site
-- Hot-swap capability: models updated only when symbol has no open positions
-- Structured decision logs posted to Cloudflare Worker D1 for full auditability
+"""Fail-closed demo CFD supervisor: learned policy -> shared adapter.
+No fixture/model fallback, no lot/price decisions, no hard position cap.
+Completed bar inference; atomically leased execution; READY-before-transfer.
 """
-
-from __future__ import annotations
-
-import argparse
-import asyncio
-import hashlib
-import json
-import logging
-import os
-import random
-import sys
-import time
-import urllib.request
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-
+import os,sys,time,json,hashlib,logging,urllib.request
+from pathlib import Path
+from datetime import datetime,timezone,timedelta
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from bot.mt5_broker import MT5Broker
+from sentinel_engine.bundle import load_bundle
+from sentinel_engine.check import check_bundle
+from sentinel_engine.plan import evaluate
+from sentinel_engine.observation import build_observation
+from sentinel_engine.execution_adapter import ExecutionAdapter,model_magic
 import pandas as pd
+logging.basicConfig(level=logging.INFO);log=logging.getLogger('sentinel.bot')
+WORKER=os.environ.get('WORKER_URL') or 'https://sentinel-fx-worker.vjumbo264.workers.dev'
+OWNER=os.environ.get('GITHUB_RUN_ID') or ('local-'+str(os.getpid()))
+SECRET=os.environ.get('BOT_SHARED_SECRET','');TOKEN=os.environ.get('GH_CHAIN_PAT','');REPO='vjumbo264/sentinel-fx'
+WALL=int(os.environ.get('BOT_WALL_SECONDS','13800'));HANDOFF=int(os.environ.get('BOT_HANDOFF_LEAD_S','300'));STOP=int(os.environ.get('BOT_STOP_OPEN_LEAD_S','120'))
 
-# Add repo to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from bot.mt5_broker import MT5Broker, BrokerError, OrderValidationError, MarginInsufficientError
-from engine.sentinel_engine.bundle import load_bundle, verify_bundle
-from engine.sentinel_engine.plan import evaluate as plan_evaluate
-from engine.sentinel_engine import news as newsmod
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-logger = logging.getLogger("sentinel.bot")
-
-WORKER = os.environ.get("WORKER_URL", "https://sentinel-fx-worker.vjumbo264.workers.dev").rstrip("/")
-BOT_SECRET = os.environ.get("BOT_SHARED_SECRET", "")
-GH_PAT = os.environ.get("GH_CHAIN_PAT", "")
-REPO = os.environ.get("GITHUB_REPOSITORY", "vjumbo264/sentinel-fx")
-
-WALL_S = int(os.environ.get("BOT_WALL_SECONDS", "13800"))          # ~3h50m
-HANDOFF_LEAD_S = int(os.environ.get("BOT_HANDOFF_LEAD_S", "300"))   # 5 min before exit
-STOP_OPEN_LEAD_S = int(os.environ.get("BOT_STOP_OPEN_LEAD_S", "120")) # 2 min before exit
-POLL_INTERVAL_S = float(os.environ.get("BOT_POLL_SECONDS", "10.0"))
-
-CACHE_DIR = os.path.join(os.path.dirname(__file__), "..", "cache", "models")
-os.makedirs(CACHE_DIR, exist_ok=True)
-
-
-# ---------------- Worker HTTP API Helpers ----------------
-
-def http_worker(method: str, path: str, body: Any = None, timeout: int = 15) -> Dict[str, Any]:
-    if not WORKER or not BOT_SECRET:
-        return {}
-    data = None if body is None else json.dumps(body).encode("utf-8")
-    req = urllib.request.Request(
-        f"{WORKER}{path}",
-        data=data,
-        method=method,
-        headers={
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "X-Bot-Secret": BOT_SECRET,
-            "User-Agent": "sentinel-bot/3.0"
-        }
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return json.loads(r.read().decode("utf-8") or "{}")
-    except Exception as e:
-        logger.debug(f"Worker {method} {path} error: {e}")
-        return {}
-
-
-def log_to_worker(level: str, symbol: str, message: str, data: Any = None):
-    logger.info(f"[{level.upper()}] [{symbol}] {message}")
-    http_worker("POST", "/api/bot/log", {"level": level, "pair": symbol, "message": message, "data": data})
-
-
-def heartbeat(mode: str, balance: float, equity: float, free_margin: float, loginid: Any = None, currency: str = "USD", note: str = ""):
-    http_worker("POST", "/api/bot/heartbeat", {
-        "mode": mode,
-        "balance": balance,
-        "equity": equity,
-        "free_margin": free_margin,
-        "loginid": str(loginid) if loginid else None,
-        "currency": currency,
-        "note": note,
-        "timestamp_utc": datetime.now(timezone.utc).isoformat()
-    })
-
-
-def post_decision_log(symbol: str, decision: Dict[str, Any], balance: float, equity: float):
-    http_worker("POST", "/api/bot/decision", {
-        "symbol": symbol,
-        "action": decision.get("action"),
-        "side": decision.get("side"),
-        "volume": decision.get("volume"),
-        "sl": decision.get("sl"),
-        "tp": decision.get("tp"),
-        "confidence": decision.get("p_win"),
-        "reason": decision.get("reason"),
-        "balance": balance,
-        "equity": equity,
-        "timestamp_utc": datetime.now(timezone.utc).isoformat()
-    })
-
-
-# ---------------- Model Bundle Management ----------------
+def http_worker(method,path,body=None,timeout=20):
+ req=urllib.request.Request(WORKER+path,method=method,data=json.dumps(body).encode() if body is not None else None,headers={'X-Bot-Secret':SECRET,'Content-Type':'application/json','Accept':'application/json','User-Agent':'sentinel-bot/4.0'})
+ with urllib.request.urlopen(req,timeout=timeout) as response:return json.load(response)
+def gh(path):
+ req=urllib.request.Request('https://api.github.com/repos/'+REPO+path,headers={'Authorization':'Bearer '+TOKEN,'Accept':'application/vnd.github+json','User-Agent':'sentinel-bot'})
+ with urllib.request.urlopen(req,timeout=30) as response:return json.load(response)
+def decision_log(symbol,obs,out,results):
+ http_worker('POST','/api/bot/decision',{'symbol':symbol,'owner':OWNER,'schema_version':obs.schema_version,'inputs_summary':{'equity':obs.equity,'drawdown':obs.drawdown,'positions':len(obs.positions),'news_coverage':obs.news['coverage'],'session':obs.session},'actions':out['actions'],'reason':out['reason'],'results':results,'timestamp_utc':datetime.now(timezone.utc).isoformat()})
+def dispatch_next_runner():
+ req=urllib.request.Request('https://api.github.com/repos/'+REPO+'/actions/workflows/bot.yml/dispatches',data=json.dumps({'ref':'main','inputs':{'mode':'demo'}}).encode(),headers={'Authorization':'Bearer '+TOKEN,'Accept':'application/vnd.github+json','Content-Type':'application/json','User-Agent':'sentinel-bot'})
+ with urllib.request.urlopen(req,timeout=30) as r:assert r.status==204
 
 class ModelRegistry:
-    def __init__(self):
-        self.bundles: Dict[str, Any] = {}
-        self.error_counts: Dict[str, int] = {}
-        self.circuit_breakers: Dict[str, bool] = {}
+ def __init__(self):self.bundles={};self.errors={};self.last_refresh=0
+ def refresh(self,enabled,broker):
+  if time.time()-self.last_refresh<30:return
+  self.last_refresh=time.time();content=gh('/contents/models/index.json');import base64
+  index=json.loads(base64.b64decode(content['content']));cache=Path('cache/models');cache.mkdir(parents=True,exist_ok=True)
+  for symbol in enabled:
+   if self.errors.get(symbol,0)>=3:continue
+   entry=index.get(symbol)
+   if not entry:continue
+   version=next((v for v in entry['versions'] if v['N']==entry['active_version']),None)
+   if not version:continue
+   old=self.bundles.get(symbol)
+   if old and (old.version==version['N'] or broker.get_open_positions(old.manifest.get('mt5_symbol') or symbol.removeprefix('frx'),model_magic(symbol+'@'+str(old.version)))):continue
+   # Hot swaps only at flat state are checked by the supervisor.
+   release=gh('/releases/tags/'+version['release_tag']);asset=next(a for a in release['assets'] if a['name']==version['asset'])
+   req=urllib.request.Request(asset['browser_download_url'],headers={'User-Agent':'sentinel-bot'})
+   with urllib.request.urlopen(req,timeout=120) as response:raw=response.read()
+   if hashlib.sha256(raw).hexdigest()!=version['sha256']:raise ValueError('model archive SHA mismatch')
+   file=cache/(version['sha256']+'.zip');file.write_bytes(raw)
+   report=check_bundle(str(file))
+   if not report['ok']:raise ValueError('unhealthy bundle '+str(report['problems']))
+   self.bundles[symbol]=load_bundle(str(file));self.errors[symbol]=0
+  self.bundles={s:b for s,b in self.bundles.items() if s in enabled}
 
-    def load_active_models(self, enabled_symbols: List[str]):
-        """Load or update bundles for enabled symbols."""
-        for sym in enabled_symbols:
-            if self.circuit_breakers.get(sym):
-                continue
-
-            # Look for local cached bundle or model file in models/
-            clean_sym = sym.replace(" ", "_").replace("(", "").replace(")", "")
-            local_pattern = os.path.join(os.path.dirname(__file__), "..", "models", f"{clean_sym}_v*.sfxmodel.zip")
-            import glob
-            matches = sorted(glob.glob(local_pattern))
-            if not matches:
-                # Check fixtures clean model as fallback test model
-                matches = [os.path.join(os.path.dirname(__file__), "..", "tests", "fixtures", "clean_v2.sfxmodel.zip")]
-
-            if matches:
-                target_path = matches[-1]
-                try:
-                    b = load_bundle(target_path)
-                    self.bundles[sym] = b
-                    self.error_counts[sym] = 0
-                    logger.info(f"Loaded active model for {sym} from {os.path.basename(target_path)}")
-                except Exception as e:
-                    logger.error(f"Failed loading bundle for {sym}: {e}")
-
-    def record_error(self, symbol: str):
-        self.error_counts[symbol] = self.error_counts.get(symbol, 0) + 1
-        if self.error_counts[symbol] >= 3:
-            self.circuit_breakers[symbol] = True
-            log_to_worker("error", symbol, f"CIRCUIT BREAKER TRIGGERED: Disabled {symbol} after 3 consecutive failures")
-
-
-# ---------------- Supervisor Main Loop ----------------
-
-def dispatch_next_runner():
-    """Trigger GitHub Actions next runner before this job reaches timeout."""
-    if not GH_PAT:
-        logger.warning("GH_CHAIN_PAT not configured; automated chaining skipped")
-        return
-    url = f"https://api.github.com/repos/{REPO}/actions/workflows/bot.yml/dispatches"
-    req = urllib.request.Request(
-        url,
-        data=json.dumps({"ref": "main"}).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {GH_PAT}",
-            "Accept": "application/vnd.github+json",
-            "Content-Type": "application/json",
-            "User-Agent": "sentinel-bot-chain"
-        },
-        method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=15) as r:
-            logger.info("Successfully dispatched next runner workflow")
-    except Exception as e:
-        logger.error(f"Failed dispatching next runner: {e}")
-
-
-def main_loop(mode: str = "demo"):
-    logger.info("=" * 65)
-    logger.info(f"SENTINEL-FX AUTONOMOUS CFD BOT STARTED (mode={mode.upper()})")
-    logger.info(f"Wall limit: {WALL_S}s | Handoff lead: {HANDOFF_LEAD_S}s")
-    logger.info("=" * 65)
-
-    start_time = time.time()
-    broker = MT5Broker()
-    if not broker.connect(mode=mode):
-        logger.critical("Broker initial login failed; aborting run.")
-        sys.exit(1)
-
-    registry = ModelRegistry()
-    handoff_dispatched = False
-    stop_new_orders = False
-
-    # Track Lagos date for midnight session reset
-    last_reset_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-    while True:
-        elapsed = time.time() - start_time
-        remaining = WALL_S - elapsed
-
-        # 1. Zero-gap Handover Protocol Checks
-        if remaining <= HANDOFF_LEAD_S and not handoff_dispatched:
-            logger.info(f"[HANDOFF] Approaching job boundary ({remaining:.0f}s left). Dispatching successor runner...")
-            dispatch_next_runner()
-            handoff_dispatched = True
-
-        if remaining <= STOP_OPEN_LEAD_S and not stop_new_orders:
-            logger.info(f"[HANDOFF] Freeze new orders lead time reached ({remaining:.0f}s left). Ceasing order dispatch.")
-            stop_new_orders = True
-
-        if remaining <= 10:
-            logger.info("[HANDOFF] Reached wall time limit. Disconnecting and exiting gracefully.")
-            broker.disconnect()
-            break
-
-        # 2. Account Health and Heartbeat
-        try:
-            health = broker.health_check()
-            if not health["ok"]:
-                logger.warning(f"Broker health check warning: {health}")
-                time.sleep(POLL_INTERVAL_S)
-                continue
-
-            acct = broker.account_info()
-            bal = acct["balance"]
-            eq = acct["equity"]
-            free_m = acct["margin_free"]
-            heartbeat(mode, bal, eq, free_m, loginid=acct.get("login"), currency=acct.get("currency", "USD"))
-        except Exception as e:
-            logger.warning(f"Error reading broker account: {e}")
-            time.sleep(POLL_INTERVAL_S)
-            continue
-
-        # 3. Fetch Settings, Session Pool & Enabled Pairs (FIX3-F2/F5)
-        sess = http_worker("GET", "/api/bot/session")
-        settings = sess.get("settings") or http_worker("GET", "/api/settings") or {}
-        overrides = {o.get("symbol"): o.get("action") for o in (sess.get("overrides") or [])} if isinstance(sess.get("overrides"), list) else http_worker("GET", "/api/bot/overrides").get("overrides", [])
-        if isinstance(overrides, list):
-            overrides = {o.get("symbol"): o.get("action") for o in overrides}
-        ledger = {l["symbol"]: l for l in (sess.get("ledger") or [])}
-        active_pairs_res = http_worker("GET", "/api/pairs/enabled")
-        enabled_symbols = active_pairs_res.get("symbols") or list(ledger.keys()) or ["Volatility 10 Index", "EURUSD"]
-
-        # Owner overrides: global stop-all honored immediately
-        if overrides.get("*") == "stop_all":
-            log_to_worker("warning", "*", "Owner stop_all override active: no new orders this cycle")
-            stop_new_orders = True
-
-        # Ensure active bundles are loaded
-        registry.load_active_models(enabled_symbols)
-
-        # 4. Process Each Enabled Symbol
-        open_positions = broker.get_open_positions(magic=MT5Broker.DEFAULT_MAGIC)
-        positions_by_symbol = {}
-        for p in open_positions:
-            positions_by_symbol.setdefault(p["symbol"], []).append(p)
-
-        for sym, bundle in registry.bundles.items():
-            if registry.circuit_breakers.get(sym):
-                continue
-
-            sym_positions = positions_by_symbol.get(sym, [])
-
-            # Fetch recent candles for decision
-            candles = broker.get_candles(sym, timeframe="M1", count=90)
-            if len(candles) < 30:
-                continue
-
-            df = pd.DataFrame(candles)
-
-            # FIX3-F2/F5: each model receives ITS OWN pool share, never the
-            # whole account. Falls back to an equal split of the balance.
-            led = ledger.get(sym) or {}
-            share_alloc = float(led.get("allocated") or 0)
-            share_bal = float(led.get("balance") or 0)
-            n_enabled = max(1, len(registry.bundles))
-            if share_alloc <= 0:
-                share_alloc = bal / n_enabled
-            if share_bal <= 0:
-                share_bal = share_alloc
-            share_free_margin = free_m * (share_alloc / bal) if bal > 0 else 0.0
-
-            # Decision context
-            ctx = {
-                "balance": share_bal,
-                "allocated": share_alloc,
-                "equity": share_bal,
-                "free_margin": share_free_margin,
-                "account_balance": bal,
-                "account_equity": eq,
-                "symbol": sym,
-                "open_positions": sym_positions,
-                "positions_count": len(sym_positions)
-            }
-
-            try:
-                dec = plan_evaluate(bundle, df, ctx)
-                action = dec.get("action", "hold")
-                post_decision_log(sym, dec, bal, eq)
-
-                # Process Decision Actions
-                # Owner per-symbol pause override
-                if overrides.get(sym) == "pause":
-                    continue
-
-                if action in ("BUY", "SELL", "trade") and not stop_new_orders:
-                    side = dec.get("side", "BUY") if action == "trade" else action
-                    if side in ("CALL", "BUY"):
-                        side = "BUY"
-                    else:
-                        side = "SELL"
-
-                    # Check max open positions (default max 2 concurrent per model)
-                    if len(sym_positions) < 2:
-                        sinfo = broker.get_symbol_info(sym)
-                        vol = float(dec.get("volume", sinfo["volume_min"] if sinfo else 0.01))
-
-                        # FIX3-F2: owner max-lot clamp (when enabled on Risk page)
-                        if settings.get("ov_max_lot_enabled") and settings.get("ov_max_lot"):
-                            vol = min(vol, float(settings["ov_max_lot"]))
-
-                        # FIX3-F5: reject sizes whose margin exceeds this model's share
-                        tick0 = broker.get_tick(sym)
-                        if tick0 and sinfo:
-                            px0 = tick0["ask"] if side == "BUY" else tick0["bid"]
-                            try:
-                                mc = broker.check_margin(sym, side, vol, px0)
-                                if mc["required_margin"] > share_free_margin:
-                                    log_to_worker("warning", sym,
-                                        f"Rejected: required margin {mc['required_margin']:.2f} exceeds model share of free margin {share_free_margin:.2f}")
-                                    continue
-                            except Exception as merr:
-                                logger.debug(f"margin precheck skipped for {sym}: {merr}")
-                        tick = broker.get_tick(sym)
-                        if tick:
-                            price = tick["ask"] if side == "BUY" else tick["bid"]
-                            point = sinfo["point"] if sinfo else 0.0001
-                            digits = sinfo["digits"] if sinfo else 5
-
-                            # Mandatory Server-Side Stop Loss
-                            sl = dec.get("sl")
-                            if not sl or sl <= 0:
-                                sl_pts = max(50, dec.get("sl_dist_points", 50))
-                                sl = round(price - (sl_pts * point), digits) if side == "BUY" else round(price + (sl_pts * point), digits)
-
-                            tp = dec.get("tp")
-
-                            # Send order with magic number & comment tag
-                            broker.open_position(
-                                symbol=sym,
-                                side=side,
-                                volume=vol,
-                                sl=sl,
-                                tp=tp,
-                                price=price,
-                                magic=MT5Broker.DEFAULT_MAGIC,
-                                model_id=sym,
-                                decision_id=f"bar_{int(time.time())}"
-                            )
-
-                elif action == "MODIFY_STOP":
-                    # Trailing stop or break-even modification
-                    target_ticket = dec.get("ticket")
-                    new_sl = dec.get("new_sl")
-                    for p in sym_positions:
-                        if (target_ticket is None or p["ticket"] == target_ticket) and new_sl and new_sl > 0:
-                            broker.modify_sl_tp(ticket=p["ticket"], symbol=sym, sl=new_sl, tp=p.get("tp"))
-
-                elif action in ("CLOSE_ALL", "EXIT"):
-                    for p in sym_positions:
-                        broker.close_position(ticket=p["ticket"], symbol=sym, comment="sfx:model_exit")
-
-            except Exception as e:
-                logger.error(f"Error executing model for {sym}: {e}")
-                registry.record_error(sym)
-
-        time.sleep(POLL_INTERVAL_S)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="SENTINEL-FX Live CFD Bot")
-    parser.add_argument("--mode", default=os.environ.get("BOT_MODE", "demo"), choices=["demo", "real"])
-    args = parser.parse_args()
-    main_loop(mode=args.mode)
+def main_loop(mode='demo'):
+ if mode!='demo':raise ValueError('Builder verification permits demo mode only')
+ if not SECRET or not TOKEN:raise ValueError('Worker shared secret and GitHub token required')
+ broker=MT5Broker();assert broker.connect('demo'),'demo login failed'
+ assert int(broker._get_api().account_info().trade_mode)==0,'non-demo account refused'
+ assert broker.health_check()['ok'],'terminal not trading-ready'
+ # Startup must be fully ready before claiming/advertising execution lease.
+ registry=ModelRegistry();start=time.time();lastbars={};lastresults={};peaks={};dispatched=False;was_leader=False
+ since=datetime.now(timezone.utc)-timedelta(days=7)
+ try:
+  while time.time()-start<WALL:
+   remaining=WALL-(time.time()-start)
+   try:
+    session=http_worker('GET','/api/bot/session');settings=session.get('settings',{});enabled=http_worker('GET','/api/bot/models')['symbols']
+    registry.refresh(enabled,broker)
+    http_worker('POST','/api/bot/ready',{'owner':OWNER,'models':list(registry.bundles),'mode':'demo'})
+    lease=http_worker('POST','/api/bot/lock',{'owner':OWNER})
+    if not lease.get('acquired'):time.sleep(5);continue
+    was_leader=True
+    if settings.get('mode')!='demo':http_worker('POST','/api/bot/settings',{'mode':'demo'})
+    acct=broker.account_info();positions=broker.get_open_positions();deals=broker.get_history_deals(since)
+    http_worker('POST','/api/bot/heartbeat',{'mode':'demo','balance':acct['balance'],'equity':acct['equity'],'free_margin':acct['margin_free'],'loginid':str(acct['login'])[:2]+'***','currency':acct['currency'],'note':'active runner '+OWNER})
+    ownership=[];ledgers={l['symbol']:l for l in session.get('ledger',[])}
+    for symbol,bundle in registry.bundles.items():
+     model_id=symbol+'@'+str(bundle.version);magic=model_magic(model_id)
+     ownership += [{'position_id':p['ticket'],'model_symbol':symbol,'reason':p.get('comment','')} for p in positions if p['magic']==magic]
+     # Also adopt closed deals after restart from deterministic model magic.
+     ownership += [{'position_id':d['position_id'],'model_symbol':symbol,'reason':d.get('comment','')} for d in deals if d['magic']==magic]
+    http_worker('POST','/api/bot/cfd-sync',{'positions':positions,'deals':deals,'ownership':ownership,'mode':'demo','balance':acct['balance']})
+    halted=settings.get('halt') or settings.get('stop_all');ov=http_worker('GET','/api/bot/overrides').get('overrides',[])
+    halted=halted or any(o.get('symbol')=='*' and o.get('action')=='stop_all' for o in ov)
+    if halted:
+     for p in positions:
+      if p['magic'] in [model_magic(s+'@'+str(b.version)) for s,b in registry.bundles.items()]:broker.close_position(p['ticket'],p['symbol'],comment='sfx:owner:halt')
+    for symbol,bundle in registry.bundles.items():
+     if registry.errors.get(symbol,0)>=3:continue
+     led=ledgers.get(symbol)
+     # No account-balance fallback. Allocation is an owner prerequisite.
+     if not led or not led.get('active') or float(led.get('allocated',0))<=0:continue
+     broker_symbol=bundle.manifest.get('mt5_symbol') or symbol.removeprefix('frx');model_id=symbol+'@'+str(bundle.version);magic=model_magic(model_id)
+     owned=broker.get_open_positions(broker_symbol,magic)
+     candles=broker.get_candles(broker_symbol,'M1',2400)
+     if len(candles)<120:continue
+     entry_seconds=int(bundle.manifest.get('entry_seconds',60));completed=int(candles[-1]['epoch'])//entry_seconds
+     if lastbars.get(symbol)==completed:continue
+     lastbars[symbol]=completed
+     share=float(led['balance']);equity=share+sum(p['profit']+p.get('swap',0) for p in owned);peaks[symbol]=max(peaks.get(symbol,equity),equity)
+     tick=broker.get_tick(broker_symbol);specs=broker.get_symbol_info(broker_symbol);frame=pd.DataFrame(candles)
+     obs,atr=build_observation(frame,equity,float(led['allocated']),owned,specs,tick,max(0,1-equity/peaks[symbol]),last_result=lastresults.get(symbol))
+     out=evaluate(bundle,frame,{'observation':obs})
+     if out.get('error'):
+      registry.errors[symbol]=registry.errors.get(symbol,0)+1;decision_log(symbol,obs,out,[]);continue
+     pause=any(o.get('symbol')==symbol and o.get('action')=='pause' for o in ov)
+     overrides={'halt':bool(halted or pause or remaining<STOP),'max_exposure_enabled':bool(settings.get('ov_max_lot_enabled')),'max_exposure_lots':float(settings.get('ov_max_lot',0))}
+     used=sum(broker.check_margin(broker_symbol,p['type'],p['volume'],p['price_current'])['required_margin'] for p in owned)
+     adapter=ExecutionAdapter(broker,broker_symbol,model_id,equity,min(acct['margin_free'],max(0,float(led['allocated'])-used)),atr,overrides)
+     results=[]
+     for action in out['actions']:
+      # Renew/verify lease immediately before each broker mutation.
+      if not http_worker('POST','/api/bot/lock',{'owner':OWNER}).get('acquired'):break
+      result=adapter.execute(action,str(candles[-1]['epoch']));results.append(result);lastresults[symbol]=result
+     decision_log(symbol,obs,out,results)
+    if remaining<HANDOFF and not dispatched and os.environ.get('BOT_CHAIN','true')=='true':dispatch_next_runner();dispatched=True
+    if remaining<STOP and dispatched:
+     ready=http_worker('GET','/api/bot/ready').get('runners',[]);successor=next((r for r in ready if r['owner']!=OWNER),None)
+     if successor:
+      transfer=http_worker('POST','/api/bot/transfer',{'owner':OWNER,'new_owner':successor['owner']})
+      if transfer.get('transferred'):log.info('HANDOVER confirmed READY successor=%s',successor['owner']);was_leader=False;break
+    log.info('HEARTBEAT owner=%s elapsed=%.0fs balance=%.2f models=%s',OWNER,time.time()-start,acct['balance'],len(registry.bundles))
+   except Exception as error:
+    log.error('FAIL CLOSED: %s',error)
+   time.sleep(10)
+ finally:
+  if was_leader:
+   try:http_worker('POST','/api/bot/unlock',{'owner':OWNER})
+   except Exception:pass
+  broker.disconnect()
+if __name__=='__main__':main_loop(os.environ.get('BOT_MODE','demo'))
