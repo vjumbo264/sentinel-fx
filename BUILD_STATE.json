@@ -627,10 +627,10 @@
   }
  ],
  "notebook": {
-  "updated_utc": "2026-10-11T18:28:01Z",
+  "updated_utc": "2026-10-11T18:29:03Z",
   "session": 1,
   "current": "D",
-  "next_step": "Fix probe-dukascopy.yml (add || true so one curl failure cannot kill the job, raise --max-time to 60), add freeserv.dukascopy.com mirror + dukascopy-node retry probe, redispatch via API, read logs = attempt 2/5.",
+  "next_step": "Read logs of probe attempt-2 run 38163977306 (freeserv mirror + 60s timeout). If also blocked: attempt 3 = dukascopy-node standalone, attempt 4 = python requests w/ SNI variants, attempt 5 = alternate free source (histdata/TrueFX/FXCM) then document blockade.",
   "items": {
    "D": {
     "status": "doing",
@@ -638,10 +638,15 @@
      {
       "what": "Dispatched probe-dukascopy.yml (run 38163818415): curl to datafeed.dukascopy.com bi5 from Azure westus3 runner",
       "result": "FAIL - TCP connect timed out after 20s (curl 28, HTTP 000). Job then died on 'head /tmp/h.txt' under bash -e, so python urllib and dukascopy-node probes never ran."
+     },
+     {
+      "what": "Redispatched fixed probe-dukascopy.yml (run 38163977306) incl. freeserv.dukascopy.com mirror",
+      "result": "RUNNING at session end - logs must be read first thing next session"
      }
     ],
     "evidence": [
-     "https://github.com/vjumbo264/sentinel-fx/actions/runs/38163818415"
+     "https://github.com/vjumbo264/sentinel-fx/actions/runs/38163818415",
+     "https://github.com/vjumbo264/sentinel-fx/actions/runs/38163977306"
     ],
     "files": []
    },
@@ -742,7 +747,8 @@
   },
   "decisions": [
    "2026-10-11T18:24:43Z session 1 started, no notebook section existed; created it. Resuming at D (Dukascopy data hub). Confirmed: frxEURUSD in data/index.json is still the MT5 copy_rates fallback (broker depth only), R_10/R_25/R_100 have ~1yr synthetic from auth-otp source.",
-   "2026-10-11T18:28:01Z D attempt 1: Dukascopy datafeed TCP-unreachable from Actions runner (20s connect timeout, Azure westus3). Probe workflow has a bash -e bug that skipped the other two probes; fixing and retrying with mirror host + longer timeout next."
+   "2026-10-11T18:28:01Z D attempt 1: Dukascopy datafeed TCP-unreachable from Actions runner (20s connect timeout, Azure westus3). Probe workflow has a bash -e bug that skipped the other two probes; fixing and retrying with mirror host + longer timeout next.",
+   "2026-10-11T18:29:03Z probe workflow fixed (bash -e bug, 60s timeout, freeserv mirror) and redispatched as attempt 2, run 38163977306; session ended before logs could be read."
   ],
   "known_problems": [
    "No Dukascopy multi-year forex history in releases (only 100k-row MT5 fallback for frxEURUSD)",

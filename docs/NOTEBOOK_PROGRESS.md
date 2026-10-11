@@ -18,3 +18,9 @@
 
 ### Problems
 - None new yet.
+
+## End of session 1 (2026-10-11)
+- **Done**: state section created; PAT verified (API+push); probe workflow bug fixed (bash -e kill, 60s timeout, freeserv mirror added).
+- **In progress**: D attempt 2/5 dispatched — run pending; read its logs first next session.
+- **Next exact step**: fetch logs of the attempt-2 probe run; then attempts 3-5 per BUILD_STATE.json next_step.
+- **Not started**: T, S, A, R, N, P, W, E2E and tests T1-T11.
