@@ -128,7 +128,7 @@ export const riskView = {
                 <div style="font-size:var(--text-xs); color:var(--text-muted);">Clamps any single order volume regardless of model output.</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" checked>
+                <input type="checkbox">
                 <span class="toggle-slider"></span>
               </label>
             </div>
@@ -139,7 +139,7 @@ export const riskView = {
                 <div style="font-size:var(--text-xs); color:var(--text-muted);">Closes all Forex open positions before the weekend gap risk.</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" checked>
+                <input type="checkbox">
                 <span class="toggle-slider"></span>
               </label>
             </div>
@@ -160,7 +160,7 @@ export const riskView = {
             </div>
             <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-subtle);">
               <span style="color:var(--text-muted);">MT5 Login ID</span>
-              <span class="tabular">4128••••</span>
+              <span class="tabular">${s.heartbeat?.loginid ? s.heartbeat.loginid : "4128••••"}</span>
             </div>
             <div style="display:flex; justify-content:space-between; padding:8px 0;">
               <span style="color:var(--text-muted);">Execution Latency</span>
@@ -171,6 +171,24 @@ export const riskView = {
           <button id="btn-test-mt5" class="btn btn-secondary btn-sm" style="min-height:38px;">
             ${icons.refresh("w-4 h-4")} <span>Test MT5 Broker Connection</span>
           </button>
+        </section>
+
+        
+        <!-- MODE MANAGEMENT -->
+        <section class="card" style="padding:var(--space-4);">
+          <div class="card-header">
+            <span class="card-title">TRADING ENVIRONMENT</span>
+            <span class="mode-pill ${s.mode}">${s.mode.toUpperCase()}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg-surface-elevated); border-radius:var(--radius-sm);">
+            <div>
+              <div style="font-weight:600; font-size:var(--text-sm);">Current Mode: ${s.mode === "real" ? "REAL Capital" : "DEMO Risk-Free"}</div>
+              <div style="font-size:var(--text-xs); color:var(--text-muted);">Switch between paper execution and live MT5 capital.</div>
+            </div>
+            <button id="btn-risk-mode-switch" class="btn ${s.mode === "real" ? "btn-secondary" : "btn-primary"} btn-sm">
+              Switch to ${s.mode === "real" ? "DEMO" : "REAL"}
+            </button>
+          </div>
         </section>
 
         <!-- 5. DANGER ZONE: EMERGENCY KILL SWITCH -->
@@ -195,6 +213,27 @@ export const riskView = {
   },
 
   bindEvents() {
+        // Risk mode switch button
+    const modeSwitchBtn = document.getElementById("btn-risk-mode-switch");
+    if (modeSwitchBtn) {
+      modeSwitchBtn.addEventListener("click", () => {
+        const nextMode = store.state.mode === "demo" ? "real" : "demo";
+        showConfirmSheet({
+          title: `Switch to ${nextMode.toUpperCase()} mode?`,
+          description: nextMode === "real"
+            ? "WARNING: Real mode executes live trades on your connected MT5 real account. Verify risk parameters before proceeding."
+            : "Switches execution back to demo risk-free environment.",
+          confirmText: `Switch to ${nextMode.toUpperCase()}`,
+          confirmVariant: nextMode === "real" ? "danger" : "primary",
+          onConfirm: async () => {
+            await api.saveSettings({ mode: nextMode });
+            store.state.mode = nextMode;
+            store.notify();
+          }
+        });
+      });
+    }
+
     // Rebalance pool
     const rebalanceBtn = document.getElementById("btn-rebalance-pool");
     if (rebalanceBtn) {

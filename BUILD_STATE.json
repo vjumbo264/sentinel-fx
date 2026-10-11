@@ -395,13 +395,13 @@
     },
     {
       "id": "RISK",
-      "status": "doing",
-      "note": "Rebuild Risk & Auth on real session pool, overrides, MT5 mode switch and emergency kill switch.",
-      "evidence": ""
+      "status": "done",
+      "note": "Rebuilt Risk desk with session balance pool, equal-split preview, daily TP/SL with repeat daily, owner overrides defaulting to OFF, masked MT5 credentials, Real/Demo switch with confirmation modal, and emergency kill switch.",
+      "evidence": "site/js/pages/risk.js verified; overrides default OFF; confirmation sheets wired on mode switch and kill switch."
     },
     {
       "id": "SETTINGS",
-      "status": "todo",
+      "status": "doing",
       "note": "Rebuild Settings with Auto/Light/Dark, Lagos timezone, logout, real build ID and /api/health.",
       "evidence": ""
     },
