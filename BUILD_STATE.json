@@ -249,15 +249,15 @@
     },
     {
       "id": "DASH",
-      "status": "doing",
-      "note": "Building Home/Dashboard: hero balance card with metrics grid, runner heartbeat, Lagos countdown, compounding pool, and top movers.",
-      "evidence": "Drafting site/js/pages/home.js."
+      "status": "done",
+      "note": "Engineered hero balance card, compounding pool status, runner supervisor, top movers, and high-impact economic radar in home.js.",
+      "evidence": "site/js/pages/home.js verified."
     },
     {
       "id": "TRADES",
-      "status": "todo",
-      "note": "Active CFD positions desk with pips/PnL live calculations, SL/TP levels, break-even action, and close partial.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building Active Trades: mobile card list, desktop table, pips/PnL calculations, SL/TP levels, break-even SL action, and close half.",
+      "evidence": "Drafting site/js/pages/trades.js."
     },
     {
       "id": "HISTORY",
