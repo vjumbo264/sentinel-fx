@@ -65,7 +65,7 @@ jobs:
     timeout-minutes: 350
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 1
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       GH_TOKEN: ${{ github.token }}
@@ -84,7 +84,7 @@ jobs:
           restore-keys: bi5-${{ matrix.pair }}-
       - run: pip install --quiet requests
       - name: Serial raw tick download -> bid/ask M1 candles
-        run: python tools/fetch_dukascopy_bi5.py --instrument "$PAIR" --from "$FROM" --to "$TO" --out out/frx${PAIR}_60s.csv.gz
+        run: python tools/fetch_dukascopy_bi5.py --instrument "$PAIR" --from "$FROM" --to "$TO" --pause 2.5 --out out/frx${PAIR}_60s.csv.gz
       - name: Merge into pair dataset, verify, publish immutable asset + CAS index
         run: python tools/publish_data.py out/frx${PAIR}_60s.csv.gz
       - uses: actions/upload-artifact@v4

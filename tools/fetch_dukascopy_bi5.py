@@ -25,7 +25,7 @@ UA = {'User-Agent': 'sentinel-fx-data/3.0 (research; +https://github.com/vjumbo2
 def price_scale(instrument):
     return 1000 if instrument.upper().endswith('JPY') else 100000
 
-def fetch_bi5(url, retries=8, base_pause=2.0):
+def fetch_bi5(url, retries=10, base_pause=4.0):
     """Download one hourly .bi5 and LZMA-decode. Returns b'' for a known 404."""
     for attempt in range(retries):
         try:
@@ -156,7 +156,7 @@ def main():
     ap.add_argument('--to', dest='end', required=True)
     ap.add_argument('--out', required=True)
     ap.add_argument('--cache', default='.bi5-cache')
-    ap.add_argument('--pause', type=float, default=1.6)
+    ap.add_argument('--pause', type=float, default=2.5)
     ap.add_argument('--granularity', type=int, default=60)
     a = ap.parse_args()
     assert a.granularity == 60, 'M1 only; resample causally in shared features'

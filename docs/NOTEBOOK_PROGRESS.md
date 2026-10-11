@@ -52,3 +52,8 @@
 
 ## Session 2 checkpoint
 - Lab cost_vec off-by-one fixed. Backfill 38165565445 (EURUSD 2024, 12 months x3 parallel) RUNNING. forex-history 38164983264 FAILED - root-cause line being extracted. Exact next_step in BUILD_STATE.json.
+
+## Session 2 — D root cause CONFIRMED
+- forex-history failure = HTTP 503 storm from datafeed.dukascopy.com caused by SELF-INFLICTED parallelism (3 concurrent month jobs, rapid retries). Probe proved a single paced request decodes fine.
+- FIX: backfill serialized (max-parallel 1), pause 2.5s, retries 10, base 4s. Lab off-by-one FIXED (kept=3, best=0.002219 verified).
+- NEXT (exact, in BUILD_STATE.json): cancel throttled run, REDISPATCH serial backfill, then full 16-pair backfill, then item T parity test.
