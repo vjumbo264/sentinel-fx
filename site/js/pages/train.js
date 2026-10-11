@@ -145,6 +145,19 @@ export const trainView = {
           }).join("")}
         </div>
 
+        
+        <!-- OPTIONAL IN-MEMORY PUBLISH TOKEN -->
+        <div class="card" style="padding:var(--space-4);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);">
+            <div style="font-weight:600; font-size:var(--text-sm);">Optional Publish PAT (Memory-Only)</div>
+            <span style="font-size:11px; color:var(--text-muted);">Never stored in localStorage</span>
+          </div>
+          <p style="font-size:var(--text-xs); color:var(--text-secondary); line-height:1.4; margin-bottom:var(--space-3);">
+            If provided, appends an authorization block to the prompt so an automated trainer can publish the finished model bundle directly via GitHub Actions.
+          </p>
+          <input type="password" id="input-train-pat" class="input" placeholder="Optional fine-grained PAT with workflow rights..." style="font-family:var(--font-mono); font-size:var(--text-sm);">
+        </div>
+
         <!-- STICKY BOTTOM GENERATION ACTION BAR -->
         <div class="card" style="position:sticky; bottom:calc(68px + env(safe-area-inset-bottom, 16px)); z-index:30; background:var(--bg-surface); padding:var(--space-3) var(--space-4); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:var(--space-2); box-shadow:var(--shadow-modal);">
           <div>

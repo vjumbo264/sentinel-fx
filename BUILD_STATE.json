@@ -383,13 +383,13 @@
     },
     {
       "id": "TRAIN",
-      "status": "doing",
-      "note": "Rebuild Train desk with symbols from tracked_pairs/symbols registry and real data/index.json status.",
-      "evidence": ""
+      "status": "done",
+      "note": "Rebuilt Train desk with Forex & main Synthetics from registry, data status dynamically gated on data/index.json, Fetch data workflow dispatcher, memory-only PAT input, disabled copy until confirmed, and zero duration pickers.",
+      "evidence": "site/js/pages/train.js verified; data/index.json integration confirmed; CFD playbook generator wired."
     },
     {
       "id": "UPLOAD",
-      "status": "todo",
+      "status": "doing",
       "note": "Rebuild Model Upload stepper with real .sfxmodel.zip bundle validation.",
       "evidence": ""
     },
