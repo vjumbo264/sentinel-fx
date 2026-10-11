@@ -46,6 +46,19 @@ export const chartView = {
   async render(container) {
     this.cleanup();
     this.container = container;
+    
+    // Dynamic pairs from registry
+    try {
+      const res = await fetch("./data/tracked_pairs.json");
+      if (res.ok) {
+        const d = await res.json();
+        if (d && d.pairs) this.availablePairs = d.pairs;
+      }
+    } catch (_) {
+      this.availablePairs = POPULAR_PAIRS;
+    }
+    if (!this.availablePairs) this.availablePairs = POPULAR_PAIRS;
+
     this.updateDom();
 
     // Listen for live theme changes
@@ -125,7 +138,7 @@ export const chartView = {
 
             <!-- Popular pairs scroll chips -->
             <div style="display:flex; gap:4px; overflow-x:auto; flex-shrink:0;">
-              ${POPULAR_PAIRS.map(sym => `
+              ${(this.availablePairs || POPULAR_PAIRS).slice(0, 15).map(sym => `
                 <button class="btn btn-sm pair-chip ${sym === this.currentPair ? "btn-secondary" : "btn-ghost"}" data-pair="${sym}" style="min-height:30px; padding:0 8px; font-size:12px; font-family:var(--font-mono);">
                   ${sym.replace(/^frx/, "")}
                 </button>
@@ -237,6 +250,13 @@ export const chartView = {
         borderColor: gridColor,
         timeVisible: true,
         secondsVisible: false
+      },
+      localization: {
+        timeFormatter: (timestamp) => {
+          // Lagos WAT is UTC+1 (add 3600 seconds)
+          const d = new Date((Number(timestamp) + 3600) * 1000);
+          return d.toISOString().replace("T", " ").slice(11, 16) + " WAT";
+        }
       },
       rightPriceScale: {
         borderColor: gridColor

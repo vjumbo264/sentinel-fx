@@ -371,13 +371,13 @@
     },
     {
       "id": "CHART",
-      "status": "doing",
-      "note": "Rebuild Candlestick chart on /api/candles with pair list from symbols registry, status line, retry, timeout.",
-      "evidence": ""
+      "status": "done",
+      "note": "Rebuilt Candlestick chart on /api/candles with Lightweight Charts 4.2.1, dynamic pair registry from tracked_pairs.json, Lagos WAT time localization, 10s timeout, position overlay lines, status banner (live/closed/error) with Retry, and live re-theming.",
+      "evidence": "site/js/pages/chart.js verified; zero mock candle generation; error handling and retry button wired."
     },
     {
       "id": "MODELS",
-      "status": "todo",
+      "status": "doing",
       "note": "Rebuild Models page on real /api/pairs and forward metrics with honest empty state when 0 models.",
       "evidence": ""
     },
