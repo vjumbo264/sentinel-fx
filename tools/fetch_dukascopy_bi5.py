@@ -20,6 +20,9 @@ def fetch_bi5(url,retries=6,base_pause=2):
    if error.code==404:return b''
    print(f'RETRY {attempt+1} HTTP {error.code} {url}',flush=True)
    if error.code not in (202,429,500,502,503,504):raise
+   retry_after=error.headers.get('Retry-After') if error.headers else None
+   if retry_after and retry_after.isdigit():
+    time.sleep(min(120,int(retry_after)));continue
   except (OSError,ValueError,RuntimeError,lzma.LZMAError) as error:print(f'RETRY {attempt+1} {type(error).__name__}: {error} {url}',flush=True)
   time.sleep(min(60,base_pause*2**attempt))
  raise RuntimeError(f'Unresolved hour after {retries} attempts: {url}')
@@ -39,7 +42,7 @@ def aggregate_m1(ticks,scale=None):
    c=candles[key];c[1]=max(c[1],bid);c[2]=min(c[2],bid);c[3]=bid;c[5]=max(c[5],ask);c[6]=min(c[6],ask);c[7]=ask;c[8]+=1
  return candles
 
-def build_range(instrument,start,end,pause=.25,cache=None):
+def build_range(instrument,start,end,pause=1.6,cache=None):
  cache=Path(cache or '.bi5-cache')/instrument;cache.mkdir(parents=True,exist_ok=True)
  result={};t=start.replace(minute=0,second=0,microsecond=0);hours=empty=0
  while t<end:

@@ -34,3 +34,8 @@
 - **freeserv mirror**: the /2.0/datafeed/ path form 404s; not needed since primary host works.
 - **Next exact step**: tune fetch_dukascopy_bi5.py pacing, then run forex-history.yml for one real
   month of EURUSD as decode-at-scale proof, then extend to the full Deriv+Dukascopy pair list.
+
+## Session 2 — started 2026-10-11, resuming at D
+- Pacing fix committed: inter-request pause 0.25s -> 1.6s, Retry-After honored (up to 120s).
+- Next exact step: watch the dispatched forex-history.yml run (EURUSD 2026-09 month), verify
+  out/*.report.json artifact and the published release shard, then extend to the full pair matrix.
