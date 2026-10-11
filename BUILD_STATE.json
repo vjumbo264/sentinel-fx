@@ -407,13 +407,13 @@
     },
     {
       "id": "THEME",
-      "status": "doing",
-      "note": "Live OS light/dark media query listener, data-theme override, chart retheming, dual meta theme-color.",
-      "evidence": ""
+      "status": "done",
+      "note": "Verified automatic OS light/dark scheme switching via prefers-color-scheme, :root and @media tokens in tokens.css, dual theme-color meta tags, pre-paint inline script, and live chart retheming on theme change.",
+      "evidence": "site/styles/tokens.css, site/js/theme.js, and site/js/pages/chart.js verified."
     },
     {
       "id": "VERIFY",
-      "status": "todo",
+      "status": "doing",
       "note": "End-to-end verification against real worker and live Cloudflare Pages deployment with build ID.",
       "evidence": ""
     }
