@@ -16,10 +16,11 @@ jobs:
         run: |
           for U in \
             "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/05/14/10h_ticks.bi5" \
-            "https://datafeed.dukascopy.com/datafeed/EURUSD/2026/09/09/10h_ticks.bi5"; do
+            "https://datafeed.dukascopy.com/datafeed/EURUSD/2026/09/09/10h_ticks.bi5" \
+            "https://freeserv.dukascopy.com/2.0/datafeed/EURUSD/2026/09/09/10h_ticks.bi5"; do
             echo "=== $U ==="
-            curl -sS --max-time 20 -D /tmp/h.txt -o /tmp/probe.bin -w "HTTP %{http_code} size=%{size_download} time=%{time_total}s\n" "$U" || echo "CURL_FAILED $?"
-            echo "--- response headers ---"; head -15 /tmp/h.txt 2>/dev/null || true
+            curl -sS --max-time 60 -D /tmp/h.txt -o /tmp/probe.bin -w "HTTP %{http_code} size=%{size_download} time=%{time_total}s\n" "$U" || echo "CURL_FAILED $?"
+            echo "--- response headers ---"; head -15 /tmp/h.txt 2>/dev/null || echo "no headers"
             ls -l /tmp/probe.bin 2>/dev/null; rm -f /tmp/probe.bin
           done
       - name: B2 diag - python urllib + LZMA decode of one bi5 file
@@ -29,6 +30,7 @@ jobs:
           for url in [
             "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/05/14/10h_ticks.bi5",
             "https://datafeed.dukascopy.com/datafeed/EURUSD/2026/09/09/10h_ticks.bi5",
+            "https://freeserv.dukascopy.com/2.0/datafeed/EURUSD/2026/09/09/10h_ticks.bi5",
           ]:
               print("===", url)
               try:
