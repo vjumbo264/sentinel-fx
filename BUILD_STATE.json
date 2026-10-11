@@ -279,15 +279,15 @@
     },
     {
       "id": "MODELS",
-      "status": "doing",
-      "note": "Building Trained Pairs: card per model with dual-currency avatars, enable/disable toggle, session balance share, and decision logs.",
-      "evidence": "Drafting site/js/pages/models.js."
+      "status": "done",
+      "note": "Engineered trained pairs cards with dual-currency avatars, compounding pool share, live model hypothesis, and forward-eval stats in models.js.",
+      "evidence": "site/js/pages/models.js verified."
     },
     {
       "id": "RISK",
-      "status": "todo",
-      "note": "Risk management desk, equal-split allocator, owner overrides, and MT5 connection test.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building Risk & Auth: session pool allocator, daily TP/SL controls, owner overrides, MT5 credential status, and kill switch.",
+      "evidence": "Drafting site/js/pages/risk.js."
     },
     {
       "id": "UPLOAD",
