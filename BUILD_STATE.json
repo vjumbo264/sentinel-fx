@@ -365,13 +365,13 @@
     },
     {
       "id": "HISTORY",
-      "status": "doing",
-      "note": "Rebuild Trade History on real closed rows from /api/trades with filters, summary, and CSV export.",
-      "evidence": ""
+      "status": "done",
+      "note": "Rebuilt Trade History desk strictly on real closed trades (close_utc IS NOT NULL) with win rate, profit factor, net P/L, outcome filters, search, CSV export, and honest empty state.",
+      "evidence": "site/js/pages/history.js verified; zero sample data generators remaining; CSV export verified."
     },
     {
       "id": "CHART",
-      "status": "todo",
+      "status": "doing",
       "note": "Rebuild Candlestick chart on /api/candles with pair list from symbols registry, status line, retry, timeout.",
       "evidence": ""
     },
