@@ -587,14 +587,24 @@
     },
     {
       "id": "A",
-      "status": "todo",
-      "attempts": [],
+      "status": "doing",
+      "attempts": [
+        {
+          "what": "Pure shared-schema/adapter logic suite",
+          "result": "16 passed. Learned graph, strict bundle hashes, finite/parity checker and causal shared simulator implemented. Bot integration/live proof not yet verified."
+        }
+      ],
       "evidence": []
     },
     {
       "id": "P",
-      "status": "todo",
-      "attempts": [],
+      "status": "doing",
+      "attempts": [
+        {
+          "what": "Versioned playbook",
+          "result": "Full playbook prepared; publication and copied-prompt fresh-directory tests pending."
+        }
+      ],
       "evidence": []
     },
     {

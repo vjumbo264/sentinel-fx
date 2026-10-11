@@ -126,8 +126,8 @@ export const trainView = {
   indexEntry(sym) {
     const e = this.dataIndex[sym];
     if (!e || !(e.rows || e.ready)) return null;
-    const first = e.first_utc || e.first || null;
-    const last = e.last_utc || e.last || null;
+    const first = e.first_utc || e.first || (e.first_epoch ? new Date(e.first_epoch * 1000).toISOString() : null);
+    const last = e.last_utc || e.last || (e.last_epoch ? new Date(e.last_epoch * 1000).toISOString() : null);
     return {
       rows: Number(e.rows || 0),
       first: first ? String(first).slice(0, 10) : null,

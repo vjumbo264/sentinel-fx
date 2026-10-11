@@ -1,0 +1,24 @@
+name: publish-playbook
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ['training-playbook-v1.md']
+permissions:
+  contents: write
+concurrency:
+  group: publish-playbook
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --quiet requests
+      - name: Publish verified playbook and checksum to dedicated release
+        run: python tools/publish_playbook.py

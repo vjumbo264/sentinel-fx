@@ -103,79 +103,20 @@ jobs:
           python3 tools/fetch_candles.py --symbol "$SYMBOL" \
             --granularity "$GRANULARITY" --mode "$MODE" \
             ${EXIST:+--existing "$EXIST"} --out out | tee fetch.log
-      - name: Swap asset into shared release (never leave a half-written asset)
+      - name: Prepare source report from real CSV and stats
         run: |
-          ASSET="${SYMBOL}_${GRANULARITY}s.csv.gz"
-          if [ ! -s "out/${ASSET}" ]; then
-            echo "ERROR: out/${ASSET} does not exist or is empty. Skipping swap to avoid publishing corrupted release."
-            exit 1
-          fi
-          gh release view data-01 -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create data-01 -R "$GITHUB_REPOSITORY" --title "data-01" \
-              --notes "SENTINEL-FX candle data hub (shared release 01). One asset per pair+granularity."
-          # 1) upload the verified local file under a temporary name
-          gh release upload data-01 -R "$GITHUB_REPOSITORY" "out/${ASSET}#${ASSET}.next" --clobber
-          # 2) only now delete the old asset and publish under the final name
-          OLD_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/data-01" \
-                   --jq ".assets[] | select(.name==\"$ASSET\") | .id" || true)
-          [ -n "$OLD_ID" ] && gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$OLD_ID" || true
-          gh release upload data-01 -R "$GITHUB_REPOSITORY" "out/$ASSET" --clobber
-          NEXT_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/data-01" \
-                    --jq ".assets[] | select(.name==\"$ASSET.next\") | .id" || true)
-          [ -n "$NEXT_ID" ] && gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$NEXT_ID" || true
-      - name: Write index fragment + job summary
-        run: |
-          python3 tools/update_index.py --stats-file fetch.log --release data-01
-          python3 - <<'EOF'
-          import json, os
-          stats = None
-          for line in open("fetch.log"):
-              if line.startswith("STATS "):
-                  stats = json.loads(line[6:])
-          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
-              f.write(f"| {stats['symbol']} | {stats['rows']} | "
-                      f"{stats['first_utc']} -> {stats['last_utc']} | "
-                      f"{stats['years_back']}y | {stats['source']} | "
-                      f"{len(stats['gaps_flagged'])} gaps |\n")
-          EOF
-      - name: Upload index fragment
-        uses: actions/upload-artifact@v4
+          python - <<'PY'
+          import json,gzip,csv,os
+          from pathlib import Path
+          stats=next(json.loads(line[6:]) for line in reversed(Path('fetch.log').read_text().splitlines()) if line.startswith('STATS '))
+          path=Path('out')/stats['file']
+          with gzip.open(path,'rt') as f:stats['columns']=next(csv.reader(f))
+          Path(str(path)+'.report.json').write_text(json.dumps(stats,indent=2))
+          PY
+      - name: Verify immutable release upload before index CAS
+        run: python tools/publish_data.py "out/${SYMBOL}_${GRANULARITY}s.csv.gz"
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: frag-${{ matrix.symbol }}
-          path: data/fragments/
-          retention-days: 1
-
-  finalize:
-    if: github.event_name != 'schedule' || github.event.schedule == '30 0 * * *'
-    needs: fetch
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: frag-*
-          path: data/fragments
-          merge-multiple: true
-      - name: Merge fragments into data/index.json and commit
-        run: |
-          python3 - <<'EOF'
-          import glob, json, os
-          idx = {}
-          if os.path.exists("data/index.json"):
-              idx = json.load(open("data/index.json"))
-          for f in glob.glob("data/fragments/*.json"):
-              idx.update(json.load(open(f)))
-          json.dump(idx, open("data/index.json", "w"), indent=1, sort_keys=True)
-          print("index entries:", len(idx))
-          EOF
-          git config user.name "sentinel-data"
-          git config user.email "data@sentinel-fx.local"
-          git add data/index.json
-          git commit -m "data: index update [skip ci]" || true
-          git push || true
-      - name: Publish index.json as release asset
-        run: |
-          gh release view data-01 -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || exit 0
-          gh release upload data-01 -R "$GITHUB_REPOSITORY" "data/index.json#index.json" --clobber
+          name: data-report-${{ matrix.symbol }}
+          path: out/*.report.json
