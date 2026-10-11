@@ -8,28 +8,24 @@ echo "=========================================="
 python3 -m pip install --upgrade pip
 python3 -m pip install "rpyc>=6.0.0,<7" requests mt5linux
 
-echo "[1/4] Starting Docker mt5linux primary container..."
-docker run -d --name mt5-spike-primary -p 18812:18812 -p 8080:8080 \
-  -e LOGIN="${MT5_DEMO_LOGIN:-41286446}" \
-  -e PASSWORD="${MT5_PASSWORD:-Kaiju-No.8}" \
-  -e SERVER="${MT5_DEMO_SERVER:-Deriv-Demo}" \
-  lprett/mt5linux:latest
+echo "[1/4] Starting primary MT5 Linux Stack via mt5_stack.sh..."
+export MT5_CONTAINER_NAME="mt5-spike-primary"
+export MT5_PORT="18812"
+export MT5_DEMO_LOGIN="${MT5_DEMO_LOGIN:-41286446}"
+export MT5_PASSWORD="${MT5_PASSWORD:-Kaiju-No.8}"
+export MT5_DEMO_SERVER="${MT5_DEMO_SERVER:-Deriv-Demo}"
 
-echo "[2/4] Starting Docker mt5linux secondary container for concurrency check..."
+bash tools/mt5_stack.sh start
+
+echo "[2/4] Starting optional secondary container for concurrency check..."
 docker run -d --name mt5-spike-secondary -p 18813:18812 \
+  -e MT5_LOGIN="${MT5_DEMO_LOGIN:-41286446}" \
+  -e MT5_PASSWORD="${MT5_PASSWORD:-Kaiju-No.8}" \
+  -e MT5_SERVER="${MT5_DEMO_SERVER:-Deriv-Demo}" \
   -e LOGIN="${MT5_DEMO_LOGIN:-41286446}" \
   -e PASSWORD="${MT5_PASSWORD:-Kaiju-No.8}" \
   -e SERVER="${MT5_DEMO_SERVER:-Deriv-Demo}" \
   lprett/mt5linux:latest || echo "[WARN] Secondary container start skipped"
-
-echo "Waiting for RPyC primary bridge to become ready on port 18812..."
-for i in $(seq 1 30); do
-  if python3 -c "import rpyc; c=rpyc.classic.connect('localhost', 18812); c.close()" 2>/dev/null; then
-    echo "[OK] Primary RPyC bridge connected on port 18812 after $((i*2))s."
-    break
-  fi
-  sleep 2
-done
 
 echo "Checking secondary RPyC bridge on port 18813..."
 for i in $(seq 1 15); do

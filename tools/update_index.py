@@ -20,6 +20,9 @@ for line in open(a.stats_file):
     if line.startswith("STATS "):
         stats = json.loads(line[6:])
 assert stats, "no STATS line found in fetch log"
+if not stats.get("rows") or stats["rows"] <= 0:
+    print(f"Warning: 0 rows recorded for {stats.get('symbol')}, skipping fragment creation")
+    exit(0)
 
 sym = stats["symbol"]
 entry = {

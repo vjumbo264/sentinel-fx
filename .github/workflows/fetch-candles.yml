@@ -86,15 +86,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
       - name: Install
-        run: pip install --quiet websockets
+        run: pip install --quiet websockets requests
       - name: Download existing asset for incremental merge
         run: |
           mkdir -p out prev
           ASSET="${SYMBOL}_${GRANULARITY}s.csv.gz"
           gh release download data-01 -p "$ASSET" -R "$GITHUB_REPOSITORY" -D prev --clobber 2>/dev/null || \
             echo "no existing asset; first run is a full pull"
-      - name: Fetch candles from Deriv public WS
+      - name: Fetch candles (Dukascopy for Forex, Deriv for Synthetics)
         run: |
           EXIST="prev/${SYMBOL}_${GRANULARITY}s.csv.gz"
           [ -f "$EXIST" ] || EXIST=""
@@ -104,6 +106,10 @@ jobs:
       - name: Swap asset into shared release (never leave a half-written asset)
         run: |
           ASSET="${SYMBOL}_${GRANULARITY}s.csv.gz"
+          if [ ! -s "out/${ASSET}" ]; then
+            echo "ERROR: out/${ASSET} does not exist or is empty. Skipping swap to avoid publishing corrupted release."
+            exit 1
+          fi
           gh release view data-01 -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
             gh release create data-01 -R "$GITHUB_REPOSITORY" --title "data-01" \
               --notes "SENTINEL-FX candle data hub (shared release 01). One asset per pair+granularity."

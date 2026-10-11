@@ -201,26 +201,17 @@ class MT5Broker(BrokerBase):
         self._connected: bool = False
         self._symbols_cache: Dict[str, Any] = {}
         self._last_health_ts: float = 0.0
+        self._backend_name: str = "none"
 
     def _get_api(self):
         """Lazy load and connect to MT5 bridge."""
         if self._mt5 is not None:
             return self._mt5
 
-        # 1. Attempt mt5linux client wrapper
-        try:
-            from mt5linux import MetaTrader5 as MT5Linux
-            logger.info("Initializing connection via mt5linux package client...")
-            client = MT5Linux(host=self.host, port=self.port, search_on_init=True, timeout=self.timeout)
-            self._mt5 = client
-            return self._mt5
-        except Exception as e:
-            logger.debug(f"mt5linux package init notice: {e}; falling back to RPyC classic")
-
-        # 2. Attempt RPyC classic connect
+        # 1. Attempt RPyC classic connect (primary reliable Linux bridge)
         try:
             import rpyc
-            logger.info(f"Connecting to RPyC bridge at {self.host}:{self.port}...")
+            logger.info(f"Connecting to MT5 RPyC bridge at {self.host}:{self.port}...")
             conn = rpyc.classic.connect(self.host, self.port)
             conn._config["sync_request_timeout"] = self.timeout
             try:
@@ -231,17 +222,77 @@ class MT5Broker(BrokerBase):
                 pass
             self._conn = conn
             self._mt5 = conn.modules.MetaTrader5
+            self._backend_name = "rpyc-classic"
+            logger.info(f"[MT5Broker] Successfully connected via backend: {self._backend_name} on {self.host}:{self.port}")
             return self._mt5
         except Exception as e:
-            logger.debug(f"RPyC connect notice: {e}; trying native MetaTrader5")
+            logger.debug(f"RPyC connect notice: {e}; trying mt5linux package client")
+
+        # 2. Attempt mt5linux client wrapper
+        try:
+            from mt5linux import MetaTrader5 as MT5Linux
+            logger.info("Initializing connection via mt5linux package client...")
+            client = MT5Linux(host=self.host, port=self.port, search_on_init=True, timeout=self.timeout)
+            self._mt5 = client
+            self._backend_name = "mt5linux-package"
+            logger.info(f"[MT5Broker] Successfully connected via backend: {self._backend_name}")
+            return self._mt5
+        except Exception as e:
+            logger.debug(f"mt5linux package init notice: {e}; trying native MetaTrader5")
 
         # 3. Native MetaTrader5 (when running directly in Windows/Wine)
         try:
             import MetaTrader5 as native_mt5
             self._mt5 = native_mt5
+            self._backend_name = "native-windows"
+            logger.info(f"[MT5Broker] Connected via backend: {self._backend_name}")
             return self._mt5
         except Exception as e:
             raise RuntimeError(f"Could not connect to any MT5 backend: {e}")
+
+    def _execute_order_check(self, req: Dict[str, Any]) -> Any:
+        """Execute order_check ensuring native dictionary types across RPyC boundary."""
+        if self._conn:
+            try:
+                return self._conn.eval(f"MetaTrader5.order_check({req!r})")
+            except Exception as e:
+                logger.warning(f"RPyC eval order_check fallback: {e}")
+                return self._mt5.order_check(req)
+        return self._mt5.order_check(req)
+
+    def _execute_order_send(self, req: Dict[str, Any]) -> Any:
+        """Execute order_send ensuring native dictionary types across RPyC boundary."""
+        if self._conn:
+            try:
+                return self._conn.eval(f"MetaTrader5.order_send({req!r})")
+            except Exception as e:
+                logger.warning(f"RPyC eval order_send fallback: {e}")
+                return self._mt5.order_send(req)
+        return self._mt5.order_send(req)
+
+    def get_server_time_offset_hours(self, symbol: str = "Volatility 10 Index") -> float:
+        """Calculate and return MT5 server time offset relative to UTC with sanity checks."""
+        mt5 = self._get_api()
+        try:
+            mt5.symbol_select(symbol, True)
+            tick = mt5.symbol_info_tick(symbol)
+            server_epoch = int(tick.time) if tick and getattr(tick, "time", 0) > 0 else 0
+            if server_epoch <= 0:
+                rates = mt5.copy_rates_from_pos(symbol, getattr(mt5, "TIMEFRAME_M1", 1), 0, 1)
+                if rates is not None and len(rates) > 0:
+                    server_epoch = int(rates[0][0]) if hasattr(rates[0], "__getitem__") else int(rates[0].time)
+            if server_epoch > 0:
+                now_utc = int(datetime.now(timezone.utc).timestamp())
+                raw_diff = server_epoch - now_utc
+                # Round to nearest 30 minutes (1800s)
+                rounded_diff = round(raw_diff / 1800.0) * 1800
+                offset_h = rounded_diff / 3600.0
+                if -14.0 <= offset_h <= 14.0:
+                    return offset_h
+                logger.warning(f"Sanity check rejected offset {offset_h}h (epoch={server_epoch})")
+        except Exception as e:
+            logger.warning(f"Failed to calculate server time offset: {e}")
+        return 0.0
 
     def connect(self, mode: str = "demo") -> bool:
         """Connect to MT5 terminal and authenticate account."""
@@ -584,7 +635,7 @@ class MT5Broker(BrokerBase):
         if tp and tp > 0:
             req["tp"] = float(tp)
 
-        check_res = mt5.order_check(req)
+        check_res = self._execute_order_check(req)
         retcode = getattr(check_res, "retcode", None)
         comment_res = getattr(check_res, "comment", "")
         free_m = getattr(check_res, "margin_free", None)
@@ -667,7 +718,7 @@ class MT5Broker(BrokerBase):
             req["tp"] = float(tp)
 
         logger.info(f"Dispatching order_send: {side} {vol} {symbol} @ {exec_price} [SL: {sl}, TP: {tp}, Magic: {magic}, Tag: {tag}]")
-        res = mt5.order_send(req)
+        res = self._execute_order_send(req)
 
         retcode = getattr(res, "retcode", None)
         deal = getattr(res, "deal", 0)
@@ -714,7 +765,7 @@ class MT5Broker(BrokerBase):
             req["tp"] = float(round(tp, digits))
 
         logger.info(f"Modifying position #{ticket} ({symbol}) -> new SL: {sl}, TP: {tp}")
-        res = mt5.order_send(req)
+        res = self._execute_order_send(req)
         retcode = getattr(res, "retcode", None)
         if retcode != 10009:
             logger.warning(f"Modify SL/TP returned retcode={retcode}: {getattr(res, 'comment', '')}")
@@ -768,7 +819,7 @@ class MT5Broker(BrokerBase):
         }
 
         logger.info(f"Closing position #{ticket}: volume={close_vol}, price={close_price}")
-        res = mt5.order_send(req)
+        res = self._execute_order_send(req)
         retcode = getattr(res, "retcode", None)
         deal = getattr(res, "deal", 0)
 

@@ -30,22 +30,14 @@ jobs:
           python-version: "3.10"
 
       - name: Start MT5 Linux Stack
-        run: |
-          python3 -m pip install "rpyc>=6.0.0,<7" requests mt5linux
-          docker run -d --name mt5-trade-test -p 18812:18812 \
-            -e LOGIN="${{ secrets.MT5_DEMO_LOGIN || '41286446' }}" \
-            -e PASSWORD="${{ secrets.MT5_PASSWORD || 'Kaiju-No.8' }}" \
-            -e SERVER="${{ secrets.MT5_DEMO_SERVER || 'Deriv-Demo' }}" \
-            lprett/mt5linux:latest
-
-          echo "Waiting for RPyC bridge..."
-          for i in $(seq 1 30); do
-            if python3 -c "import rpyc; c=rpyc.classic.connect('localhost', 18812); c.close()" 2>/dev/null; then
-              echo "Bridge ready after $((i*2))s"
-              break
-            fi
-            sleep 2
-          done
+        uses: ./.github/actions/mt5-stack
+        with:
+          action: start
+          login: ${{ secrets.MT5_DEMO_LOGIN || '41286446' }}
+          password: ${{ secrets.MT5_PASSWORD || 'Kaiju-No.8' }}
+          server: ${{ secrets.MT5_DEMO_SERVER || 'Deriv-Demo' }}
+          port: '18812'
+          container-name: 'mt5-trade-test'
 
       - name: Run CFD Trade Test
         env:
@@ -59,6 +51,13 @@ jobs:
             --synthetic-symbol "${{ github.event.inputs.synthetic_symbol || 'Volatility 10 Index' }}" \
             --forex-symbol "${{ github.event.inputs.forex_symbol || 'EURUSD' }}" \
             --out docs/cfd_trade_test_report.json
+
+      - name: Stop MT5 Linux Stack
+        if: always()
+        uses: ./.github/actions/mt5-stack
+        with:
+          action: stop
+          container-name: 'mt5-trade-test'
 
       - name: Commit and Push Trade Test Evidence
         if: always()

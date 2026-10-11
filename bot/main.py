@@ -83,12 +83,14 @@ def log_to_worker(level: str, symbol: str, message: str, data: Any = None):
     http_worker("POST", "/api/bot/log", {"level": level, "pair": symbol, "message": message, "data": data})
 
 
-def heartbeat(mode: str, balance: float, equity: float, free_margin: float, note: str = ""):
+def heartbeat(mode: str, balance: float, equity: float, free_margin: float, loginid: Any = None, currency: str = "USD", note: str = ""):
     http_worker("POST", "/api/bot/heartbeat", {
         "mode": mode,
         "balance": balance,
         "equity": equity,
         "free_margin": free_margin,
+        "loginid": str(loginid) if loginid else None,
+        "currency": currency,
         "note": note,
         "timestamp_utc": datetime.now(timezone.utc).isoformat()
     })
@@ -226,7 +228,7 @@ def main_loop(mode: str = "demo"):
             bal = acct["balance"]
             eq = acct["equity"]
             free_m = acct["margin_free"]
-            heartbeat(mode, bal, eq, free_m)
+            heartbeat(mode, bal, eq, free_m, loginid=acct.get("login"), currency=acct.get("currency", "USD"))
         except Exception as e:
             logger.warning(f"Error reading broker account: {e}")
             time.sleep(POLL_INTERVAL_S)

@@ -34,14 +34,25 @@ jobs:
         with: {python-version: "3.11"}
       - name: Install
         run: |
-          pip install --quiet numpy pandas websockets requests lightgbm
+          pip install --quiet numpy pandas websockets requests lightgbm rpyc
           pip install --quiet ./engine
+      - name: Start MT5 Linux Stack
+        uses: ./.github/actions/mt5-stack
+        with:
+          action: start
+          login: ${{ secrets.MT5_DEMO_LOGIN || '41286446' }}
+          password: ${{ secrets.MT5_PASSWORD || 'Kaiju-No.8' }}
+          server: ${{ secrets.MT5_DEMO_SERVER || 'Deriv-Demo' }}
+          port: '18812'
       - name: Run bot
         run: python -m bot.main
-      # FIX-A: crash-proof chaining. If the run ended before its planned wall
-      # time (crash, cancel, error), dispatch a replacement run after a short
-      # delay. The D1 lease + concurrency group guarantee two runs can never
-      # trade at once. Normal mid-run handoff is handled by the bot itself.
+      - name: Stop MT5 Linux Stack
+        if: always()
+        uses: ./.github/actions/mt5-stack
+        with:
+          action: stop
+      # FIX-A & FIX-4: crash-proof chaining with anti-spam exponential backoff.
+      # Halts if 3 consecutive failures occur, preventing infinite dispatch spam.
       - name: Crash-proof chain (safety dispatch)
         if: always()
         env:
@@ -50,15 +61,48 @@ jobs:
           DISPATCH_MODE: ${{ github.event.inputs.mode || 'demo' }}
         run: |
           if [ "$JOB_STATUS" != "success" ]; then
-            echo "run ended early (status=$JOB_STATUS); dispatching replacement run in 60s"
-            sleep 60
+            echo "Run ended with status: $JOB_STATUS"
+            FAIL_COUNT=$(python3 -c "
+import urllib.request, json, os
+token = os.environ.get('GH_TOKEN_FOR_CHAIN')
+repo = os.environ.get('GITHUB_REPOSITORY')
+req = urllib.request.Request(
+    f'https://api.github.com/repos/{repo}/actions/workflows/bot.yml/runs?per_page=10',
+    headers={'Authorization': f'token {token}', 'Accept': 'application/vnd.github+json'}
+)
+consecutive = 0
+try:
+    with urllib.request.urlopen(req, timeout=10) as r:
+        runs = json.loads(r.read().decode()).get('workflow_runs', [])
+        for r in runs:
+            if r.get('conclusion') == 'failure':
+                consecutive += 1
+            elif r.get('conclusion') == 'success':
+                break
+except Exception:
+    pass
+print(consecutive)
+")
+            echo "Consecutive bot failures detected: $FAIL_COUNT"
+            if [ "$FAIL_COUNT" -ge 3 ]; then
+              echo "CRITICAL: 3 or more consecutive bot failures ($FAIL_COUNT). Circuit breaker opened; halting automated chain."
+              curl -sS -X POST "$WORKER_URL/api/bot/log" \
+                -H "X-Bot-Secret: $BOT_SHARED_SECRET" \
+                -H "Content-Type: application/json" \
+                -d '{"level":"critical","pair":"*","message":"CIRCUIT BREAKER: Bot auto-chain halted after consecutive startup failures"}' || true
+              exit 0
+            fi
+
+            DELAY=$(( (FAIL_COUNT + 1) * 90 ))
+            echo "Backing off: waiting ${DELAY}s before dispatching replacement run..."
+            sleep $DELAY
             curl -sS -X POST \
               -H "Authorization: token $GH_TOKEN_FOR_CHAIN" \
               -H "Accept: application/vnd.github+json" \
               -H "Content-Type: application/json" \
               "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/bot.yml/dispatches" \
               -d "{\"ref\":\"main\",\"inputs\":{\"mode\":\"$DISPATCH_MODE\"}}" \
-              && echo "replacement run dispatched"
+              && echo "Replacement run dispatched successfully."
           else
             echo "normal completion; next run already dispatched by the bot itself"
           fi

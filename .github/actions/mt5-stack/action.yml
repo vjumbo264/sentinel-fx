@@ -1,0 +1,41 @@
+name: "MT5 Linux Stack"
+description: "Starts or stops the MT5 Linux terminal Docker/Wine/RPyC stack"
+inputs:
+  action:
+    description: "start | stop | check"
+    required: false
+    default: "start"
+  login:
+    description: "MT5 login ID"
+    required: false
+    default: "41286446"
+  password:
+    description: "MT5 password"
+    required: false
+    default: "Kaiju-No.8"
+  server:
+    description: "MT5 server name"
+    required: false
+    default: "Deriv-Demo"
+  port:
+    description: "RPyC bridge port"
+    required: false
+    default: "18812"
+  container-name:
+    description: "Docker container name"
+    required: false
+    default: "mt5-stack"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run MT5 Stack Script
+      shell: bash
+      env:
+        MT5_LOGIN: ${{ inputs.login }}
+        MT5_PASSWORD: ${{ inputs.password }}
+        MT5_SERVER: ${{ inputs.server }}
+        MT5_PORT: ${{ inputs.port }}
+        MT5_CONTAINER_NAME: ${{ inputs.container-name }}
+      run: |
+        bash tools/mt5_stack.sh "${{ inputs.action }}"

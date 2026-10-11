@@ -215,6 +215,24 @@ def main():
         "bad symbol: expected frxXXXYYY, R_<n> or 1HZ<n>V"
     os.makedirs(a.out, exist_ok=True)
 
+    # Route Forex pairs directly to Dukascopy fetcher
+    if a.symbol.startswith("frx"):
+        print(f"[fetch] Routing Forex pair {a.symbol} to Dukascopy datafeed...", flush=True)
+        cmd = [
+            sys.executable, os.path.join(os.path.dirname(__file__), "fetch_dukascopy.py"),
+            "--symbol", a.symbol,
+            "--granularity", str(a.granularity),
+            "--mode", a.mode,
+            "--out", a.out
+        ]
+        if a.existing:
+            cmd.extend(["--existing", a.existing])
+        res = subprocess.run(cmd)
+        if res.returncode != 0:
+            print(f"[ERROR] Dukascopy fetch failed for {a.symbol} (exit code {res.returncode})", file=sys.stderr, flush=True)
+            sys.exit(res.returncode)
+        return
+
     existing = {}
     start_after = None
     if a.mode == "incremental" and a.existing and os.path.exists(a.existing):
@@ -232,7 +250,8 @@ def main():
 
     epochs = sorted(existing)
     if not epochs:
-        print(f"[warn] No candles fetched or existing for {a.symbol}", flush=True)
+        err_msg = f"Deriv returned no data for synthetic index {a.symbol} (source: {source_used})"
+        print(f"[ERROR] {err_msg}", file=sys.stderr, flush=True)
         stats = {
             "symbol": a.symbol, "granularity": a.granularity, "rows": 0,
             "first_epoch": None, "last_epoch": None,
@@ -243,7 +262,7 @@ def main():
             "file": f"{a.symbol}_{a.granularity}s.csv.gz"
         }
         print("STATS " + json.dumps(stats), flush=True)
-        return
+        sys.exit(1)
 
     assert all(b > x for x, b in zip(epochs, epochs[1:])), "epochs not increasing"
     is_fx = a.symbol.startswith("frx")

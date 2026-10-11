@@ -134,7 +134,21 @@ def test_symbol_trading(broker: MT5Broker, symbol: str, is_forex: bool = False) 
         )
         res["steps"]["order_check"] = check_out
         logger.info(f"[OK] order_check passed: retcode={check_out['retcode']} (comment={check_out['comment']})")
+        if is_forex and (check_out.get("retcode") == 10018 or "closed" in str(check_out.get("comment", "")).lower()):
+            msg = "Forex market is currently closed (Weekend). Scheduled to resume Sunday 21:05 UTC."
+            logger.info(f"[PENDING] {msg}")
+            res["status"] = "pending"
+            res["pending_reason"] = msg
+            res["resume_command"] = f"python3 tools/trade_test.py --forex-symbol {symbol} --demo"
+            return res
     except Exception as e:
+        if is_forex and ("10018" in str(e) or "closed" in str(e).lower()):
+            msg = "Forex market is currently closed (Weekend). Scheduled to resume Sunday 21:05 UTC."
+            logger.info(f"[PENDING] {msg}")
+            res["status"] = "pending"
+            res["pending_reason"] = msg
+            res["resume_command"] = f"python3 tools/trade_test.py --forex-symbol {symbol} --demo"
+            return res
         err = f"order_check error: {e}"
         logger.error(err)
         res["errors"].append(err)
@@ -157,6 +171,13 @@ def test_symbol_trading(broker: MT5Broker, symbol: str, is_forex: bool = False) 
         res["steps"]["order_open_1"] = open_res
         logger.info(f"[OK] Order #1 opened: order={open_res['order']}, deal={open_res['deal']}")
     except Exception as e:
+        if is_forex and ("10018" in str(e) or "closed" in str(e).lower()):
+            msg = "Forex market is currently closed (Weekend). Scheduled to resume Sunday 21:05 UTC."
+            logger.info(f"[PENDING] {msg}")
+            res["status"] = "pending"
+            res["pending_reason"] = msg
+            res["resume_command"] = f"python3 tools/trade_test.py --forex-symbol {symbol} --demo"
+            return res
         err = f"open_position failed: {e}"
         logger.error(err)
         res["errors"].append(err)
@@ -271,12 +292,14 @@ def run_trade_test(args) -> Dict[str, Any]:
         return {"status": "blocked", "error": err, "timestamp_utc": datetime.now(timezone.utc).isoformat()}
 
     acct = broker.account_info()
+    offset_h = broker.get_server_time_offset_hours()
     print(f"Account: {acct['currency']} {acct['balance']:.2f} (Equity: {acct['equity']:.2f}, FreeMargin: {acct['margin_free']:.2f})")
-    print(f"Margin Mode: {acct['margin_mode']}, Leverage: 1:{acct['leverage']}")
+    print(f"Margin Mode: {acct['margin_mode']}, Leverage: 1:{acct['leverage']} | Server Offset vs UTC: {offset_h}h")
 
     results: Dict[str, Any] = {
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "account": acct,
+        "server_time_utc_offset_hours": offset_h,
         "tests": {},
         "status": "done"
     }

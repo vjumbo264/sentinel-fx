@@ -302,13 +302,27 @@ def run_spike(args) -> Dict[str, Any]:
     mt5.symbol_select(test_forex, True)
 
     synth_tick = mt5.symbol_info_tick(test_synthetic)
-    if synth_tick:
-        server_epoch = int(synth_tick.time)
-        local_utc_epoch = int(datetime.now(timezone.utc).timestamp())
-        offset_hours = round((server_epoch - local_utc_epoch) / 3600.0, 1)
-        results["server_time_epoch"] = server_epoch
-        results["server_time_utc_offset_hours"] = offset_hours
-        print(f"Server time: {datetime.fromtimestamp(server_epoch, timezone.utc)} | Offset vs UTC: {offset_hours}h")
+    server_epoch = int(synth_tick.time) if synth_tick and getattr(synth_tick, "time", 0) > 0 else 0
+    if server_epoch <= 0:
+        rates = mt5.copy_rates_from_pos(test_synthetic, getattr(mt5, "TIMEFRAME_M1", 1), 0, 1)
+        if rates is not None and len(rates) > 0:
+            server_epoch = int(rates[0][0]) if hasattr(rates[0], "__getitem__") else int(rates[0].time)
+
+    local_utc_epoch = int(datetime.now(timezone.utc).timestamp())
+    if server_epoch > 0:
+        raw_diff = server_epoch - local_utc_epoch
+        rounded_diff = round(raw_diff / 1800.0) * 1800
+        offset_hours = rounded_diff / 3600.0
+        if not (-14.0 <= offset_hours <= 14.0):
+            print(f"[WARN] Computed offset {offset_hours}h outside sanity bounds [-14, 14]; fallback to 0.0")
+            offset_hours = 0.0
+    else:
+        offset_hours = 0.0
+        server_epoch = local_utc_epoch
+
+    results["server_time_epoch"] = server_epoch
+    results["server_time_utc_offset_hours"] = offset_hours
+    print(f"Server time: {datetime.fromtimestamp(server_epoch, timezone.utc)} | Offset vs UTC: {offset_hours}h")
 
     # Rates & History Depth
     rates_report = {}
@@ -358,6 +372,39 @@ def run_spike(args) -> Dict[str, Any]:
         elif getattr(sym_info, "filling_mode", 0) & 1:
             filling = getattr(mt5, "ORDER_FILLING_FOK", 0)
 
+        def safe_order_check(req):
+            if conn:
+                try:
+                    return conn.eval(f"MetaTrader5.order_check({req!r})")
+                except Exception as e:
+                    print(f"[WARN] eval order_check failed: {e}")
+            return mt5.order_check(req)
+
+        def safe_order_send(req):
+            if conn:
+                try:
+                    return conn.eval(f"MetaTrader5.order_send({req!r})")
+                except Exception as e:
+                    print(f"[WARN] eval order_send failed: {e}")
+            return mt5.order_send(req)
+
+        def safe_positions_get(sym=None):
+            if conn:
+                try:
+                    return conn.eval(f"MetaTrader5.positions_get(symbol={sym!r})" if sym else "MetaTrader5.positions_get()") or []
+                except Exception:
+                    pass
+            return mt5.positions_get(symbol=sym) if sym else mt5.positions_get()
+
+        def safe_history_deals_get(since_dt):
+            if conn:
+                try:
+                    ts = int(since_dt.timestamp())
+                    return conn.eval(f"MetaTrader5.history_deals_get(datetime.datetime.fromtimestamp({ts}, datetime.timezone.utc), datetime.datetime.now(datetime.timezone.utc))") or []
+                except Exception:
+                    pass
+            return mt5.history_deals_get(since_dt, datetime.now(timezone.utc)) or []
+
         check_req = {
             "action": int(mt5.TRADE_ACTION_DEAL),
             "symbol": str(test_synthetic),
@@ -366,37 +413,53 @@ def run_spike(args) -> Dict[str, Any]:
             "price": float(ask),
             "sl": float(sl_price),
             "tp": float(tp_price),
-            "deviation": 20,
+            "deviation": 25,
             "magic": 999001,
             "comment": "sfx_spike_check",
             "type_time": int(getattr(mt5, "ORDER_TIME_GTC", 0)),
             "type_filling": int(filling),
         }
 
-        check_res = mt5.order_check(check_req)
+        # Negotiate filling mode if needed
+        check_res = safe_order_check(check_req)
+        if not check_res or getattr(check_res, "retcode", None) != 0:
+            for alt_fill in [getattr(mt5, "ORDER_FILLING_IOC", 1), getattr(mt5, "ORDER_FILLING_FOK", 0), getattr(mt5, "ORDER_FILLING_RETURN", 2)]:
+                check_req["type_filling"] = int(alt_fill)
+                alt_res = safe_order_check(check_req)
+                if alt_res and getattr(alt_res, "retcode", None) == 0:
+                    check_res = alt_res
+                    filling = alt_fill
+                    break
+
+        retcode_check = getattr(check_res, "retcode", None)
+        comment_check = getattr(check_res, "comment", "")
+        last_err_check = conn.eval("MetaTrader5.last_error()") if (conn and retcode_check is None) else None
         trade_test_result["order_check"] = {
-            "retcode": getattr(check_res, "retcode", None),
-            "comment": getattr(check_res, "comment", str(check_res)),
-            "margin_free": float(getattr(check_res, "margin_free", 0.0)) if hasattr(check_res, "margin_free") else None
+            "retcode": retcode_check,
+            "comment": comment_check,
+            "margin_free": float(getattr(check_res, "margin_free", 0.0)) if hasattr(check_res, "margin_free") else None,
+            "last_error": last_err_check
         }
-        print(f"order_check dry-run result: retcode={getattr(check_res, 'retcode', None)} ({getattr(check_res, 'comment', '')})")
+        print(f"order_check dry-run result: retcode={retcode_check} ({comment_check}) (last_err={last_err_check})")
 
         print(f"Executing real tiny demo order on {test_synthetic} (volume={lot})...")
-        order_res = mt5.order_send(check_req)
+        order_res = safe_order_send(check_req)
         order_retcode = getattr(order_res, "retcode", None)
         order_deal = getattr(order_res, "deal", 0)
         order_order = getattr(order_res, "order", 0)
-        print(f"order_send result: retcode={order_retcode}, order={order_order}, deal={order_deal}")
+        last_err_send = conn.eval("MetaTrader5.last_error()") if (conn and order_retcode is None) else None
+        print(f"order_send result: retcode={order_retcode}, order={order_order}, deal={order_deal} (last_err={last_err_send})")
 
         trade_test_result["order_send"] = {
             "retcode": order_retcode,
             "order": order_order,
             "deal": order_deal,
-            "comment": getattr(order_res, "comment", "")
+            "comment": getattr(order_res, "comment", ""),
+            "last_error": last_err_send
         }
 
-        time.sleep(1)
-        positions = mt5.positions_get(symbol=test_synthetic) or []
+        time.sleep(1.5)
+        positions = safe_positions_get(test_synthetic) or []
         open_pos = None
         for p in positions:
             if getattr(p, "magic", 0) == 999001:
@@ -413,7 +476,7 @@ def run_spike(args) -> Dict[str, Any]:
                 "sl": float(new_sl),
                 "tp": float(open_pos.tp),
             }
-            mod_res = mt5.order_send(mod_req)
+            mod_res = safe_order_send(mod_req)
             trade_test_result["modify_stop"] = {
                 "retcode": getattr(mod_res, "retcode", None),
                 "new_sl": new_sl
@@ -429,13 +492,13 @@ def run_spike(args) -> Dict[str, Any]:
                 "type": int(mt5.ORDER_TYPE_SELL),
                 "position": int(open_pos.ticket),
                 "price": float(close_price),
-                "deviation": 20,
+                "deviation": 25,
                 "magic": 999001,
                 "comment": "sfx_spike_close",
                 "type_time": int(getattr(mt5, "ORDER_TIME_GTC", 0)),
                 "type_filling": int(filling),
             }
-            close_res = mt5.order_send(close_req)
+            close_res = safe_order_send(close_req)
             trade_test_result["close_position"] = {
                 "retcode": getattr(close_res, "retcode", None),
                 "deal": getattr(close_res, "deal", 0)
@@ -444,7 +507,7 @@ def run_spike(args) -> Dict[str, Any]:
         else:
             trade_test_result["positions_warning"] = "Position not found in positions_get"
 
-        deals = mt5.history_deals_get(datetime.now(timezone.utc).replace(hour=0, minute=0, second=0), datetime.now(timezone.utc)) or []
+        deals = safe_history_deals_get(datetime.now(timezone.utc).replace(hour=0, minute=0, second=0)) or []
         sfx_deals = [
             {"deal": int(d.ticket), "order": int(d.order), "profit": float(d.profit), "symbol": str(d.symbol), "volume": float(d.volume)}
             for d in deals if getattr(d, "magic", 0) == 999001
