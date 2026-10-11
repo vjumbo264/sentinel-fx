@@ -8,5 +8,15 @@
   "rows": 525762,
   "sha256": "46b0f2cb51ab39a58813cb62aa8f2b684e622e65deb6be88d08b371063750b67",
   "source": "auth-otp"
+ },
+ "R_100": {
+  "asset": "R_100_60s.csv.gz",
+  "first_epoch": 1760178212,
+  "last_checked_utc": "2026-10-11T10:23:39Z",
+  "last_epoch": 1791714180,
+  "release_tag": "data-01",
+  "rows": 525600,
+  "sha256": "ade60aca68e0de81105b25230f9ec0a8306f2eb919f27c8bdaccddf89e710bd0",
+  "source": "auth-otp"
  }
 }
