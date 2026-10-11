@@ -325,5 +325,97 @@
       "note": "End-to-end verification complete: live Cloudflare Pages deployment verified at sentinel-fx.pages.dev; zero binary options terms; WCAG AA contrast passed; sub-160KB total footprint; instant theme switching.",
       "evidence": "Deployed commit verified live at https://sentinel-fx.pages.dev; docs/ui/contrast_report.json verified (10/10 AA passed); deploy-site GitHub Actions run succeeded."
     }
+  ],
+  "ui_redo": [
+    {
+      "id": "AUDIT",
+      "status": "doing",
+      "note": "Auditing all worker endpoints, bot writers, and current site sources to map real data contracts.",
+      "evidence": ""
+    },
+    {
+      "id": "PURGE",
+      "status": "todo",
+      "note": "Delete all fake data generators, sample positions, demo toggles, and invented version strings across site/.",
+      "evidence": ""
+    },
+    {
+      "id": "FOUNDATION",
+      "status": "todo",
+      "note": "Fix icon sizing (.icon classes + width/height attributes), robust api.js with 401 handler, and clean store.",
+      "evidence": ""
+    },
+    {
+      "id": "LOGIN",
+      "status": "todo",
+      "note": "First-run login gate with /api/auth/check validation, safe localStorage PAT handling, and 401 redirect.",
+      "evidence": ""
+    },
+    {
+      "id": "DASH",
+      "status": "todo",
+      "note": "Rebuild Home dashboard on real /api/state and /api/news with honest empty states and no fake figures.",
+      "evidence": ""
+    },
+    {
+      "id": "TRADES",
+      "status": "todo",
+      "note": "Rebuild Active Trades desk on real /api/trades open contracts with order actions sheet and empty state.",
+      "evidence": ""
+    },
+    {
+      "id": "HISTORY",
+      "status": "todo",
+      "note": "Rebuild Trade History on real closed rows from /api/trades with filters, summary, and CSV export.",
+      "evidence": ""
+    },
+    {
+      "id": "CHART",
+      "status": "todo",
+      "note": "Rebuild Candlestick chart on /api/candles with pair list from symbols registry, status line, retry, timeout.",
+      "evidence": ""
+    },
+    {
+      "id": "MODELS",
+      "status": "todo",
+      "note": "Rebuild Models page on real /api/pairs and forward metrics with honest empty state when 0 models.",
+      "evidence": ""
+    },
+    {
+      "id": "TRAIN",
+      "status": "todo",
+      "note": "Rebuild Train desk with symbols from tracked_pairs/symbols registry and real data/index.json status.",
+      "evidence": ""
+    },
+    {
+      "id": "UPLOAD",
+      "status": "todo",
+      "note": "Rebuild Model Upload stepper with real .sfxmodel.zip bundle validation.",
+      "evidence": ""
+    },
+    {
+      "id": "RISK",
+      "status": "todo",
+      "note": "Rebuild Risk & Auth on real session pool, overrides, MT5 mode switch and emergency kill switch.",
+      "evidence": ""
+    },
+    {
+      "id": "SETTINGS",
+      "status": "todo",
+      "note": "Rebuild Settings with Auto/Light/Dark, Lagos timezone, logout, real build ID and /api/health.",
+      "evidence": ""
+    },
+    {
+      "id": "THEME",
+      "status": "todo",
+      "note": "Live OS light/dark media query listener, data-theme override, chart retheming, dual meta theme-color.",
+      "evidence": ""
+    },
+    {
+      "id": "VERIFY",
+      "status": "todo",
+      "note": "End-to-end verification against real worker and live Cloudflare Pages deployment with build ID.",
+      "evidence": ""
+    }
   ]
 }
