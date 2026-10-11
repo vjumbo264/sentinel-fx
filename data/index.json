@@ -7,7 +7,17 @@
     "release_tag": "data-01",
     "rows": 525922,
     "sha256": "05d2fa9bbb023872af253bf05c176dd117c9b5df5a0788803464ce70af5da9fe",
-    "source": "auth-otp"
+    "source": "auth-otp",
+    "columns": [
+      "epoch",
+      "open",
+      "high",
+      "low",
+      "close"
+    ],
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_10_60s.csv.gz",
+    "first_utc": "2025-10-11T06:15:05+00:00",
+    "last_utc": "2026-10-11T11:37:00+00:00"
   },
   "R_100": {
     "asset": "R_100_60s.csv.gz",
@@ -17,7 +27,17 @@
     "release_tag": "data-01",
     "rows": 525600,
     "sha256": "ade60aca68e0de81105b25230f9ec0a8306f2eb919f27c8bdaccddf89e710bd0",
-    "source": "auth-otp"
+    "source": "auth-otp",
+    "columns": [
+      "epoch",
+      "open",
+      "high",
+      "low",
+      "close"
+    ],
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_100_60s.csv.gz",
+    "first_utc": "2025-10-11T10:23:32+00:00",
+    "last_utc": "2026-10-11T10:23:00+00:00"
   },
   "frxEURUSD": {
     "symbol": "frxEURUSD",
