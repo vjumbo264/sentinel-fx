@@ -321,9 +321,9 @@
     },
     {
       "id": "VERIFY",
-      "status": "doing",
-      "note": "Running automated verification: zero Rise/Fall binary terms check, double-press button tests, multi-viewport layout validation, and Cloudflare Pages sync.",
-      "evidence": "Running test suites and verifying no legacy terminology remains."
+      "status": "done",
+      "note": "End-to-end verification complete: live Cloudflare Pages deployment verified at sentinel-fx.pages.dev; zero binary options terms; WCAG AA contrast passed; sub-160KB total footprint; instant theme switching.",
+      "evidence": "Deployed commit verified live at https://sentinel-fx.pages.dev; docs/ui/contrast_report.json verified (10/10 AA passed); deploy-site GitHub Actions run succeeded."
     }
   ]
 }
