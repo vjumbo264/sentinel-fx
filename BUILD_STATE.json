@@ -455,5 +455,37 @@
    "note": "Deployed site auto-deploys via deploy-site.yml on push; worker redeployed (version dde7df3f + final). Live build id stamped into version.js.",
    "evidence": "git log + version.js build-32634c3; wrangler Current Version IDs; live curl /api/state OK"
   }
+ ],
+ "fix4": [
+  {
+   "id": "G1",
+   "status": "doing",
+   "note": "Make MT5 stack run in BOT workflow (.github/actions/mt5-stack + tools/mt5_stack.sh, bridge connection in bot/mt5_broker.py, anti-spam exponential backoff with 3-failure circuit breaker, proven 10+ min heartbeat on Actions).",
+   "evidence": "In progress"
+  },
+  {
+   "id": "G2",
+   "status": "todo",
+   "note": "Fix server time offset (±14h sanity check, nearest 30m) and prove real order execution on DEMO account with real retcodes, order/deal tickets, SL modify, partial/full close on Volatility 10 Index and EURUSD.",
+   "evidence": "Pending execution"
+  },
+  {
+   "id": "G3",
+   "status": "todo",
+   "note": "Real candle data: Dukascopy for forex, Deriv for synthetics, no crashes on empty results, atomic release upload, contract match with Train desk.",
+   "evidence": "Pending execution"
+  },
+  {
+   "id": "G4",
+   "status": "todo",
+   "note": "Re-audit everything marked done in CFD phase (honesty pass: verify real Actions runs, check lease, models, audit report in docs/audit-fix4.md).",
+   "evidence": "Pending execution"
+  },
+  {
+   "id": "G5",
+   "status": "todo",
+   "note": "Final concise report: what was broken, what is proven with Actions URLs, pending/blocked items with exact commands.",
+   "evidence": "Pending execution"
+  }
  ]
 }
