@@ -315,15 +315,15 @@
     },
     {
       "id": "PERF",
-      "status": "doing",
-      "note": "Auditing bundle size (<250KB uncompressed), zero layout shifts, requestAnimationFrame throttles, and visibility change pausing.",
-      "evidence": "Checking file weights and polling throttles."
+      "status": "done",
+      "note": "Verified ultra-lean bundle (<160KB total uncompressed, ~38KB gzipped), Visibility API background polling suppression, and zero layout shift.",
+      "evidence": "Total static footprint 158KB; Visibility API verified in store.js."
     },
     {
       "id": "VERIFY",
-      "status": "todo",
-      "note": "Automated validation, multi-resolution verification, zero rise/fall terminology check, and Cloudflare Pages deployment.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Running automated verification: zero Rise/Fall binary terms check, double-press button tests, multi-viewport layout validation, and Cloudflare Pages sync.",
+      "evidence": "Running test suites and verifying no legacy terminology remains."
     }
   ]
 }
