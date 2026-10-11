@@ -351,5 +351,31 @@
     "release_tag": "data-01",
     "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxEURUSD_60s.75a939f5ed73e428.csv.gz",
     "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxEURUSD_60s.75a939f5ed73e428.csv.gz.report.json"
+  },
+  "R_25": {
+    "symbol": "R_25",
+    "granularity": 60,
+    "rows": 525600,
+    "first_epoch": 1760187982,
+    "last_epoch": 1791723960,
+    "first_utc": "2025-10-11T13:06:22+00:00",
+    "last_utc": "2026-10-11T13:06:00+00:00",
+    "years_back": 1.0,
+    "sha256": "ea8fc9ee80c07ac10b06aca018bcbc7c3a601219763aee4d683e3c65f8f9c155",
+    "gaps_flagged": [],
+    "source": "auth-otp",
+    "last_checked_utc": "2026-10-11T13:06:33Z",
+    "file": "R_25_60s.csv.gz",
+    "columns": [
+      "epoch",
+      "open",
+      "high",
+      "low",
+      "close"
+    ],
+    "asset": "R_25_60s.ea8fc9ee80c07ac1.csv.gz",
+    "release_tag": "data-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_25_60s.ea8fc9ee80c07ac1.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_25_60s.ea8fc9ee80c07ac1.csv.gz.report.json"
   }
 }
