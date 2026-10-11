@@ -114,26 +114,19 @@ export default {
           const cur = await env.DB.prepare("SELECT loginid, currency FROM heartbeat WHERE id=1").first();
           const loginid = body.loginid !== undefined ? body.loginid : (cur ? cur.loginid : null);
           const currency = body.currency !== undefined ? body.currency : (cur ? cur.currency : null);
-          await env.DB.prepare(
+          const SQL =
             "INSERT INTO heartbeat (id, ts, mode, balance, equity, free_margin, note, loginid, currency) VALUES (1,?,?,?,?,?,?,?,?) " +
             "ON CONFLICT(id) DO UPDATE SET ts=excluded.ts, mode=excluded.mode, balance=excluded.balance, " +
-            "equity=excluded.equity, free_margin=excluded.free_margin, note=excluded.note, loginid=excluded.loginid, currency=excluded.currency"
+            "equity=excluded.equity, free_margin=excluded.free_margin, note=excluded.note, loginid=excluded.loginid, currency=excluded.currency";
+          const ARGS = [nowUTC(), body.mode || null, body.balance ?? null, body.equity ?? null, body.free_margin ?? null, body.note || null, loginid, currency];
           try {
-            await env.DB.prepare(
-              "INSERT INTO heartbeat (id, ts, mode, balance, equity, free_margin, note, loginid, currency) VALUES (1,?,?,?,?,?,?,?,?) " +
-              "ON CONFLICT(id) DO UPDATE SET ts=excluded.ts, mode=excluded.mode, balance=excluded.balance, " +
-              "equity=excluded.equity, free_margin=excluded.free_margin, note=excluded.note, loginid=excluded.loginid, currency=excluded.currency"
-            ).bind(nowUTC(), body.mode || null, body.balance ?? null, body.equity ?? null, body.free_margin ?? null, body.note || null, loginid, currency).run();
+            await env.DB.prepare(SQL).bind(...ARGS).run();
           } catch (e) {
-            // D1 migration-safe: add columns if the table predates them, then retry
-            if (String(e).includes("equity") || String(e).includes("free_margin") || String(e).includes("no column")) {
+            // D1 migration-safe: add columns if the table predates them, then retry once
+            if (String(e).includes("no column") || String(e).includes("equity")) {
               try { await env.DB.prepare("ALTER TABLE heartbeat ADD COLUMN equity REAL").run(); } catch (_) {}
               try { await env.DB.prepare("ALTER TABLE heartbeat ADD COLUMN free_margin REAL").run(); } catch (_) {}
-              await env.DB.prepare(
-                "INSERT INTO heartbeat (id, ts, mode, balance, equity, free_margin, note, loginid, currency) VALUES (1,?,?,?,?,?,?,?,?) " +
-                "ON CONFLICT(id) DO UPDATE SET ts=excluded.ts, mode=excluded.mode, balance=excluded.balance, " +
-                "equity=excluded.equity, free_margin=excluded.free_margin, note=excluded.note, loginid=excluded.loginid, currency=excluded.currency"
-              ).bind(nowUTC(), body.mode || null, body.balance ?? null, body.equity ?? null, body.free_margin ?? null, body.note || null, loginid, currency).run();
+              await env.DB.prepare(SQL).bind(...ARGS).run();
             } else { throw e; }
           }
           return json({ ok: true });
