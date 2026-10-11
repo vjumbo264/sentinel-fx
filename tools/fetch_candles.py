@@ -17,6 +17,7 @@ Prints a final line "STATS {json}" for the workflow to parse.
 from __future__ import annotations
 
 import argparse
+import subprocess
 import asyncio
 import csv
 import gzip

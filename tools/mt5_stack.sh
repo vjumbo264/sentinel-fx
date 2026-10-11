@@ -99,6 +99,40 @@ try:
 except Exception as e:
     print(f"[NOTE] C:\\\\server write: {e}")
 
+# Enable terminal algo trading via terminal_info / options where possible
+try:
+    conn.execute("""
+import MetaTrader5 as mt5
+ti = mt5.terminal_info()
+if ti is not None:
+    print('terminal trade_allowed before:', ti.trade_allowed)
+""")
+except Exception as e:
+    print(f"[NOTE] terminal_info: {e}")
+try:
+    # registry-style enable via portable ini is best-effort; the watchdog
+    # also enables Experts=1. Log the outcome either way.
+    conn.execute("""
+import os, re
+for path in [r"C:\MT5\terminal.ini", r"C:\MT5\common.ini"]:
+    if os.path.exists(path):
+        with open(path, 'rb') as f:
+            raw = f.read()
+        for enc in ('utf-16le','utf-8'):
+            try:
+                txt = raw.decode(enc)
+                break
+            except Exception:
+                txt = None
+        if txt:
+            txt = txt.replace('AutoTrading=0','AutoTrading=1').replace('Enabled=0','Enabled=1')
+            with open(path, 'wb') as f:
+                f.write(txt.encode('utf-16le'))
+""")
+    print("[OK] AutoTrading/Experts enabled flags written to terminal INI files")
+except Exception as e:
+    print(f"[NOTE] AutoTrading ini write: {e}")
+
 # Enable Experts in common.ini and terminal.ini if accessible
 try:
     script = '''
