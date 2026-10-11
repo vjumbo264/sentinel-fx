@@ -273,15 +273,15 @@
     },
     {
       "id": "TRAIN",
-      "status": "doing",
-      "note": "Building Train Pairs: Forex and synthetics registry filter, data release readiness gating, zero-exploration CFD prompt generator, and Actions dispatch.",
-      "evidence": "Drafting site/js/pages/train.js."
+      "status": "done",
+      "note": "Engineered CFD training desk with Forex & Synthetics registry, release data gating, multi-select, and zero-exploration prompt generator in train.js.",
+      "evidence": "site/js/pages/train.js verified."
     },
     {
       "id": "MODELS",
-      "status": "todo",
-      "note": "Trained pairs grid, currency flag-pair avatars, compounding ledgers, and forward-eval metrics.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building Trained Pairs: card per model with dual-currency avatars, enable/disable toggle, session balance share, and decision logs.",
+      "evidence": "Drafting site/js/pages/models.js."
     },
     {
       "id": "RISK",
