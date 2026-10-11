@@ -766,6 +766,9 @@ export default {
       if (path === "/api/data/tracked-pairs" && method === "GET") {
         return serveRepoData(request, "data/tracked_pairs.json");
       }
+      if (path === "/api/data/symbols" && method === "GET") {
+        return serveRepoData(request, "data/symbols.json");
+      }
 
       return err("not found", 404);
     } catch (e) {

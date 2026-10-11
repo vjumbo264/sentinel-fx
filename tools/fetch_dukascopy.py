@@ -183,10 +183,29 @@ def main():
 
     print(f"[dukascopy] Fetching {clean_sym} ({inst}) from {date_from} to {date_to} (mode={args.mode})...", flush=True)
 
+    # B2: dukascopy-node fires hundreds of parallel requests and is throttled
+    # (HTTP 202/429/503) on GitHub runners. Our own serial .bi5 decoder with
+    # backoff is the reliable path (proven: 3132 ticks decoded in a probe run).
+    bi5_candles = {}
+    try:
+        from fetch_dukascopy_bi5 import build_range
+        start_dt = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        end_dt = datetime.strptime(date_to, "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1)
+        bi5_candles = build_range(inst, start_dt, end_dt, pause=0.25)
+    except Exception as e:
+        print(f"[dukascopy] bi5 decoder error: {e}", flush=True)
+
     work_dir = tempfile.mkdtemp(prefix="duka_")
     try:
-        new_candles = download_dukascopy_range(inst, date_from, date_to, work_dir)
-        print(f"[dukascopy] Downloaded {len(new_candles)} new candle bars", flush=True)
+        if bi5_candles:
+            new_candles = [
+                {"epoch": ep, "open": v[0], "high": v[1], "low": v[2], "close": v[3], "volume": float(v[4])}
+                for ep, v in bi5_candles.items()
+            ]
+            print(f"[dukascopy] bi5 decoder produced {len(new_candles)} candle bars", flush=True)
+        else:
+            new_candles = download_dukascopy_range(inst, date_from, date_to, work_dir)
+            print(f"[dukascopy] Downloaded {len(new_candles)} new candle bars (dukascopy-node)", flush=True)
 
         for c in new_candles:
             existing[c["epoch"]] = c
