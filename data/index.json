@@ -1,22 +1,335 @@
 {
- "R_10": {
-  "asset": "R_10_60s.csv.gz",
-  "first_epoch": 1760163305,
-  "last_checked_utc": "2026-10-11T11:37:44Z",
-  "last_epoch": 1791718620,
-  "release_tag": "data-01",
-  "rows": 525922,
-  "sha256": "05d2fa9bbb023872af253bf05c176dd117c9b5df5a0788803464ce70af5da9fe",
-  "source": "auth-otp"
- },
- "R_100": {
-  "asset": "R_100_60s.csv.gz",
-  "first_epoch": 1760178212,
-  "last_checked_utc": "2026-10-11T10:23:39Z",
-  "last_epoch": 1791714180,
-  "release_tag": "data-01",
-  "rows": 525600,
-  "sha256": "ade60aca68e0de81105b25230f9ec0a8306f2eb919f27c8bdaccddf89e710bd0",
-  "source": "auth-otp"
- }
+  "R_10": {
+    "asset": "R_10_60s.csv.gz",
+    "first_epoch": 1760163305,
+    "last_checked_utc": "2026-10-11T11:37:44Z",
+    "last_epoch": 1791718620,
+    "release_tag": "data-01",
+    "rows": 525922,
+    "sha256": "05d2fa9bbb023872af253bf05c176dd117c9b5df5a0788803464ce70af5da9fe",
+    "source": "auth-otp"
+  },
+  "R_100": {
+    "asset": "R_100_60s.csv.gz",
+    "first_epoch": 1760178212,
+    "last_checked_utc": "2026-10-11T10:23:39Z",
+    "last_epoch": 1791714180,
+    "release_tag": "data-01",
+    "rows": 525600,
+    "sha256": "ade60aca68e0de81105b25230f9ec0a8306f2eb919f27c8bdaccddf89e710bd0",
+    "source": "auth-otp"
+  },
+  "frxEURUSD": {
+    "symbol": "frxEURUSD",
+    "granularity": 60,
+    "source": "Deriv-MT5-copy_rates-bid-history-fallback",
+    "source_limitation": "Broker depth only. Bid candles with broker-reported spread; no historical ask OHLC claimed. Dukascopy range attempts returned 202/429/503; see Actions probe logs.",
+    "columns": [
+      "epoch",
+      "open",
+      "high",
+      "low",
+      "close",
+      "tick_volume",
+      "spread_points",
+      "real_volume"
+    ],
+    "rows": 100000,
+    "first_epoch": 1783317060,
+    "last_epoch": 1791579240,
+    "first_utc": "2026-07-06T05:51:00+00:00",
+    "last_utc": "2026-10-09T20:54:00+00:00",
+    "last_checked_utc": "2026-10-11T12:51:09.960989+00:00",
+    "sha256": "75a939f5ed73e428c7000db5880d29238586ebe4f481a696f7f036dc4b22878d",
+    "duplicates": 0,
+    "gaps": [
+      {
+        "from": 1783631160,
+        "to": 1783631280,
+        "seconds": 120
+      },
+      {
+        "from": 1783716840,
+        "to": 1783890600,
+        "seconds": 173760
+      },
+      {
+        "from": 1784321640,
+        "to": 1784495400,
+        "seconds": 173760
+      },
+      {
+        "from": 1784667600,
+        "to": 1784667720,
+        "seconds": 120
+      },
+      {
+        "from": 1784754060,
+        "to": 1784754180,
+        "seconds": 120
+      },
+      {
+        "from": 1784840820,
+        "to": 1784840940,
+        "seconds": 120
+      },
+      {
+        "from": 1784926440,
+        "to": 1785100200,
+        "seconds": 173760
+      },
+      {
+        "from": 1785445380,
+        "to": 1785445500,
+        "seconds": 120
+      },
+      {
+        "from": 1785531240,
+        "to": 1785705000,
+        "seconds": 173760
+      },
+      {
+        "from": 1785963960,
+        "to": 1785964080,
+        "seconds": 120
+      },
+      {
+        "from": 1786036800,
+        "to": 1786036920,
+        "seconds": 120
+      },
+      {
+        "from": 1786038240,
+        "to": 1786038360,
+        "seconds": 120
+      },
+      {
+        "from": 1786039560,
+        "to": 1786039680,
+        "seconds": 120
+      },
+      {
+        "from": 1786039920,
+        "to": 1786040160,
+        "seconds": 240
+      },
+      {
+        "from": 1786043340,
+        "to": 1786043460,
+        "seconds": 120
+      },
+      {
+        "from": 1786046040,
+        "to": 1786046220,
+        "seconds": 180
+      },
+      {
+        "from": 1786050420,
+        "to": 1786050540,
+        "seconds": 120
+      },
+      {
+        "from": 1786136040,
+        "to": 1786309800,
+        "seconds": 173760
+      },
+      {
+        "from": 1786395720,
+        "to": 1786395840,
+        "seconds": 120
+      },
+      {
+        "from": 1786395960,
+        "to": 1786396080,
+        "seconds": 120
+      },
+      {
+        "from": 1786482360,
+        "to": 1786482480,
+        "seconds": 120
+      },
+      {
+        "from": 1786568760,
+        "to": 1786568880,
+        "seconds": 120
+      },
+      {
+        "from": 1786740840,
+        "to": 1786914600,
+        "seconds": 173760
+      },
+      {
+        "from": 1787000760,
+        "to": 1787000880,
+        "seconds": 120
+      },
+      {
+        "from": 1787087100,
+        "to": 1787087220,
+        "seconds": 120
+      },
+      {
+        "from": 1787173500,
+        "to": 1787173680,
+        "seconds": 180
+      },
+      {
+        "from": 1787173680,
+        "to": 1787173800,
+        "seconds": 120
+      },
+      {
+        "from": 1787345640,
+        "to": 1787519400,
+        "seconds": 173760
+      },
+      {
+        "from": 1787691900,
+        "to": 1787692020,
+        "seconds": 120
+      },
+      {
+        "from": 1787864760,
+        "to": 1787864940,
+        "seconds": 180
+      },
+      {
+        "from": 1787925840,
+        "to": 1787926500,
+        "seconds": 660
+      },
+      {
+        "from": 1787926800,
+        "to": 1787927400,
+        "seconds": 600
+      },
+      {
+        "from": 1787950440,
+        "to": 1788124200,
+        "seconds": 173760
+      },
+      {
+        "from": 1788210360,
+        "to": 1788210480,
+        "seconds": 120
+      },
+      {
+        "from": 1788296880,
+        "to": 1788297000,
+        "seconds": 120
+      },
+      {
+        "from": 1788383160,
+        "to": 1788383280,
+        "seconds": 120
+      },
+      {
+        "from": 1788469560,
+        "to": 1788469680,
+        "seconds": 120
+      },
+      {
+        "from": 1788525540,
+        "to": 1788525660,
+        "seconds": 120
+      },
+      {
+        "from": 1788526560,
+        "to": 1788526740,
+        "seconds": 180
+      },
+      {
+        "from": 1788555240,
+        "to": 1788729000,
+        "seconds": 173760
+      },
+      {
+        "from": 1788815160,
+        "to": 1788815280,
+        "seconds": 120
+      },
+      {
+        "from": 1788901500,
+        "to": 1788901680,
+        "seconds": 180
+      },
+      {
+        "from": 1788987960,
+        "to": 1788988140,
+        "seconds": 180
+      },
+      {
+        "from": 1789074360,
+        "to": 1789074480,
+        "seconds": 120
+      },
+      {
+        "from": 1789160040,
+        "to": 1789333800,
+        "seconds": 173760
+      },
+      {
+        "from": 1789506420,
+        "to": 1789506540,
+        "seconds": 120
+      },
+      {
+        "from": 1789679220,
+        "to": 1789679340,
+        "seconds": 120
+      },
+      {
+        "from": 1789764840,
+        "to": 1789938600,
+        "seconds": 173760
+      },
+      {
+        "from": 1790369640,
+        "to": 1790543400,
+        "seconds": 173760
+      },
+      {
+        "from": 1790629560,
+        "to": 1790629680,
+        "seconds": 120
+      },
+      {
+        "from": 1790715960,
+        "to": 1790716080,
+        "seconds": 120
+      },
+      {
+        "from": 1790802180,
+        "to": 1790802300,
+        "seconds": 120
+      },
+      {
+        "from": 1790888760,
+        "to": 1790888880,
+        "seconds": 120
+      },
+      {
+        "from": 1790974440,
+        "to": 1791148200,
+        "seconds": 173760
+      },
+      {
+        "from": 1791407160,
+        "to": 1791407340,
+        "seconds": 180
+      },
+      {
+        "from": 1791493560,
+        "to": 1791493680,
+        "seconds": 120
+      }
+    ],
+    "bid_ask_validation": "not available for historical OHLC; spread_points must be >=0",
+    "negative_spread_rows": 0,
+    "file": "frxEURUSD_60s.csv.gz",
+    "asset": "frxEURUSD_60s.75a939f5ed73e428.csv.gz",
+    "release_tag": "data-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxEURUSD_60s.75a939f5ed73e428.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxEURUSD_60s.75a939f5ed73e428.csv.gz.report.json"
+  }
 }
