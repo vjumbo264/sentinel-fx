@@ -1,0 +1,60 @@
+{
+  "timestamp_utc": "2026-10-11T09:33:46.746261+00:00",
+  "account": {
+    "login": 41286446,
+    "server": "Deriv-Demo",
+    "currency": "USD",
+    "balance": 10007.18,
+    "equity": 10007.18,
+    "profit": 0.0,
+    "margin": 0.0,
+    "margin_free": 10007.18,
+    "margin_level": 0.0,
+    "leverage": 1000,
+    "margin_mode": "ACCOUNT_MARGIN_MODE_RETAIL_HEDGING",
+    "trade_allowed": true,
+    "trade_expert": true
+  },
+  "server_time_utc_offset_hours": 0.0,
+  "tests": {
+    "synthetic": {
+      "symbol": "Volatility 10 Index",
+      "is_forex": false,
+      "status": "failed",
+      "steps": {
+        "order_check": {
+          "retcode": null,
+          "ok": false,
+          "comment": "",
+          "margin_free": null,
+          "volume": 0.5,
+          "sl": 4931.889,
+          "tp": 4935.489
+        }
+      },
+      "errors": [
+        "open_position failed: order_send failed: retcode=None ()"
+      ]
+    },
+    "forex": {
+      "symbol": "EURUSD",
+      "is_forex": true,
+      "status": "failed",
+      "steps": {
+        "order_check": {
+          "retcode": null,
+          "ok": false,
+          "comment": "",
+          "margin_free": null,
+          "volume": 0.01,
+          "sl": 1.11928,
+          "tp": 1.12178
+        }
+      },
+      "errors": [
+        "open_position failed: order_send failed: retcode=None ()"
+      ]
+    }
+  },
+  "status": "failed"
+}
