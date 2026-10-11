@@ -192,7 +192,7 @@ class MT5Broker(BrokerBase):
         self.demo_server = demo_server or os.environ.get("MT5_DEMO_SERVER", "Deriv-Demo")
         self.real_login = real_login or os.environ.get("MT5_REAL_LOGIN", "10357278")
         self.real_server = real_server or os.environ.get("MT5_REAL_SERVER", "DerivSVG-Server")
-        self.password = password or os.environ.get("MT5_PASSWORD", "Kaiju-No.8")
+        self.password = password or os.environ.get("MT5_PASSWORD", "")
         self.timeout = timeout
 
         self.mode: str = "demo"
@@ -396,7 +396,7 @@ class MT5Broker(BrokerBase):
             term = mt5.terminal_info()
             acct = mt5.account_info()
             connected = bool(term and getattr(term, "connected", False))
-            trade_allowed = bool(acct and getattr(acct, "trade_allowed", False))
+            trade_allowed = bool(acct and getattr(acct, "trade_allowed", False) and term and getattr(term, "trade_allowed", False))
             trade_expert = bool(acct and getattr(acct, "trade_expert", False))
             balance = float(getattr(acct, "balance", 0.0)) if acct else 0.0
             equity = float(getattr(acct, "equity", 0.0)) if acct else 0.0
@@ -486,6 +486,9 @@ class MT5Broker(BrokerBase):
             "digits": int(s.digits),
             "point": float(s.point),
             "contract_size": float(s.trade_contract_size),
+            "tick_size": float(s.trade_tick_size),
+            "tick_value": float(s.trade_tick_value),
+            "freeze_level": int(s.trade_freeze_level),
             "volume_min": float(s.volume_min),
             "volume_max": float(s.volume_max),
             "volume_step": float(s.volume_step),

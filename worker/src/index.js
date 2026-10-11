@@ -17,7 +17,7 @@ const GITHUB_REPO = "vjumbo264/sentinel-fx";
 // as a release asset; the site must read the LIVE version through the Worker,
 // never a stale copy bundled into the Pages deployment.
 const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
-const DATA_CACHE_TTL_MS = 45 * 1000; // 45s short cache
+const DATA_CACHE_TTL_MS = 5 * 1000; // 45s short cache
 const _dataCache = new Map(); // path -> { body, status, at }
 
 async function fetchRepoFile(path, token) {
@@ -42,7 +42,9 @@ async function fetchRepoFile(path, token) {
     try {
       const r = await fetch(u, { headers });
       if (r.ok) {
-        const out = { body: await r.text(), status: 200, at: Date.now() };
+        const body = await r.text();
+        JSON.parse(body); // Never cache a non-JSON upstream error page.
+        const out = { body, status: 200, at: Date.now() };
         _dataCache.set(path, out);
         return out;
       }
@@ -52,8 +54,8 @@ async function fetchRepoFile(path, token) {
     }
   }
   const out = { body: null, status: 502, at: Date.now(), error: lastErr };
-  _dataCache.set(path, out);
-  return out;
+  if (cached && cached.body != null) return { ...cached, stale: true };
+  return out; // Negative responses are not cached.
 }
 
 async function serveRepoData(request, path) {
@@ -206,6 +208,38 @@ export default {
             ).bind(k, JSON.stringify(v), nowUTC()).run();
           }
           return json({ ok: true });
+        }
+
+        if (path === "/api/bot/cfd-sync" && method === "POST") {
+          if (body.mode !== "demo") return err("acceptance sync requires demo", 400);
+          await env.DB.batch([
+            env.DB.prepare("CREATE TABLE IF NOT EXISTS cfd_deals (ticket INTEGER PRIMARY KEY, position_id INTEGER, symbol TEXT, net REAL NOT NULL, data TEXT NOT NULL)"),
+            env.DB.prepare("CREATE TABLE IF NOT EXISTS cfd_positions (ticket INTEGER PRIMARY KEY, data TEXT NOT NULL)")
+          ]);
+          const stmts = [];
+          for (const d of body.deals || []) {
+            if (!(d.ticket > 0 && d.position_id > 0)) return err("invalid real deal ticket", 400);
+            const net = Number(d.profit || 0) + Number(d.swap || 0) + Number(d.commission || 0) + Number(d.fee || 0);
+            stmts.push(env.DB.prepare("INSERT OR IGNORE INTO cfd_deals VALUES (?,?,?,?,?)").bind(d.ticket, d.position_id, d.symbol, net, JSON.stringify(d)));
+          }
+          if (stmts.length) await env.DB.batch(stmts);
+          // Replacement is an authoritative broker snapshot, not generated positions.
+          await env.DB.prepare("DELETE FROM cfd_positions").run();
+          for (const pos of body.positions || []) {
+            await env.DB.prepare("INSERT INTO cfd_positions VALUES (?,?)").bind(pos.ticket, JSON.stringify({...pos, model_id: body.model_id, reason: body.reason})).run();
+          }
+          const ids = [...new Set((body.deals || []).map(d => d.position_id))];
+          let net = 0;
+          for (const id of ids) {
+            const row = await env.DB.prepare("SELECT SUM(net) AS net FROM cfd_deals WHERE position_id=?").bind(id).first();
+            net += Number(row?.net || 0);
+          }
+          return json({ok:true, deals:(body.deals || []).length, positions:(body.positions || []).length, net});
+        }
+
+        if (path === "/api/bot/decision" && method === "POST") {
+          await logLine(env, "decision", body.symbol, body.reason || "Policy decision", body);
+          return json({ok:true});
         }
 
         if (path === "/api/bot/log" && method === "POST") {
@@ -455,7 +489,7 @@ export default {
             error: errMsg,
             market_closed: isMarketClosed,
             symbol
-          }, isMarketClosed ? 200 : 502);
+          }, 200); // Valid response describing an unavailable upstream, never invented candles.
         }
       }
 

@@ -66,7 +66,7 @@ def parse_args():
     parser.add_argument("--port", type=int, default=18812, help="MT5 server primary port")
     parser.add_argument("--port-second", type=int, default=18813, help="MT5 second terminal port for concurrency test")
     parser.add_argument("--login", default=os.environ.get("MT5_DEMO_LOGIN", "41286446"), help="MT5 Demo login")
-    parser.add_argument("--password", default=os.environ.get("MT5_PASSWORD", "Kaiju-No.8"), help="MT5 Demo password")
+    parser.add_argument("--password", default=os.environ.get("MT5_PASSWORD", ""), help="MT5 Demo password")
     parser.add_argument("--server", default=os.environ.get("MT5_DEMO_SERVER", "Deriv-Demo"), help="MT5 Demo server")
     parser.add_argument("--out-md", default="docs/mt5-spike.md", help="Output markdown report path")
     parser.add_argument("--out-json", default="mt5_spike_result.json", help="Output JSON artifact path")

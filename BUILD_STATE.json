@@ -576,8 +576,13 @@
     },
     {
       "id": "T4",
-      "status": "todo",
-      "attempts": [],
+      "status": "doing",
+      "attempts": [
+        {
+          "what": "Inspect terminal launch and lifecycle tests",
+          "result": "Confirmed INI written after launch, terminal trade_allowed not checked, partial close missing, nonexistent /api/bot/cfd-trade endpoint, test incorrectly exits zero on failed lifecycle. Repairs under live validation."
+        }
+      ],
       "evidence": []
     },
     {

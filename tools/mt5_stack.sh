@@ -159,6 +159,7 @@ EOF
 
   echo "[4/4] Verifying MT5 terminal login and account state..."
   verify_mt5_login
+  python3 tools/enable_mt5_trading.py
 
   if [ -n "${GITHUB_ENV:-}" ]; then
     echo "MT5_HOST=localhost" >> "${GITHUB_ENV}"

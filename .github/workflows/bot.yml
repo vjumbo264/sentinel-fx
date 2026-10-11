@@ -24,6 +24,9 @@ jobs:
       DERIV_BEARER_TOKEN: ${{ secrets.DERIV_BEARER_TOKEN }}
       DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
       GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT }}
+      MT5_PASSWORD: ${{ secrets.MT5_PASSWORD }}
+      MT5_DEMO_LOGIN: ${{ secrets.MT5_DEMO_LOGIN }}
+      MT5_DEMO_SERVER: ${{ secrets.MT5_DEMO_SERVER }}
       BOT_MODE: ${{ github.event.inputs.mode || 'demo' }}
       BOT_WALL_SECONDS: "13800"      # 3h50m total loop
       BOT_HANDOFF_LEAD_S: "300"      # dispatch next run 5min before stop
