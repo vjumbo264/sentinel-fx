@@ -4,9 +4,8 @@ on:
     paths:
       - "site/**"
       - ".github/workflows/deploy-site.yml"
-    branches: [main]
       - "!site/data/index.json"
-      - "!data/**"
+    branches: [main]
   workflow_dispatch: {}
 permissions:
   contents: read

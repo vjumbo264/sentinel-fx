@@ -12,7 +12,7 @@ inputs:
   password:
     description: "MT5 password"
     required: false
-    default: "Kaiju-No.8"
+    default: ""
   server:
     description: "MT5 server name"
     required: false

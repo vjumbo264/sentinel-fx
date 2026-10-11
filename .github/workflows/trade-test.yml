@@ -34,7 +34,7 @@ jobs:
         with:
           action: start
           login: ${{ secrets.MT5_DEMO_LOGIN || '41286446' }}
-          password: ${{ secrets.MT5_PASSWORD || 'Kaiju-No.8' }}
+          password: ${{ secrets.MT5_PASSWORD }}
           server: ${{ secrets.MT5_DEMO_SERVER || 'Deriv-Demo' }}
           port: '18812'
           container-name: 'mt5-trade-test'
@@ -42,7 +42,7 @@ jobs:
       - name: Run CFD Trade Test
         env:
           MT5_DEMO_LOGIN: ${{ secrets.MT5_DEMO_LOGIN || '41286446' }}
-          MT5_PASSWORD: ${{ secrets.MT5_PASSWORD || 'Kaiju-No.8' }}
+          MT5_PASSWORD: ${{ secrets.MT5_PASSWORD }}
           MT5_DEMO_SERVER: ${{ secrets.MT5_DEMO_SERVER || 'Deriv-Demo' }}
           WORKER_URL: https://sentinel-fx-worker.vjumbo264.workers.dev
           BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
