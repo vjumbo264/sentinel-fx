@@ -291,15 +291,15 @@
     },
     {
       "id": "UPLOAD",
-      "status": "doing",
-      "note": "Building Upload Model: drag-and-drop / tap-to-pick for .sfxmodel.zip, stepper, and validator report viewer.",
-      "evidence": "Drafting site/js/pages/upload.js."
+      "status": "done",
+      "note": "Engineered drag-and-drop bundle uploader for .sfxmodel.zip with 3-step pipeline, checksum, and safety checker in upload.js.",
+      "evidence": "site/js/pages/upload.js verified."
     },
     {
       "id": "STATES",
-      "status": "todo",
-      "note": "Resilient offline banner, connection recovery, error boundary with retry, and loading skeletons.",
-      "evidence": ""
+      "status": "doing",
+      "note": "Building Settings, offline banner, error boundary states, connection recovery, and loading skeletons.",
+      "evidence": "Drafting site/js/pages/settings.js and connection banner."
     },
     {
       "id": "THEME",
