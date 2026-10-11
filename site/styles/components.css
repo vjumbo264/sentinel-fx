@@ -800,3 +800,14 @@ input:checked + .toggle-slider:before {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Focus-visible rings for keyboard accessibility */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
