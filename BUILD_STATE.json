@@ -377,13 +377,13 @@
     },
     {
       "id": "MODELS",
-      "status": "doing",
-      "note": "Rebuild Models page on real /api/pairs and forward metrics with honest empty state when 0 models.",
-      "evidence": ""
+      "status": "done",
+      "note": "Rebuilt Models desk on real /api/pairs and forward_metrics with pack_version, verdict, enabled toggle with confirm sheet, session share, and honest empty state when 0 models installed.",
+      "evidence": "site/js/pages/models.js verified against live worker response; zero hard-coded models."
     },
     {
       "id": "TRAIN",
-      "status": "todo",
+      "status": "doing",
       "note": "Rebuild Train desk with symbols from tracked_pairs/symbols registry and real data/index.json status.",
       "evidence": ""
     },
