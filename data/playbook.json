@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "release_tag": "playbook",
+  "asset": "training-playbook-v1.d3bce12297de7b9a.md",
+  "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/playbook/training-playbook-v1.d3bce12297de7b9a.md",
+  "sha256": "d3bce12297de7b9a5ada597768c73a80e1bd12b8931681a9c60a9e34ba10df53",
+  "checksum_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/playbook/training-playbook-v1.d3bce12297de7b9a.sha256",
+  "policy_schema_version": "sentinel.policy.v1"
+}
