@@ -460,31 +460,31 @@
   {
    "id": "G1",
    "status": "doing",
-   "note": "MT5 stack composite action (.github/actions/mt5-stack + tools/mt5_stack.sh) is wired into bot.yml/trade-test.yml and PROVEN to start container + login on Actions (trade-test run 38129230441: 'Logged in successfully', balance USD 10007.18, leverage 1:1000). Backoff/circuit-breaker in bot.yml present. Still to prove: 10-min live bot loop heartbeat in Worker /api/state.",
-   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38129230441 (login ok, balance 10007.18)"
+   "note": "MT5 stack composite action wired into bot.yml+trade-test.yml; PROVEN container start+login on runs 38129230441 & 38130437280 (balance USD 10007.18, Lev 1:1000). Backoff+3-fail circuit breaker in bot.yml. STILL PENDING: 10-min live bot heartbeat; bot.yml workflow_dispatch returns 422 (GitHub shows \"no workflow_dispatch trigger\" - YAML trigger not registering, needs owner attention/enable).",
+   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38130437280"
   },
   {
    "id": "G2",
    "status": "doing",
-   "note": "Root cause of all retcode=None failures FOUND in trade-test run 38129230441 logs: RPyC conn.eval('MetaTrader5.order_send/order_check') raised NameError on every call (MetaTrader5 never imported in server eval namespace). Fixed in bot/mt5_broker.py + tools/mt5_spike.py with remote 'import MetaTrader5' after connect. Time-offset code already has \u00b114h/30m-rounding sanity (get_server_time_offset_hours). Awaiting fresh trade-test run for real retcode/ticket proof.",
-   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38129230441 (NameError 'MetaTrader5 is not defined' on every order_send/order_check)"
+   "note": "HUGE progress: RPyC eval-namespace fix WORKED. Run 38130437280: order_check now returns REAL retcode=0 \"Done\" (was None). order_send now returns REAL retcode=10027 \"AutoTrading disabled by client\" (was None). Time offset code has \u00b114h/30m sanity. Remaining: enable AutoTrading in terminal (added ini-enable to mt5_stack.sh; redispatched).",
+   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38130437280 (order_check retcode=0 Done; order_send retcode=10027 AutoTrading disabled)"
   },
   {
    "id": "G3",
    "status": "doing",
-   "note": "Deriv synthetic path PROVEN: fetch-candles run 38128792662 fetched R_10 525798 rows 2025-10-11..2026-10-11, sha256 recorded, swap guards against empty file, index updated atomically after asset exists. Dukascopy forex fetcher exists (tools/fetch_dukascopy.py) but NOT yet proven on Actions for frxEURUSD; empty-result crash fixed (fails loudly, skips swap).",
-   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38128792662 (R_10 525798 rows OK)"
+   "note": "Synthetic R_10 PROVEN (run 38128792662, 525798 rows). Forex Dukascopy run 38130438816 FAILED with NameError: subprocess not defined in tools/fetch_candles.py:230 - fixed (added import), redispatched. Empty-result crash already guarded.",
+   "evidence": "https://github.com/vjumbo264/sentinel-fx/actions/runs/38130438816 (NameError subprocess - fixed + redispatched)"
   },
   {
    "id": "G4",
-   "status": "doing",
-   "note": "Honesty pass underway: cfd steps SPIKE/BUYTEST/PROVE marked done earlier are NOT proven (all retcodes None, 0 deals \u2014 see run 38129230441 report). DATA: synthetic half proven. MT5LAYER unit tests are mocks, not evidence. HANDOFF, BOT live loop, SESSION pool: unverified on Actions. Full table being written to docs/audit-fix4.md.",
-   "evidence": "docs/audit-fix4.md + run URLs"
+   "status": "done",
+   "note": "Honesty audit complete in docs/audit-fix4.md: SPIKE/BUYTEST/PROVE revoked to pending (retcode=None/0 deals confirmed in run 38129230441); DATA synthetic proven; MT5LAYER mocks-only; HANDOFF/SESSION/BOT-loop unverified.",
+   "evidence": "docs/audit-fix4.md + run 38129230441"
   },
   {
    "id": "G5",
-   "status": "doing",
-   "note": "Final report in progress; will list proven items with run URLs and pending commands only.",
+   "status": "done",
+   "note": "Final report docs/fix4-report.md written with proven items + run URLs and pending commands.",
    "evidence": "docs/fix4-report.md"
   }
  ]
