@@ -28,16 +28,16 @@
   "R_100": {
     "symbol": "R_100",
     "granularity": 60,
-    "rows": 537161,
+    "rows": 538726,
     "first_epoch": 1760178212,
-    "last_epoch": 1792407840,
+    "last_epoch": 1792501740,
     "first_utc": "2025-10-11T10:23:32+00:00",
-    "last_utc": "2026-10-19T11:04:00+00:00",
+    "last_utc": "2026-10-20T13:09:00+00:00",
     "years_back": 1.02,
-    "sha256": "6bd072295f489a16d6f485c2fc0c3969630b5244d50c52139e4a6957ce6664cd",
+    "sha256": "b67d2aa3078c07e66f68e75330b76d1378607c63e0c480d720f3e267f3e8537f",
     "gaps_flagged": [],
     "source": "auth-otp",
-    "last_checked_utc": "2026-10-19T11:04:49Z",
+    "last_checked_utc": "2026-10-20T13:09:37Z",
     "file": "R_100_60s.csv.gz",
     "columns": [
       "epoch",
@@ -46,10 +46,10 @@
       "low",
       "close"
     ],
-    "asset": "R_100_60s.6bd072295f489a16.csv.gz",
+    "asset": "R_100_60s.b67d2aa3078c07e6.csv.gz",
     "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_100_60s.6bd072295f489a16.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_100_60s.6bd072295f489a16.csv.gz.report.json"
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_100_60s.b67d2aa3078c07e6.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_100_60s.b67d2aa3078c07e6.csv.gz.report.json"
   },
   "frxEURUSD": {
     "symbol": "frxEURUSD",
