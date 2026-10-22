@@ -389,5 +389,133 @@
     "release_tag": "data-01",
     "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ250V_60s.6ad7ed79a028e3b2.csv.gz",
     "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ250V_60s.6ad7ed79a028e3b2.csv.gz.report.json"
+  },
+  "frxAUDUSD": {
+    "symbol": "frxAUDUSD",
+    "granularity": 60,
+    "rows": 1112861,
+    "first_epoch": 1698019200,
+    "last_epoch": 1792627140,
+    "first_utc": "2023-10-23T00:00:00+00:00",
+    "last_utc": "2026-10-21T23:59:00+00:00",
+    "years_back": 3.0,
+    "sha256": "4f71994f26dcd0acab8d72746f2180707d7c8fcf90f7578e59d8c337478107ca",
+    "gaps_flagged": [
+      {
+        "from": 1703460420,
+        "to": 1703460840,
+        "seconds": 420
+      },
+      {
+        "from": 1703460840,
+        "to": 1703461680,
+        "seconds": 840
+      },
+      {
+        "from": 1703461740,
+        "to": 1703462520,
+        "seconds": 780
+      },
+      {
+        "from": 1703463420,
+        "to": 1703463840,
+        "seconds": 420
+      },
+      {
+        "from": 1703469000,
+        "to": 1703469420,
+        "seconds": 420
+      },
+      {
+        "from": 1703473200,
+        "to": 1703473620,
+        "seconds": 420
+      },
+      {
+        "from": 1703474100,
+        "to": 1703474460,
+        "seconds": 360
+      },
+      {
+        "from": 1703475360,
+        "to": 1703476200,
+        "seconds": 840
+      },
+      {
+        "from": 1703476260,
+        "to": 1703476620,
+        "seconds": 360
+      },
+      {
+        "from": 1703478060,
+        "to": 1703478600,
+        "seconds": 540
+      },
+      {
+        "from": 1703479560,
+        "to": 1703480100,
+        "seconds": 540
+      },
+      {
+        "from": 1703480460,
+        "to": 1703480940,
+        "seconds": 480
+      },
+      {
+        "from": 1703486280,
+        "to": 1703486880,
+        "seconds": 600
+      },
+      {
+        "from": 1703489640,
+        "to": 1703490720,
+        "seconds": 1080
+      },
+      {
+        "from": 1703490720,
+        "to": 1703541840,
+        "seconds": 51120
+      },
+      {
+        "from": 1703542800,
+        "to": 1703543640,
+        "seconds": 840
+      },
+      {
+        "from": 1708368360,
+        "to": 1708368900,
+        "seconds": 540
+      },
+      {
+        "from": 1708371840,
+        "to": 1708372200,
+        "seconds": 360
+      },
+      {
+        "from": 1711729080,
+        "to": 1711729740,
+        "seconds": 660
+      },
+      {
+        "from": 1711737000,
+        "to": 1711737780,
+        "seconds": 780
+      }
+    ],
+    "source": "dukascopy-m1",
+    "last_checked_utc": "2026-10-22T07:07:51Z",
+    "file": "frxAUDUSD_60s.csv.gz",
+    "columns": [
+      "epoch",
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume"
+    ],
+    "asset": "frxAUDUSD_60s.4f71994f26dcd0ac.csv.gz",
+    "release_tag": "data-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.4f71994f26dcd0ac.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.4f71994f26dcd0ac.csv.gz.report.json"
   }
 }
