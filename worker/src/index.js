@@ -416,6 +416,34 @@ export default {
       const site = await verifySiteAuth(request);
       if (!site) return err("unauthorized", 401);
 
+      if (path === "/api/training/dispatch" && method === "POST") {
+        const mode = String(body.mode || "update");
+        const pair = String(body.pair || "").replaceAll("frx", "");
+        if (!["start", "update"].includes(mode) || !/^(all|(?:[A-Z]{6}|R_\d+|1HZ\d+V)(?:,(?:[A-Z]{6}|R_\d+|1HZ\d+V))*)$/.test(pair)) return err("Invalid pair or training mode");
+        const headers = { Authorization: `Bearer ${site.token}`, Accept: "application/vnd.github+json", "User-Agent": "sentinel-fx-worker", "Content-Type": "application/json" };
+        const runsResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/train.yml/runs?per_page=100`, { headers });
+        if (!runsResponse.ok) return err(`Cannot check training writer: HTTP ${runsResponse.status}`, 502);
+        const runs = (await runsResponse.json()).workflow_runs || [];
+        if (runs.some(r => r.status !== "completed")) return err("Training cycle is already active. Its checkpoint is preserved; retry after the current owner cycle completes.", 409);
+        const currentFile = await fetchRepoFile("training_state.json", site.token);
+        if (!currentFile.body) return err("Cannot read training state", 503);
+        const current = JSON.parse(currentFile.body);
+        if (current.pairs_pending?.length && !["idle", "complete", "cancelled"].includes(current.status)) return err("Existing owner cycle must finish before starting an update", 409);
+        if (mode === "update") {
+          const modelFile = await fetchRepoFile("models/index.json", site.token);
+          if (!modelFile.body) return err("Model registry unavailable", 503);
+          const models = JSON.parse(modelFile.body);
+          const canUpdate = p => (models['frx'+p] || models[p])?.versions?.some(v => v.observation_dim === 62 && v.checkpoint_asset);
+          const requested = pair === "all" ? Object.keys(models).map(p => p.replace(/^frx/, '')).filter(canUpdate) : pair.split(',');
+          if (!requested.length || requested.some(p => !canUpdate(p))) return err("Update needs an existing 62-input model with native training weights. Train this pair first.", 409);
+        }
+        const dispatched = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/train.yml/dispatches`, {
+          method: "POST", headers, body: JSON.stringify({ ref: "main", inputs: { pair, mode } })
+        });
+        if (dispatched.status !== 204) return err(`Training dispatch failed: HTTP ${dispatched.status}`, 502);
+        return json({ ok: true, pair, mode });
+      }
+
       // Schema-compatible model registry, consumed by the Training page.
       // Unknown/old schemas stay visible but can never be advertised tradable.
       if (path === "/api/models/index" && method === "GET") {
@@ -426,7 +454,7 @@ export default {
         const index = await upstream.json();
         const result = {};
         for (const [symbol, entry] of Object.entries(index)) {
-          const version = (entry.versions || []).find(v => v.N === entry.active_version) || entry;
+          const version = (entry.versions || []).find(v => v.N === (entry.candidate_version ?? entry.active_version)) || entry;
           const dimension = version.observation_dim ?? entry.observation_dim;
           const schema = version.policy_schema ?? entry.policy_schema;
           const compatible = dimension === 62 && schema === "sentinel.policy.v2";
