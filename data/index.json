@@ -727,5 +727,10 @@
         "status": "unavailable_not_complete"
       }
     }
+  },
+  "frxUSDJPY": {
+    "shard_releases": [
+      "data-usdjpy-01"
+    ]
   }
 }
