@@ -438,7 +438,7 @@
   "frxAUDUSD": {
     "symbol": "frxAUDUSD",
     "granularity": 60,
-    "rows": 1011595,
+    "rows": 1275731,
     "first_epoch": 960224580,
     "last_epoch": 1792713540,
     "first_utc": "2023-10-23T00:00:00+00:00",
@@ -616,6 +616,14 @@
         "first_epoch": 1104734880,
         "last_epoch": 1135893420,
         "sha256": "8513ff3fccdb846d41d31dfce589bfdc80d3daa27824230de5bbef303e8ee9a4"
+      },
+      "2006": {
+        "asset": "AUDUSD_2006.csv.gz",
+        "release_tag": "data-audusd-01",
+        "rows": 264136,
+        "first_epoch": 1136246400,
+        "last_epoch": 1167426780,
+        "sha256": "8716d83bbae793b7aad705ca537b6c18f7903d1d76c5e84420d4cb07d6574095"
       }
     },
     "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
