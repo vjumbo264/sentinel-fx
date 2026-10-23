@@ -113,6 +113,30 @@ def load_data(gh, pair):
     return frame.iloc[:split].reset_index(drop=True), frame
 
 
+def record_checkpoint_metadata(state, meta, name, raw):
+    """Recover an uploaded checkpoint even if its state commit/verification failed."""
+    steps = int(meta['steps'])
+    history = [h for h in state.get('checkpoint_history', [])
+               if h.get('pair', state['active_pair']) == state['active_pair']
+               and h.get('version', state['active_version']) == state['active_version']
+               and h['step'] != steps]
+    history.append({'pair':meta['pair'],'version':meta['version'],'step':steps,
+                    'utc':meta['saved_utc'],'score':meta.get('val_score'),
+                    'metrics':meta.get('val_metrics', {})})
+    history.sort(key=lambda h:h['step'])
+    score = meta.get('val_score')
+    if score is not None and np.isfinite(score) and meta.get('val_metrics', {}).get('eligible', False):
+        best = state.get('best_checkpoint')
+        if best is None or score > best.get('score', -float('inf')):
+            state['best_checkpoint'] = {'step':steps,'score':score,'asset':name,
+                                        'val_metrics':meta.get('val_metrics', {})}
+    state.update(total_steps_done=steps,last_checkpoint_steps=steps,last_checkpoint_utc=meta['saved_utc'],
+                 checkpoint={'asset':name,'release_tag':'training-checkpoints',
+                             'sha256':hashlib.sha256(raw).hexdigest()},
+                 plateau_intervals=meta.get('plateau_intervals',0),
+                 previous_mean_reward=meta.get('previous_mean_reward'),checkpoint_history=history)
+
+
 def checkpoint(gh, model, state, stats):
     pair, version, steps = state['active_pair'], state['active_version'], int(model.num_timesteps)
     cache = ROOT / 'cache/training'; cache.mkdir(parents=True, exist_ok=True)
@@ -126,8 +150,7 @@ def checkpoint(gh, model, state, stats):
             meta = json.loads(archive.read('sentinel_checkpoint.json'))
         assert meta['steps'] == steps and meta['pair'] == pair and meta['version'] == version
         path.write_bytes(raw)
-        state.update(total_steps_done=steps,last_checkpoint_steps=steps,last_checkpoint_utc=meta['saved_utc'],
-                     checkpoint={'asset':name,'release_tag':'training-checkpoints','sha256':hashlib.sha256(raw).hexdigest()})
+        record_checkpoint_metadata(state, meta, name, raw)
         save_state(gh,state,f'Q4: recover existing {pair} checkpoint {steps}')
         return path
     model.save(str(path))
@@ -137,22 +160,7 @@ def checkpoint(gh, model, state, stats):
     raw = path.read_bytes()
     rel = gh.ensure_release('training-checkpoints')
     gh.upload(rel, name, raw)
-    history = state.get('checkpoint_history', [])
-    history.append({
-        'step': steps,
-        'utc': meta['saved_utc'],
-        'score': stats.get('val_score'),
-        'metrics': stats.get('val_metrics', {})
-    })
-    val_score = stats.get('val_score')
-    if val_score is not None:
-        best = state.get('best_checkpoint')
-        if best is None or val_score > best.get('score', -999999):
-            state['best_checkpoint'] = {'step': steps, 'score': val_score, 'asset': name, 'val_metrics': stats.get('val_metrics', {})}
-    state.update(total_steps_done=steps, last_checkpoint_steps=steps, last_checkpoint_utc=meta['saved_utc'],
-                 checkpoint={'asset': name,'release_tag':'training-checkpoints','sha256':hashlib.sha256(raw).hexdigest()},
-                 plateau_intervals=stats.get('plateau_intervals',0), previous_mean_reward=stats.get('previous_mean_reward'),
-                 checkpoint_history=history[-30:])
+    record_checkpoint_metadata(state, meta, name, raw)
     save_state(gh,state,f'Q4: verified {pair} v{version} checkpoint {steps}')
     return path
 
@@ -178,8 +186,8 @@ def restore(gh, env, state):
     # Only repository-owned checkpoints; never load user-supplied pickle/model archives here.
     model = PPO.load(str(path), env=env, device='cpu')
     assert model.num_timesteps == steps, 'checkpoint step mismatch'
-    state.update(total_steps_done=steps,last_checkpoint_steps=steps,last_checkpoint_utc=meta['saved_utc'],
-                 plateau_intervals=meta.get('plateau_intervals',0), previous_mean_reward=meta.get('previous_mean_reward'))
+    record_checkpoint_metadata(state, meta, asset['name'], raw)
+    print(f'RESTORED VERIFIED {pair} v{version} checkpoint {steps} sha256={hashlib.sha256(raw).hexdigest()}', flush=True)
     return model
 
 
@@ -400,6 +408,7 @@ def main():
         monitored = Monitor(env)
         model = restore(gh,monitored,state)
         state.update(status='training',next_retrain_after_utc=None)
+        state.pop('last_error', None)
         save_state(gh,state,'Q4: start/resume '+pair)
         callback = TrainingWall(gh,state,deadline,full_data,specs,pair)
         model.learn(total_timesteps=max(1,state['total_steps_target']-model.num_timesteps),

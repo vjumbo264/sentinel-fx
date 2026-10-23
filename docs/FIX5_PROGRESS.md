@@ -320,3 +320,7 @@ Next: H0: keep39992955869 running and wait for verified >900000 checkpoint; if i
 ## H0 — Repair proven checkpoint verification transport failure
 Resume39992955869 trained to950000 and uploaded immutable EURUSD_v1_s950000.zip (asset669882729), but the GitHub release download used for digest verification timed out after180s. This is a transport failure, not invalid volatility: per-checkpoint validation completed before upload. Added bounded retries for GET/HEAD/PUT/DELETE timeouts and connection resets; asset-creation POST is not blindly replayed. Next recover embedded950000 metadata and validation before re-dispatch.
 Next: H0: repair restore to recover uploaded-but-unindexed950000 checkpoint and its validation metrics, then resume it and verify real Actions state.
+
+## H0 — Recover uploaded checkpoints and embedded validation atomically
+Restore now reconstructs checkpoint digest, history, best-validation metadata and durable step from the actual latest archive, including950000 uploaded before a verification-network timeout. Existing checkpoints are deduplicated by pair/version/step, not silently lost; stale last_error clears only after a verified restore. No target/reset changes.
+Next: H0: download and verify950000 archive and metadata, run regression, then resume latest weights in Actions.
