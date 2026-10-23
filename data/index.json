@@ -1062,11 +1062,19 @@
         "first_epoch": 1104734880,
         "last_epoch": 1135893480,
         "sha256": "55b462a34c2cb67c71e6553f5782f37fc55cd27de50dd2209d0045a2a4be3c15"
+      },
+      "2006": {
+        "asset": "USDCHF_2006.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 308133,
+        "first_epoch": 1136246400,
+        "last_epoch": 1167427560,
+        "sha256": "3d588fd3e755a2237360d99ed7e322b5ac4d0c2975d78b0557f51cf7fd93b191"
       }
     },
-    "last_epoch": 1135893480,
+    "last_epoch": 1167427560,
     "first_epoch": 959725380,
-    "rows": 1348987,
+    "rows": 1657120,
     "columns": [
       "epoch",
       "bid_open",
