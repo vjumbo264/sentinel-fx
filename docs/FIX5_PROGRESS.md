@@ -324,3 +324,7 @@ Next: H0: repair restore to recover uploaded-but-unindexed950000 checkpoint and 
 ## H0 — Recover uploaded checkpoints and embedded validation atomically
 Restore now reconstructs checkpoint digest, history, best-validation metadata and durable step from the actual latest archive, including950000 uploaded before a verification-network timeout. Existing checkpoints are deduplicated by pair/version/step, not silently lost; stale last_error clears only after a verified restore. No target/reset changes.
 Next: H0: download and verify950000 archive and metadata, run regression, then resume latest weights in Actions.
+
+## H0 — Verify real Actions950000 checkpoint and recoverable metadata
+Downloaded actual Actions-produced EURUSD_v1_s950000.zip, ZIP integrity passes, actual SB3 model has950000 steps and62 inputs; embedded validation and digest committed in docs/evidence/h0_actions950000.json. Idempotent recovery restores validation/history exactly once. Run39992955869 advanced from900000 without reset and failed only on GitHub verification transport; replacement will use durable950000.
+Next: H0: dispatch patched resume and verify remote state950000 with validation while Actions is active, then H9.

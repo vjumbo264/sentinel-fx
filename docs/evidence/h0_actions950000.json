@@ -1,0 +1,62 @@
+{
+  "run_url": "https://github.com/vjumbo264/sentinel-fx/actions/runs/39992955869",
+  "asset": "EURUSD_v1_s950000.zip",
+  "asset_id": 669882729,
+  "sha256": "b52f8d5a5bf88870706168aae264b0702d4109ababf59e9ea652083a7d9e1c29",
+  "model_steps": 950000,
+  "input_dim": 62,
+  "archive_metadata": {
+    "pair": "EURUSD",
+    "version": 1,
+    "steps": 950000,
+    "saved_utc": "2026-10-23T17:38:06.352801+00:00",
+    "plateau_intervals": 0,
+    "previous_mean_reward": -1687.1396716666666,
+    "val_score": -50.414696,
+    "val_metrics": {
+      "verdict": "no_edge",
+      "eligible": true,
+      "val_rows": 3069,
+      "purge_bars": 2400,
+      "holdout_rows": 1318718,
+      "holdout_accessed": false,
+      "total_return_pct": -76.394856,
+      "max_drawdown_pct": 50.414696,
+      "sharpe_annualized": -51.222501,
+      "trade_count": 1009,
+      "activity_days": 5,
+      "evaluated_days": 5,
+      "cost_paid": 11977.503000012046,
+      "windows": [
+        {
+          "start_epoch": 1565167320,
+          "end_epoch": 1565228700,
+          "rows": 1024,
+          "status": "evaluated",
+          "final_equity": 9460.586999992687,
+          "trades": 332
+        },
+        {
+          "start_epoch": 1620975060,
+          "end_epoch": 1621209420,
+          "rows": 1024,
+          "status": "evaluated",
+          "final_equity": 4978.909999998804,
+          "trades": 299
+        },
+        {
+          "start_epoch": 1676601120,
+          "end_epoch": 1676662500,
+          "rows": 1024,
+          "status": "evaluated",
+          "final_equity": 5011.344999998743,
+          "trades": 378
+        }
+      ],
+      "skipped_windows": [],
+      "sampling": "three fixed 1024-bar purged validation windows; not full validation coverage"
+    }
+  },
+  "recovery_idempotent": true,
+  "note": "Training/evaluation succeeded; run failed on verification download timeout after upload. Replacement resumes this archive."
+}
