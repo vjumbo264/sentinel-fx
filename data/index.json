@@ -1429,11 +1429,19 @@
         "first_epoch": 1420135260,
         "last_epoch": 1451599080,
         "sha256": "3f90cdb7c5baeba6034aaac535d22226c09e4f26d5f9ef167602af7bf0471871"
+      },
+      "2016": {
+        "asset": "USDCHF_2016.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 371548,
+        "first_epoch": 1451858400,
+        "last_epoch": 1483135080,
+        "sha256": "a3eb4a34c04df9b356b30d7c39fc92e28e5f2ae2980a2c5909fcae527d5138ab"
       }
     },
-    "last_epoch": 1451599080,
+    "last_epoch": 1483135080,
     "first_epoch": 959725380,
-    "rows": 4449149,
+    "rows": 4820697,
     "columns": [
       "epoch",
       "bid_open",
