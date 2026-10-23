@@ -1094,11 +1094,19 @@
         "first_epoch": 1136246400,
         "last_epoch": 1167427560,
         "sha256": "3d588fd3e755a2237360d99ed7e322b5ac4d0c2975d78b0557f51cf7fd93b191"
+      },
+      "2007": {
+        "asset": "USDCHF_2007.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 296611,
+        "first_epoch": 1167699600,
+        "last_epoch": 1199138220,
+        "sha256": "20caeeb40c6457ac0cf8a45a37604c33595d32d8a9d93f154b187467239da36f"
       }
     },
-    "last_epoch": 1167427560,
+    "last_epoch": 1199138220,
     "first_epoch": 959725380,
-    "rows": 1657120,
+    "rows": 1953731,
     "columns": [
       "epoch",
       "bid_open",
