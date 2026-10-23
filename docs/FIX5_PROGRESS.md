@@ -79,3 +79,7 @@
 ### H6: Dispatch bounded demo bot acceptance run
 - Started demo-only bot run 39985787304 (wall_seconds=660, chain=false), https://github.com/vjumbo264/sentinel-fx/actions/runs/39985787304 . Run is pending; not marked passing. Read-only login run 39985636231 is installing MT5.
 - Next: H6: wait for broker login and verify 600+ seconds of actual heartbeats, then inspect final logs.
+
+### H6: Add first-run authentication regression checks
+- Two local startup regression tests PASS: first initialize supplies stored credentials, exact portable executable and 60000ms timeout; unknown account modes rejected. These are unit regressions only, not MT5 integration evidence.
+- Next: H6: check actual Windows login and bounded bot run; do not start H7 until verified.

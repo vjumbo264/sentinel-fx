@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H6: wait for broker login and verify 600+ seconds of actual heartbeats, then inspect final logs.",
+    "next_step": "H6: check actual Windows login and bounded bot run; do not start H7 until verified.",
     "items": [
       {
         "id": "H1",
@@ -209,6 +209,10 @@
           {
             "what": "Dispatch bounded demo bot acceptance run",
             "result": "Started demo-only bot run 39985787304 (wall_seconds=660, chain=false), https://github.com/vjumbo264/sentinel-fx/actions/runs/39985787304 . Run is pending; not marked passing. Read-only login run 39985636231 is installing MT5."
+          },
+          {
+            "what": "Add first-run authentication regression checks",
+            "result": "Two local startup regression tests PASS: first initialize supplies stored credentials, exact portable executable and 60000ms timeout; unknown account modes rejected. These are unit regressions only, not MT5 integration evidence."
           }
         ],
         "evidence": [],
