@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H7: add retired label with existing styling and verify deployed endpoint.",
+    "next_step": "H7: execute real ONNX/CLI compatibility tests and deploy model registry route.",
     "items": [
       {
         "id": "H1",
@@ -273,6 +273,10 @@
           {
             "what": "Expose model compatibility on actual model index endpoint",
             "result": "Training page previously fetched an absent /api/models/index route. Added authenticated registry proxy that marks missing/47-dimensional schema entries retired and incompatible, never tradable. Current repository model index is empty; no old bundle was deleted."
+          },
+          {
+            "what": "Show retired incompatible models without changing design",
+            "result": "Training card now labels incompatible entries retired using the existing muted badge, and no longer labels a stopped active pair Training simply because its name is active."
           }
         ],
         "evidence": [],

@@ -227,7 +227,10 @@ export async function trainingPage() {
     let trainChip = 'badge-muted';
     let trainText = 'Untrained';
 
-    if (isCurrentlyActive) {
+    if (verdict === 'retired') {
+      trainChip = 'badge-muted';
+      trainText = 'Retired, incompatible';
+    } else if (isCurrentlyActive && trainingState.status === 'training') {
       trainChip = 'badge-warning';
       trainText = 'Training...';
     } else if (verdict === 'pass') {

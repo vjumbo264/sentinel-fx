@@ -217,3 +217,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Expose model compatibility on actual model index endpoint
 - Training page previously fetched an absent /api/models/index route. Added authenticated registry proxy that marks missing/47-dimensional schema entries retired and incompatible, never tradable. Current repository model index is empty; no old bundle was deleted.
 - Next: H7: add retired label with existing styling and verify deployed endpoint.
+
+### H7: Show retired incompatible models without changing design
+- Training card now labels incompatible entries retired using the existing muted badge, and no longer labels a stopped active pair Training simply because its name is active.
+- Next: H7: execute real ONNX/CLI compatibility tests and deploy model registry route.
