@@ -63,3 +63,7 @@
 - In progress: H6, latest failed bot run 39983309547 at c43649f.
 - Next: original run logs, minimal crash repair, bounded demo-only ten-minute verification; then H7.
 - Problems: inherited V2/V4/V5/V6 evidence cites local tests rather than required broker runs; those claims require independent V12 verification. Actions API reports original training run 39929904179 failed (not running). No checkpoint or training progress has been modified.
+
+### H6: Authenticate during first terminal initialization
+- Latest bot run 39983309547 logs: initialize attempt 3 returned False (last_err: (-10005, IPC timeout)); AssertionError: demo login failed. Previously fixed resource import and inline indentation were not the remaining root cause. Broker now passes credentials on its first initialize, allows 60 seconds, and uses the launched executable when available.
+- Next: H6: pin Windows terminal path and portable launch, then dispatch demo verification.

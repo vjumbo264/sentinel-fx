@@ -340,9 +340,16 @@ class MT5Broker(BrokerBase):
 
                 # Initialize
                 init_ok = False
-                for cfg in [{}, {"server": target_server}, {"login": target_login, "password": self.password, "server": target_server}]:
+                # First-run Windows terminals have no cached account. Initializing
+                # anonymously can stall at the login dialog and never create IPC.
+                # Use the exact launched executable and authenticate on initialize.
+                cfg = {"login": target_login, "password": self.password, "server": target_server}
+                terminal_path = os.environ.get("MT5_TERMINAL_PATH")
+                if terminal_path:
+                    cfg.update(path=terminal_path, portable=True)
+                for cfg in [cfg]:
                     try:
-                        if mt5.initialize(**cfg, timeout=10000):
+                        if mt5.initialize(**cfg, timeout=60000):
                             init_ok = True
                             break
                     except Exception:

@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H6: retrieve original Actions logs for the latest failed bot run; repair actual crash; verify a bounded demo-only 10-minute run before H7.",
+    "next_step": "H6: pin Windows terminal path and portable launch, then dispatch demo verification.",
     "items": [
       {
         "id": "H1",
@@ -193,6 +193,10 @@
           {
             "what": "Resume: authenticated Actions API audit of last 40 runs",
             "result": "HTTP 200. Latest bot run 39983309547 failed at c43649f. Training run 39929904179 is completed/failure, not currently running; preserve stored checkpoint and inspect before any resume."
+          },
+          {
+            "what": "Authenticate during first terminal initialization",
+            "result": "Latest bot run 39983309547 logs: initialize attempt 3 returned False (last_err: (-10005, IPC timeout)); AssertionError: demo login failed. Previously fixed resource import and inline indentation were not the remaining root cause. Broker now passes credentials on its first initialize, allows 60 seconds, and uses the launched executable when available."
           }
         ],
         "evidence": [],
