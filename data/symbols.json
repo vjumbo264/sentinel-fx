@@ -206,6 +206,23 @@
       "margin_currency": "AUD",
       "point": 0.001
     },
+    "GBPAUD": {
+      "mt5_symbol": "GBPAUD",
+      "dukascopy_symbol": "GBPAUD",
+      "type": "forex",
+      "digits": 5,
+      "contract_size": 100000.0,
+      "volume_min": 0.01,
+      "volume_max": 50.0,
+      "volume_step": 0.01,
+      "stops_level": 0,
+      "typical_spread_pts": 25,
+      "swap_long": -7.5,
+      "swap_short": 1.5,
+      "trading_sessions": "Sun 21:05 - Fri 20:55 UTC",
+      "margin_currency": "GBP",
+      "point": 0.00001
+    },
     "EURCAD": {
       "mt5_symbol": "EURCAD",
       "dukascopy_symbol": "EURCAD",

@@ -128,7 +128,7 @@ def run(pairs, dry_run=False):
                             path = dl(year=str(year), month=str(month) if month else None,
                                       pair=pair.lower(), time_frame=TF.ONE_MINUTE,
                                       platform=P.GENERIC_ASCII, output_directory=str(cache), verbose=False)
-                        rows.update(parse_zip(path, specs[pair]))
+                        rows.update(parse_zip(path, specs.get(pair, {'point': 0.00001})))
                     if not rows:
                         raise ValueError('empty archive')
                     text = io.StringIO()
