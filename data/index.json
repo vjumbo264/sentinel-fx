@@ -726,7 +726,10 @@
         "checked_utc": "2026-10-23T07:56:35.040924+00:00",
         "status": "unavailable_not_complete"
       }
-    }
+    },
+    "shard_releases": [
+      "data-eurgbp-01"
+    ]
   },
   "frxUSDJPY": {
     "shard_releases": [
