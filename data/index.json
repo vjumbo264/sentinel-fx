@@ -2129,11 +2129,19 @@
         "first_epoch": 1451858400,
         "last_epoch": 1483134960,
         "sha256": "3540b5a07aac10457585fa4dbab73b53a4ab698845c9adada52347a96f65e8e7"
+      },
+      "2017": {
+        "asset": "AUDJPY_2017.csv.gz",
+        "release_tag": "data-audjpy-01",
+        "rows": 372157,
+        "first_epoch": 1483340460,
+        "last_epoch": 1514584620,
+        "sha256": "b36a94875e514325e8d3e958828c9a830622941b629d5fcdb74403866cbf96d4"
       }
     },
-    "last_epoch": 1483134960,
+    "last_epoch": 1514584620,
     "first_epoch": 1029796320,
-    "rows": 4765790,
+    "rows": 5137947,
     "columns": [
       "epoch",
       "bid_open",
