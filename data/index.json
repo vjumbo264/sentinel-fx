@@ -396,8 +396,8 @@
   "frxAUDUSD": {
     "symbol": "frxAUDUSD",
     "granularity": 60,
-    "rows": 1114297,
-    "first_epoch": 1698019200,
+    "rows": 121,
+    "first_epoch": 960224580,
     "last_epoch": 1792713540,
     "first_utc": "2023-10-23T00:00:00+00:00",
     "last_utc": "2026-10-22T23:59:00+00:00",
@@ -505,16 +505,19 @@
         "seconds": 780
       }
     ],
-    "source": "dukascopy-m1",
+    "source": "histdata-bid-only-synthetic-ask",
     "last_checked_utc": "2026-10-23T07:07:18Z",
     "file": "frxAUDUSD_60s.csv.gz",
     "columns": [
       "epoch",
-      "open",
-      "high",
-      "low",
-      "close",
-      "volume"
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
     ],
     "asset": "frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz",
     "release_tag": "data-01",
@@ -522,7 +525,18 @@
     "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz.report.json",
     "shard_releases": [
       "data-audusd-01"
-    ]
+    ],
+    "bulk_years": {
+      "2000": {
+        "asset": "AUDUSD_2000.csv.gz",
+        "release_tag": "data-audusd-01",
+        "rows": 121,
+        "first_epoch": 960224580,
+        "last_epoch": 978104760,
+        "sha256": "54e1372240c7d6a0330e1c5fb7ef5a2241c8022a4ae23a95e4629b74243f9467"
+      }
+    },
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   },
   "frxGBPUSD": {
     "shard_releases": [
