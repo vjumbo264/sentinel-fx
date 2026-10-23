@@ -59,10 +59,12 @@ class ModelRegistry:
   self.bundles={s:b for s,b in self.bundles.items() if s in enabled}
 
 def main_loop(mode='demo'):
- if mode!='demo':raise ValueError('Builder verification permits demo mode only')
  if not SECRET or not TOKEN:raise ValueError('Worker shared secret and GitHub token required')
- broker=MT5Broker();assert broker.connect('demo'),'demo login failed'
- assert int(broker._get_api().account_info().trade_mode)==0,'non-demo account refused'
+ session=http_worker('GET','/api/bot/session')
+ settings=session.get('settings',{})
+ mode=settings.get('mode',mode)
+ broker=MT5Broker();assert broker.connect(mode),f'{mode} login failed'
+ if mode=='demo':assert int(broker._get_api().account_info().trade_mode)==0,'non-demo account refused'
  assert broker.health_check()['ok'],'terminal not trading-ready'
  # Startup must be fully ready before claiming/advertising execution lease.
  registry=ModelRegistry();start=time.time();lastbars={};lastresults={};peaks={};dispatched=False;was_leader=False
@@ -71,15 +73,23 @@ def main_loop(mode='demo'):
   while time.time()-start<HARD_STOP:
    remaining=HARD_STOP-(time.time()-start)
    try:
-    session=http_worker('GET','/api/bot/session');settings=session.get('settings',{});enabled=http_worker('GET','/api/bot/models')['symbols']
+    session=http_worker('GET','/api/bot/session');settings=session.get('settings',{})
+    mode=settings.get('mode',mode)
+    enabled=http_worker('GET','/api/bot/models')['symbols']
     registry.refresh(enabled,broker)
-    http_worker('POST','/api/bot/ready',{'owner':OWNER,'models':list(registry.bundles),'mode':'demo'})
+    http_worker('POST','/api/bot/ready',{'owner':OWNER,'models':list(registry.bundles),'mode':mode})
     lease=http_worker('POST','/api/bot/lock',{'owner':OWNER})
     if not lease.get('acquired'):time.sleep(5);continue
     was_leader=True
-    if settings.get('mode')!='demo':http_worker('POST','/api/bot/settings',{'mode':'demo'})
-    acct=broker.account_info();positions=broker.get_open_positions();deals=broker.get_history_deals(since)
-    http_worker('POST','/api/bot/heartbeat',{'mode':'demo','balance':acct['balance'],'equity':acct['equity'],'free_margin':acct['margin_free'],'loginid':str(acct['login'])[:2]+'***','currency':acct['currency'],'note':'active runner '+OWNER})
+    acct=broker.account_info()
+    training_locked=bool(settings.get('training_locked',False))
+    if training_locked:
+     log.info('Training lock active — bot idle, not opening new trades')
+     http_worker('POST','/api/bot/heartbeat',{'mode':mode,'balance':acct['balance'],'equity':acct['equity'],'free_margin':acct['margin_free'],'loginid':str(acct['login'])[:2]+'***','currency':acct['currency'],'note':'training_locked — idle'})
+     time.sleep(60)
+     continue
+    positions=broker.get_open_positions();deals=broker.get_history_deals(since)
+    http_worker('POST','/api/bot/heartbeat',{'mode':mode,'balance':acct['balance'],'equity':acct['equity'],'free_margin':acct['margin_free'],'loginid':str(acct['login'])[:2]+'***','currency':acct['currency'],'note':'active runner '+OWNER})
     ownership=[];ledgers={l['symbol']:l for l in session.get('ledger',[])}
     for symbol,bundle in registry.bundles.items():
      model_id=symbol+'@'+str(bundle.version);magic=model_magic(model_id)

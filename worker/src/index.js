@@ -676,96 +676,17 @@ export default {
         return json({ pairs: pairs.results, packs: packs.results, models: models.results, forward: fwd.results });
       }
 
-            if (path === "/api/upload/staging-asset" && method === "POST") {
-        const name = url.searchParams.get("name");
-        if (!name) return err("missing name parameter");
-        const token = siteAuth.token;
-        let relRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/tags/staging`, {
-          headers: { Authorization: `token ${token}`, "User-Agent": "sentinel-fx-worker", Accept: "application/vnd.github+json" }
-        });
-        let relData;
-        if (!relRes.ok) {
-          const createRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases`, {
-            method: "POST",
-            headers: { Authorization: `token ${token}`, "User-Agent": "sentinel-fx-worker", Accept: "application/vnd.github+json", "Content-Type": "application/json" },
-            body: JSON.stringify({ tag_name: "staging", name: "staging", body: "Staging area for model bundles." })
-          });
-          relData = await createRes.json();
-        } else {
-          relData = await relRes.json();
-        }
-        if (!relData || !relData.id) return err("could not find or create staging release");
-
-        for (const asset of (relData.assets || [])) {
-          if (asset.name === name) {
-            await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/assets/${asset.id}`, {
-              method: "DELETE",
-              headers: { Authorization: `token ${token}`, "User-Agent": "sentinel-fx-worker" }
-            });
-          }
-        }
-
-        const bodyBytes = await request.arrayBuffer();
-        const uploadRes = await fetch(`https://uploads.github.com/repos/${GITHUB_REPO}/releases/${relData.id}/assets?name=${encodeURIComponent(name)}`, {
-          method: "POST",
-          headers: {
-            Authorization: `token ${token}`,
-            "User-Agent": "sentinel-fx-worker",
-            "Content-Type": "application/zip",
-            "Content-Length": String(bodyBytes.byteLength)
-          },
-          body: bodyBytes
-        });
-        if (!uploadRes.ok) {
-          const t = await uploadRes.text();
-          return err(`GitHub asset upload failed (${uploadRes.status}): ${t}`);
-        }
-        const assetJson = await uploadRes.json();
-        return json({ ok: true, asset: assetJson });
-      }
-
-      if (path === "/api/packs/register" && method === "POST") {
+            if (path === "/api/settings/training-lock" && method === "POST") {
+        const locked = Boolean(body.locked);
+        const reason = String(body.reason || "");
         await env.DB.prepare(
-          "INSERT INTO pair_packs (symbol, version, sha256, status, has_custom_code, verdict, metrics, created_utc) VALUES (?,?,?,?,?,?,?,?)"
-        ).bind(body.symbol, body.version, body.sha256 || null, body.status || "incoming",
-               body.has_custom_code ? 1 : 0, body.verdict || null,
-               body.metrics ? JSON.stringify(body.metrics) : null, nowUTC()).run();
-        return json({ ok: true });
-      }
-
-      if (path === "/api/packs/status" && method === "POST") {
-        // called by validate-pack workflow OR by the site polling step
-        const body = await request.json();
+          "INSERT INTO settings (key, value, updated_utc) VALUES (?,?,?) " +
+          "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_utc=excluded.updated_utc"
+        ).bind("training_locked", JSON.stringify(locked), nowUTC()).run();
         await env.DB.prepare(
-          "UPDATE pair_packs SET status=?, verdict=?, validation_report=? WHERE symbol=? AND version=?"
-        ).bind(body.status, body.verdict || null,
-               body.validation_report ? JSON.stringify(body.validation_report) : null,
-               body.symbol, body.version).run();
-        return json({ ok: true });
-      }
-
-      if (path === "/api/packs/promote" && method === "POST") {
-        // mark all previous packs retired, this one active; upsert pair row
-        await env.DB.prepare("UPDATE pair_packs SET status='retired' WHERE symbol=? AND status='active'")
-          .bind(body.symbol).run();
-        await env.DB.prepare("UPDATE pair_packs SET status='active', installed_utc=? WHERE symbol=? AND version=?")
-          .bind(nowUTC(), body.symbol, body.version).run();
-        const existing = await env.DB.prepare("SELECT * FROM pairs WHERE symbol=?").bind(body.symbol).first();
-        const p = body.pack || {};
-        if (existing) {
-          await env.DB.prepare(
-            "UPDATE pairs SET pack_version=?, verdict=?, has_custom_code=?, updated_utc=? WHERE symbol=?"
-          ).bind(body.version, p.verdict || null, p.has_custom_code ? 1 : 0, nowUTC(), body.symbol).run();
-        } else {
-          await env.DB.prepare(
-            `INSERT INTO pairs (symbol, enabled, shadow_mode, status, min_stake, max_stake, stake_pct,
-                                max_consec_losses, pack_version, verdict, has_custom_code, updated_utc)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
-          ).bind(body.symbol, 0, p.has_custom_code ? 1 : 0, "installed",
-                 Math.max(0.35, p.min_stake || 0.35), p.max_stake || 10,
-                 p.stake_pct || 0.01, p.max_consec_losses || 3,
-                 body.version, p.verdict || null, p.has_custom_code ? 1 : 0, nowUTC()).run();
-        }
+          "INSERT INTO settings (key, value, updated_utc) VALUES (?,?,?) " +
+          "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_utc=excluded.updated_utc"
+        ).bind("training_lock_reason", JSON.stringify(reason), nowUTC()).run();
         return json({ ok: true });
       }
 

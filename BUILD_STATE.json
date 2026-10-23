@@ -7,8 +7,8 @@
   "queue": [
     { "id": "F1", "title": "Fetch missing 11 forex pair data", "status": "done", "notes": "All 11 forex pairs (GBPUSD, USDJPY, USDCHF, USDCAD, NZDUSD, EURGBP, EURJPY, GBPJPY, AUDJPY, EURAUD, GBPAUD) successfully fetched and indexed in data/index.json with rows > 0, SHA256 checksums, and release assets. Verified runs: 39920396628, 39921134518, 39921139091, 39921143724, 39921148510, 39921153517, 39921158472, 39921162907, 39921167489, 39921172313, 39921733418." },
     { "id": "F2", "title": "Training engine overhaul — observation v2, actions, reward, walk-forward", "status": "done", "notes": "Completed v2 observation overhaul (62 dimensions, causally safe), 8-action catalog, scalper composite reward, and walk-forward validation (split 70/15/15). Policy schema version updated to sentinel.policy.v2. Smoke test and test_overhaul_training passed." },
-    { "id": "F3", "title": "Training interlock — bot pauses during training", "status": "in_progress", "notes": "" },
-    { "id": "F4", "title": "Complete site rebuild — 4 pages, no polling, fast", "status": "pending", "notes": "" },
+    { "id": "F3", "title": "Training interlock — bot pauses during training", "status": "done", "notes": "Added /api/settings/training-lock endpoint in worker/src/index.js; purged dead packs/staging endpoints; updated bot/main.py with training_locked check and dynamic mode from settings; added lock/unlock steps and Saturday 2am UTC cron to train.yml." },
+    { "id": "F4", "title": "Complete site rebuild — 4 pages, no polling, fast", "status": "in_progress", "notes": "" },
     { "id": "F5", "title": "Start EURUSD training", "status": "pending", "notes": "" }
   ],
   "decisions": [
@@ -17,7 +17,8 @@
     "Configured scoped workflow dispatch to ingest all 11 forex pairs concurrently",
     "Added GBPAUD specifications to data/symbols.json and verified ingestion across all 11 pairs",
     "Updated observation schema to sentinel.policy.v2 locked with 62 dimensions across M1, M5, M15, H1",
-    "Adopted 8-action catalog with discrete actions for hold, full/half long, full/half short, close, breakeven, and trailing stop"
+    "Adopted 8-action catalog with discrete actions for hold, full/half long, full/half short, close, breakeven, and trailing stop",
+    "Added training_locked interlock in worker and bot main loop with dynamic mode control"
   ],
   "known_issues": [],
   "deployment": {

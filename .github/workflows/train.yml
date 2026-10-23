@@ -8,6 +8,7 @@ on:
         default: resume
   schedule:
     - cron: '0 2 * * *'
+    - cron: '0 2 * * 6'
 
 permissions:
   contents: write
@@ -35,8 +36,30 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install stable-baselines3 gymnasium onnx onnxruntime numpy pandas requests
           pip install ./engine
+      - name: Set training lock
+        env:
+          WORKER_URL: ${{ secrets.WORKER_URL }}
+          BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
+          GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT }}
+        run: |
+          curl -sS -X POST "$WORKER_URL/api/settings/training-lock" \
+            -H "Authorization: Bearer $GH_CHAIN_PAT" \
+            -H "Content-Type: application/json" \
+            -d '{"locked":true,"reason":"train.yml active"}' \
+            && echo "Training lock set"
       - name: Resume pair training
         run: python tools/train_agent.py
+      - name: Clear training lock
+        if: always()
+        env:
+          WORKER_URL: ${{ secrets.WORKER_URL }}
+          GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT }}
+        run: |
+          curl -sS -X POST "$WORKER_URL/api/settings/training-lock" \
+            -H "Authorization: Bearer $GH_CHAIN_PAT" \
+            -H "Content-Type: application/json" \
+            -d '{"locked":false,"reason":""}' \
+            && echo "Training lock cleared"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
