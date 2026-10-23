@@ -47,7 +47,9 @@
     "Created dedicated data-synthetics-01 release containing all Deriv synthetic volatility index datasets",
     "Rebuilt site/ from scratch with pure ES modules, automatic dark/light UI, and <70KB total JS payload",
     "Mirrored fresh UI in src/App.tsx for immediate AI Studio live interaction",
-    "Dispatched initial EURUSD PPO v2 training cycle via train.yml on GitHub Actions"
+    "Dispatched initial EURUSD PPO v2 training cycle via train.yml on GitHub Actions",
+    "Lean mission: demo only, no visual redesign, no test suites or reports; resume first incomplete L item.",
+    "Use completion-triggered training continuation, never training cron; existing running writer is not cancelled or duplicated."
   ],
   "known_issues": [],
   "deployment": {
@@ -71,7 +73,7 @@
   "observation_schema": "sentinel.policy.v2",
   "observation_dimension": 62,
   "old_47dim_models": "incompatible \u2014 do not load",
-  "last_updated": "2026-10-23T09:10:50.000000+00:00",
+  "last_updated": "2026-10-23T18:15:11.626588+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
     "next_step": "H9 INCOMPLETE, do this next before H10: wire staged tools/training_requests.py into trainer plus authenticated Worker/UI durable request queue; remove invalid pair/queue workflow inputs; add Update all; native best-checkpoint provenance; per-pair new versions and frozen per-cycle data bounds; preserve released active_version on candidates; stop automatic new cycles; verify actual owner update and lock safety. Current EURUSD v1 run39997388327 is active from verified950000 (sha256 b52f8d5a5bf88870706168aae264b0702d4109ababf59e9ea652083a7d9e1c29), target5000000: do NOT cancel/reset or start a duplicate. Then H10, H8, H1-H5, final V1-V12 suite. Read docs/fix5-report.md.",
@@ -712,5 +714,55 @@
     "full_suite_rerun_completed": false,
     "owner_side_blockers": [],
     "last_session_summary": "H0 verified: real950000 checkpoint with purged validation and active patched resume39997388327; H9 crons removed and truthful UI deployed but request/update integration remains staged. Full mission incomplete; no owner-side blockers."
+  },
+  "lean": {
+    "items": [
+      {
+        "id": "L1",
+        "status": "doing",
+        "note": "Live run 39997388327 is still training; durable checkpoint advanced from 950000 to 1000000. Preserve writer. Repair completion/failure continuation and stop automatic new cycles."
+      },
+      {
+        "id": "L2",
+        "status": "todo",
+        "note": ""
+      },
+      {
+        "id": "L3",
+        "status": "todo",
+        "note": ""
+      },
+      {
+        "id": "L4",
+        "status": "todo",
+        "note": ""
+      },
+      {
+        "id": "L5",
+        "status": "todo",
+        "note": ""
+      },
+      {
+        "id": "L6",
+        "status": "todo",
+        "note": ""
+      },
+      {
+        "id": "L7",
+        "status": "todo",
+        "note": ""
+      },
+      {
+        "id": "L8",
+        "status": "todo",
+        "note": ""
+      },
+      {
+        "id": "L9",
+        "status": "todo",
+        "note": ""
+      }
+    ],
+    "next_step": "L1"
   }
 }
