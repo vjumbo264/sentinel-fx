@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H6: inspect real login result, then run demo bot for 660 seconds.",
+    "next_step": "H6: wait for broker login and verify 600+ seconds of actual heartbeats, then inspect final logs.",
     "items": [
       {
         "id": "H1",
@@ -205,6 +205,10 @@
           {
             "what": "Bound acceptance runtime and pin authenticated account mode",
             "result": "BOT_CHAIN=false now ends after wall_seconds instead of running 5 hours. A demo runner cannot silently relabel itself real via Worker settings. Read-only login verification dispatched: https://github.com/vjumbo264/sentinel-fx/actions/runs/39985636231 ."
+          },
+          {
+            "what": "Dispatch bounded demo bot acceptance run",
+            "result": "Started demo-only bot run 39985787304 (wall_seconds=660, chain=false), https://github.com/vjumbo264/sentinel-fx/actions/runs/39985787304 . Run is pending; not marked passing. Read-only login run 39985636231 is installing MT5."
           }
         ],
         "evidence": [],

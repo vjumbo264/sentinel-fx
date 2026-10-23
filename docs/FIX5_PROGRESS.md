@@ -75,3 +75,7 @@
 ### H6: Bound acceptance runtime and pin authenticated account mode
 - BOT_CHAIN=false now ends after wall_seconds instead of running 5 hours. A demo runner cannot silently relabel itself real via Worker settings. Read-only login verification dispatched: https://github.com/vjumbo264/sentinel-fx/actions/runs/39985636231 .
 - Next: H6: inspect real login result, then run demo bot for 660 seconds.
+
+### H6: Dispatch bounded demo bot acceptance run
+- Started demo-only bot run 39985787304 (wall_seconds=660, chain=false), https://github.com/vjumbo264/sentinel-fx/actions/runs/39985787304 . Run is pending; not marked passing. Read-only login run 39985636231 is installing MT5.
+- Next: H6: wait for broker login and verify 600+ seconds of actual heartbeats, then inspect final logs.
