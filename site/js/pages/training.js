@@ -57,7 +57,11 @@ export async function trainingPage() {
 
     // H2 Honest training ETA calculation from last N checkpoints
     const remainingSteps = Math.max(0, stepsTarget - stepsDone);
-    const history = trainingState.checkpoint_history || [];
+    const history = (trainingState.checkpoint_history || []).filter(h =>
+      (!h.pair || h.pair === activePair) &&
+      (!h.version || h.version === trainingState.active_version) &&
+      Number.isFinite(Date.parse(h.utc)) && Number.isFinite(h.step)
+    ).sort((a, b) => a.step - b.step);
     let etaInfo = {
       rate: null,
       rateStr: 'measuring...',
@@ -79,9 +83,10 @@ export async function trainingPage() {
         const rate = stepDelta / timeDeltaMin;
         const remMin = remainingSteps / rate;
         const etaHours = (remMin / 60).toFixed(1);
-        const finishDate = new Date(Date.now() + remMin * 60000);
-        const finishStr = finishDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) + ' (' + finishDate.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ')';
-        const startMs = new Date(history[0].utc).getTime();
+        const finishDate = new Date(Date.parse(cLast.utc) + remMin * 60000);
+        const timeZone = settings.timezone || 'Africa/Lagos';
+        const finishStr = new Intl.DateTimeFormat([], { timeZone, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }).format(finishDate);
+        const startMs = Date.parse(trainingState.cycle_started_utc || history[0].utc);
         const elapsedHours = (Math.max(0, Date.now() - startMs) / 3600000).toFixed(1);
 
         const queue = trainingState.queue || [];
@@ -98,7 +103,7 @@ export async function trainingPage() {
           rateStr: `${Math.round(rate).toLocaleString()} steps/min`,
           etaStr: `~${etaHours} hours`,
           etaHours: parseFloat(etaHours),
-          elapsedStr: `${elapsedHours}h elapsed`,
+          elapsedStr: `${elapsedHours}h ${trainingState.cycle_started_utc ? 'elapsed' : 'since first measured checkpoint'}`,
           finishStr: finishStr,
           queueStr
         };
@@ -139,7 +144,7 @@ export async function trainingPage() {
                 </div>
                 <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:10px; font-size:11px; color:var(--text-3);">
                   <span id="training-throughput">Throughput: <strong style="color:var(--text);">${etaInfo.rateStr}</strong> (${etaInfo.elapsedStr})</span>
-                  <span id="training-eta">ETA: <strong style="color:var(--text);">${etaInfo.etaStr}</strong> · Est. Finish: <strong style="color:var(--text);">${etaInfo.finishStr}</strong>${etaInfo.queueStr}</span>
+                  <span id="training-eta">Remaining at checkpoint: <strong style="color:var(--text);">${etaInfo.etaStr}</strong> · Est. Finish: <strong style="color:var(--text);">${etaInfo.finishStr}</strong>${etaInfo.queueStr}</span>
                 </div>
               </div>
             `
