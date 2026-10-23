@@ -1274,11 +1274,19 @@
         "first_epoch": 1199232000,
         "last_epoch": 1230757080,
         "sha256": "e3d34955d447350ab255797cc68d26ee7a929512d8c9702c5937fa79bdbbd280"
+      },
+      "2009": {
+        "asset": "GBPJPY_2009.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 365749,
+        "first_epoch": 1230854340,
+        "last_epoch": 1262296740,
+        "sha256": "87079a561f2426b0e7ae8c1ccb52ce4c88e797d08bfaa289606a9b9af66f03fe"
       }
     },
-    "last_epoch": 1230757080,
+    "last_epoch": 1262296740,
     "first_epoch": 1020265200,
-    "rows": 1946411,
+    "rows": 2312160,
     "columns": [
       "epoch",
       "bid_open",
