@@ -920,11 +920,19 @@
         "first_epoch": 1514844060,
         "last_epoch": 1546293480,
         "sha256": "a0d2438548ddf562b806aad9ab84dc91ead232ea41391ad4213bfa19f37dd159"
+      },
+      "2020": {
+        "asset": "EURGBP_2020.csv.gz",
+        "release_tag": "data-eurgbp-01",
+        "rows": 372416,
+        "first_epoch": 1577916120,
+        "last_epoch": 1609451880,
+        "sha256": "cf135be3a0a19c3682549d2156d4f61de0d02fdfff5e411b042a67f51d4fe71a"
       }
     },
-    "last_epoch": 1546293480,
+    "last_epoch": 1609451880,
     "first_epoch": 1015200240,
-    "rows": 5449389,
+    "rows": 5821805,
     "columns": [
       "epoch",
       "bid_open",
