@@ -1657,11 +1657,19 @@
         "first_epoch": 1483340400,
         "last_epoch": 1514584500,
         "sha256": "83bdf0fa1aa4282368d20279c49804934c67d4ab3e2ef40ef1378d0871678c03"
+      },
+      "2018": {
+        "asset": "GBPJPY_2018.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 372495,
+        "first_epoch": 1514844120,
+        "last_epoch": 1546293480,
+        "sha256": "62a13e0505574ce04d22ccfbdd7b72663298747ceb325efdea299589b80776d7"
       }
     },
-    "last_epoch": 1514584500,
+    "last_epoch": 1546293480,
     "first_epoch": 1020265200,
-    "rows": 5270764,
+    "rows": 5643259,
     "columns": [
       "epoch",
       "bid_open",
