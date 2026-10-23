@@ -895,11 +895,19 @@
         "first_epoch": 1020265200,
         "last_epoch": 1041358620,
         "sha256": "17efd0ca63d40bfb5019a5815fc826b4c6e5ef9a677554b966e0203805e539e8"
+      },
+      "2003": {
+        "asset": "GBPJPY_2003.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 328001,
+        "first_epoch": 1041465600,
+        "last_epoch": 1072900800,
+        "sha256": "ed8d7ea89b332d019748e1fbd95d774f7e893cbaf21a0f43c71346bc3547b67e"
       }
     },
-    "last_epoch": 1041358620,
+    "last_epoch": 1072900800,
     "first_epoch": 1020265200,
-    "rows": 184502,
+    "rows": 512503,
     "columns": [
       "epoch",
       "bid_open",
