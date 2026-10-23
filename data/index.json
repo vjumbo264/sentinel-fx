@@ -1858,6 +1858,32 @@
     },
     "shard_releases": [
       "data-gbpaud-01"
-    ]
+    ],
+    "bulk_years": {
+      "2007": {
+        "asset": "GBPAUD_2007.csv.gz",
+        "release_tag": "data-gbpaud-01",
+        "rows": 68842,
+        "first_epoch": 1191189600,
+        "last_epoch": 1199137200,
+        "sha256": "b800c7c98689aac5bd0f8003a12a8a1741fb350189ff327e90a73fec1751faa8"
+      }
+    },
+    "last_epoch": 1199137200,
+    "first_epoch": 1191189600,
+    "rows": 68842,
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "source": "histdata-bid-only-synthetic-ask",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   }
 }
