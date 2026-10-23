@@ -1038,11 +1038,19 @@
         "first_epoch": 1325487600,
         "last_epoch": 1356991080,
         "sha256": "7310c5f476fcc08a4eed242f1431e933ebaf2206c42cefb2ac3411a05a784974"
+      },
+      "2013": {
+        "asset": "USDJPY_2013.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 370808,
+        "first_epoch": 1357077600,
+        "last_epoch": 1388523540,
+        "sha256": "c43e2ccc573d7b4e89f1918952657496df75c2ce7b690f402683d68bd946a998"
       }
     },
-    "last_epoch": 1356991080,
+    "last_epoch": 1388523540,
     "first_epoch": 959727480,
-    "rows": 3904707,
+    "rows": 4275515,
     "columns": [
       "epoch",
       "bid_open",
