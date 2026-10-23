@@ -284,3 +284,7 @@ Next: H0: retrieve failing evaluation stack, reproduce on durable 900000 checkpo
 ## H0 — Bound purged checkpoint validation and skip bad windows
 Exact original stack proves observation.py causal_market raised invalid volatility on nonpositive ATR; prior H5 already installed finite flat-window floor. Added deterministic purged validation module with explicit coverage, skip records, no holdout fallback and disqualification when windows are skipped. Must wire trainer and verify actual checkpoint before acceptance.
 Next: H0: wire validation, reproduce flat historical window with checkpoint900000, then dispatch resume and wait for verified >900000 checkpoint.
+
+## H0 — Wire safe validation into every checkpoint
+Trainer now uses bounded purged validation, records ineligible/error results without terminating checkpoint durability, and never marks a skipped window as best. Removed old validation fallback that could touch the locked holdout. Full 5000000-step target and existing durable model remain unchanged.
+Next: H0: verify real-data reproduction then start Actions resume from900000 and collect new checkpoint validation evidence.

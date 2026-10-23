@@ -23,6 +23,7 @@ from stable_baselines3.common.monitor import Monitor
 from tools.train_env import SentinelScalpEnv
 from tools.release_utils import ROOT, GitHub, pair_key
 from tools.export_rl_bundle import export_bundle
+from tools.validation import evaluate_validation
 
 PAIRS = 'EURUSD GBPUSD USDJPY USDCHF AUDUSD USDCAD NZDUSD EURGBP EURJPY GBPJPY AUDJPY EURAUD GBPAUD'.split()
 STATE = ROOT / 'training_state.json'
@@ -212,9 +213,11 @@ class TrainingWall(BaseCallback):
                     sharpe = val_metrics.get('sharpe_annualized', 0.0)
                     ret = val_metrics.get('total_return_pct', 0.0)
                     dd = val_metrics.get('max_drawdown_pct', 0.0)
-                    val_score = round(sharpe * (1.0 - dd / 100.0) if ret > 0 else -dd, 4)
+                    if val_metrics.get('eligible', False):
+                        val_score = round(sharpe * (1.0 - dd / 100.0) if ret > 0 else -dd, 6)
                 except Exception as e:
-                    val_metrics = {'error': str(e)}
+                    val_metrics = {'error': str(e), 'eligible': False, 'verdict': 'evaluation_error'}
+                    print(f'VALIDATION FAILED SAFELY {self.pair}: {e}', flush=True)
             self.stats = {
                 'plateau_intervals': self.plateau,
                 'previous_mean_reward': self.previous,
@@ -229,57 +232,9 @@ class TrainingWall(BaseCallback):
 
 
 def walk_forward_eval(model, full_data, specs, pair):
-    """
-    Split: 70% train (already used), 15% validation, 15% holdout (locked).
-    Walk-forward: evaluate on validation fold only.
-    Returns verdict: 'pass' or 'no_edge', plus metrics.
-    """
-    n = len(full_data)
-    val_start = int(n * 0.70)
-    holdout_start = int(n * 0.85)
+    """Per-checkpoint validation only; locked hold-out is never a fallback."""
+    return evaluate_validation(model, full_data, specs, pair)
 
-    val_data = full_data.iloc[val_start:holdout_start].reset_index(drop=True)
-    holdout_data = full_data.iloc[holdout_start:].reset_index(drop=True)
-
-    if len(val_data) < 500:
-        val_data = full_data.iloc[max(0, n - 600):].reset_index(drop=True)
-        if len(val_data) < 70:
-            return {'verdict': 'insufficient_data', 'val_rows': len(val_data)}
-
-    val_env = SentinelScalpEnv(val_data, specs, pair)
-    obs, _ = val_env.reset(options={'start_bar': 60})
-    equity_curve = [val_env.initial_balance]
-    done = False
-    while not done:
-        action, _ = model.predict(obs, deterministic=True)
-        obs, reward, terminated, truncated, info = val_env.step(int(action))
-        equity_curve.append(info['equity'])
-        done = terminated or truncated
-
-    equity_curve = np.array(equity_curve)
-    returns = np.diff(np.log(np.maximum(equity_curve, 1e-9)))
-
-    final_equity = float(equity_curve[-1])
-    total_return = float((final_equity - val_env.initial_balance) / val_env.initial_balance)
-    max_dd = float(np.max(np.maximum.accumulate(equity_curve) - equity_curve) / np.maximum.accumulate(equity_curve).max())
-    sharpe = float(np.mean(returns) / (np.std(returns) + 1e-9) * np.sqrt(252 * 1440))  # annualized M1 Sharpe
-    trade_count = len(val_env.broker.closed)
-    win_rate = float(np.mean([1 if t['net_pnl'] > 0 else 0 for t in val_env.broker.closed])) if trade_count > 0 else 0.0
-
-    verdict = 'pass' if (total_return > 0 and sharpe > 0.3 and max_dd < 0.30 and trade_count >= 10) else 'no_edge'
-
-    return {
-        'verdict': verdict,
-        'val_rows': len(val_data),
-        'holdout_rows': len(holdout_data),
-        'final_equity': final_equity,
-        'total_return_pct': round(total_return * 100, 2),
-        'max_drawdown_pct': round(max_dd * 100, 2),
-        'sharpe_annualized': round(sharpe, 3),
-        'trade_count': trade_count,
-        'win_rate_pct': round(win_rate * 100, 1),
-        'cost_paid': val_env.broker.cost_paid,
-    }
 
 def holdout_eval(model, full_data, specs, pair, cost_stress=1.5):
     """
