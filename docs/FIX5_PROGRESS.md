@@ -288,3 +288,7 @@ Next: H0: wire validation, reproduce flat historical window with checkpoint90000
 ## H0 — Wire safe validation into every checkpoint
 Trainer now uses bounded purged validation, records ineligible/error results without terminating checkpoint durability, and never marks a skipped window as best. Removed old validation fallback that could touch the locked holdout. Full 5000000-step target and existing durable model remain unchanged.
 Next: H0: verify real-data reproduction then start Actions resume from900000 and collect new checkpoint validation evidence.
+
+## H0 — Dispatch durable EURUSD v1 resume
+Authenticated workflow_dispatch train.yml mode=resume accepted HTTP204 using committed safe validation. Existing900000 checkpoint and target5000000 preserved; acceptance awaits new checkpoint and real dataset probes.
+Next: H0: monitor Actions resume, run per-pair validation probes, collect verified checkpoint >900000 before beginning H9.
