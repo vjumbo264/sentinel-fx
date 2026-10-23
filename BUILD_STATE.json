@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H6: complete bounded real MT5 demo runtime verification before continuing queue.",
+    "next_step": "H6: inspect launched native demo login/bot results; use actual runner evidence for next repair.",
     "items": [
       {
         "id": "H1",
@@ -217,6 +217,10 @@
           {
             "what": "Document original last-40 run evidence and exact failure lines",
             "result": "Fresh audit proves latest failure is native MT5 IPC timeout, not owner cancellation. Last green bot used Linux stack. Original training stopped at durable EURUSD v1 900000-step checkpoint due invalid volatility during evaluation. Exact lines and all 40 run URLs are in docs/FIX5_PROGRESS.md."
+          },
+          {
+            "what": "Restore owner-provided MT5 secret values with sealed encryption",
+            "result": "GitHub repository secret writes all returned HTTP 204 (names only: MT5_PASSWORD, MT5_DEMO_LOGIN, MT5_DEMO_SERVER, MT5_REAL_LOGIN, MT5_REAL_SERVER). Values were encrypted outside the repository; no credentials committed or added to BUILD_STATE. Running Actions jobs retain their launch-time environment."
           }
         ],
         "evidence": [],

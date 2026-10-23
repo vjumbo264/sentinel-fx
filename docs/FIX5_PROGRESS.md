@@ -161,3 +161,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H6: Document original last-40 run evidence and exact failure lines
 - Fresh audit proves latest failure is native MT5 IPC timeout, not owner cancellation. Last green bot used Linux stack. Original training stopped at durable EURUSD v1 900000-step checkpoint due invalid volatility during evaluation. Exact lines and all 40 run URLs are in docs/FIX5_PROGRESS.md.
 - Next: H6: complete bounded real MT5 demo runtime verification before continuing queue.
+
+### H6: Restore owner-provided MT5 secret values with sealed encryption
+- GitHub repository secret writes all returned HTTP 204 (names only: MT5_PASSWORD, MT5_DEMO_LOGIN, MT5_DEMO_SERVER, MT5_REAL_LOGIN, MT5_REAL_SERVER). Values were encrypted outside the repository; no credentials committed or added to BUILD_STATE. Running Actions jobs retain their launch-time environment.
+- Next: H6: inspect launched native demo login/bot results; use actual runner evidence for next repair.
