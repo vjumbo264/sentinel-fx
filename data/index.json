@@ -1929,11 +1929,19 @@
         "first_epoch": 1704146640,
         "last_epoch": 1735682280,
         "sha256": "58e32b1eb0448ae770e60be4876011cd0e52bdd247d2e3ebb9c7f5b2283839c3"
+      },
+      "2025": {
+        "asset": "GBPJPY_2025.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 371016,
+        "first_epoch": 1735769100,
+        "last_epoch": 1767218220,
+        "sha256": "dcf3141dc1f13ebf55ca48a16f966084eb2e1ae8dd10ea480f9d003e5aa0ef46"
       }
     },
-    "last_epoch": 1735682280,
+    "last_epoch": 1767218220,
     "first_epoch": 1020265200,
-    "rows": 7826341,
+    "rows": 8197357,
     "columns": [
       "epoch",
       "bid_open",
