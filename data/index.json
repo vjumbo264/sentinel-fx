@@ -526,6 +526,32 @@
   "frxGBPUSD": {
     "shard_releases": [
       "data-gbpusd-01"
-    ]
+    ],
+    "bulk_years": {
+      "2000": {
+        "asset": "GBPUSD_2000.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 132267,
+        "first_epoch": 959727540,
+        "last_epoch": 978107160,
+        "sha256": "52b92bd81faa6712d931fbc96370f847883a904d936945d7bb49fc3d974551e4"
+      }
+    },
+    "last_epoch": 978107160,
+    "first_epoch": 959727540,
+    "rows": 132267,
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "source": "histdata-bid-only-synthetic-ask",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   }
 }
