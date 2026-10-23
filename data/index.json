@@ -1519,11 +1519,19 @@
         "first_epoch": 1388613660,
         "last_epoch": 1420063080,
         "sha256": "15014e0782d4f662bf639485ad416a9a486008799d3c5c455d491250a8f92cfb"
+      },
+      "2015": {
+        "asset": "GBPJPY_2015.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 371946,
+        "first_epoch": 1420137540,
+        "last_epoch": 1451599020,
+        "sha256": "8853c9ab70e60f132db6065e0e80dfd9bc07df9a672aae35f145cfe28f19120d"
       }
     },
-    "last_epoch": 1420063080,
+    "last_epoch": 1451599020,
     "first_epoch": 1020265200,
-    "rows": 4156587,
+    "rows": 4528533,
     "columns": [
       "epoch",
       "bid_open",
