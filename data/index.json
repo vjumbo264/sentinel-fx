@@ -736,7 +736,33 @@
   "frxUSDCAD": {
     "shard_releases": [
       "data-usdcad-01"
-    ]
+    ],
+    "bulk_years": {
+      "2000": {
+        "asset": "USDCAD_2000.csv.gz",
+        "release_tag": "data-usdcad-01",
+        "rows": 9,
+        "first_epoch": 960834300,
+        "last_epoch": 965432220,
+        "sha256": "68b86231e19e5aba120a8face9013d1933c8f69cda870ac480700baff9f62676"
+      }
+    },
+    "last_epoch": 965432220,
+    "first_epoch": 960834300,
+    "rows": 9,
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "source": "histdata-bid-only-synthetic-ask",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   },
   "frxUSDCHF": {
     "shard_releases": [
