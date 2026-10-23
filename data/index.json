@@ -1032,11 +1032,19 @@
         "first_epoch": 1073001600,
         "last_epoch": 1104528540,
         "sha256": "5f2259c1d192e46c0a9e61642e62a9880bc86c5412bc403371bd3535a0ce608c"
+      },
+      "2005": {
+        "asset": "GBPJPY_2005.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 351750,
+        "first_epoch": 1104734880,
+        "last_epoch": 1135893420,
+        "sha256": "576ae9fecadbf137285825a56d4588acdb049aff46045b2f869f1c34db777150"
       }
     },
-    "last_epoch": 1104528540,
+    "last_epoch": 1135893420,
     "first_epoch": 1020265200,
-    "rows": 866453,
+    "rows": 1218203,
     "columns": [
       "epoch",
       "bid_open",
