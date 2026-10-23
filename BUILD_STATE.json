@@ -184,10 +184,22 @@
       {
         "id": "H6",
         "title": "The failed or cancelled live action root cause and fix",
-        "status": "todo",
-        "attempts": [],
+        "status": "doing",
+        "attempts": [
+          {
+            "what": "Actions API audit of last 40 workflow runs",
+            "result": "Identified exact failures: run 39933073507 (bot.yml) crashed with ModuleNotFoundError: No module named 'resource' on windows-latest in engine/sentinel_engine/sandbox.py:18; safety dispatch step failed with IndentationError: unexpected indent in python inline script; bot/main.py missing acct=broker.account_info() before line 85."
+          }
+        ],
         "evidence": [],
-        "files": []
+        "files": [
+          "bot/main.py",
+          "tools/bot_safety_dispatch.py",
+          ".github/workflows/bot.yml",
+          "site/js/pages/dash.js",
+          "src/App.tsx",
+          "docs/FIX5_PROGRESS.md"
+        ]
       },
       {
         "id": "H7",

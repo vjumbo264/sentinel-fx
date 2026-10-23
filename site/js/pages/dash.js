@@ -49,15 +49,19 @@ export async function dashPage() {
     const isRecent = hbEpoch > 0 && (nowSec - hbEpoch) < 120;
     const botPower = settings.power !== false;
 
+    const botRecovery = settings.bot_recovery || {};
     let runnerStatusText = 'Bot idle';
     let runnerDotClass = 'dot-paused';
 
-    if (trainingLocked) {
-      runnerStatusText = 'Training — bot paused';
-      runnerDotClass = 'dot-train';
-    } else if (isRecent && botPower) {
+    if (isRecent && botPower) {
       runnerStatusText = 'Bot running';
       runnerDotClass = 'dot-live';
+    } else if (botRecovery.status === 'recovering') {
+      runnerStatusText = 'Bot chain recovering';
+      runnerDotClass = 'dot-warning';
+    } else if (botRecovery.status === 'code_failure_halted') {
+      runnerStatusText = 'Bot halted (code error)';
+      runnerDotClass = 'dot-danger';
     } else if (!botPower) {
       runnerStatusText = 'Bot stopped (power OFF)';
       runnerDotClass = 'dot-paused';
@@ -100,6 +104,35 @@ export async function dashPage() {
               <button id="dash-clear-limit-btn" class="btn btn-ghost btn-sm" style="font-size:11px;">Clear Limit State</button>
               <a href="#risk" class="btn btn-primary btn-sm" style="font-size:11px;">Manage Risk Overrides</a>
             </div>
+          </div>
+        </div>
+      ` : ''}
+
+      ${botRecovery.status === 'recovering' ? `
+        <div class="card" style="border-left: 4px solid var(--accent); background:rgba(59,130,246,0.1); margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; font-size:14px; color:var(--accent);">
+                ⚠️ Bot chain recovering, next try at ${botRecovery.next_try_utc ? new Date(botRecovery.next_try_utc).toLocaleTimeString() : 'upcoming window'}
+              </div>
+              <div style="font-size:12px; color:var(--text-2); margin-top:2px;">
+                Automated cool-down backoff active. ${botRecovery.reason || ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+      ${botRecovery.status === 'recovered' ? `
+        <div class="card" style="border-left: 4px solid var(--profit); background:var(--profit-dim); margin-bottom:16px;">
+          <div style="font-weight:700; font-size:13px; color:var(--profit);">
+            ✅ Recovered automatically at ${botRecovery.recovered_at_utc ? new Date(botRecovery.recovered_at_utc).toLocaleTimeString() : 'recent check'}
+          </div>
+        </div>
+      ` : ''}
+      ${botRecovery.status === 'code_failure_halted' ? `
+        <div class="card" style="border-left: 4px solid var(--loss); background:var(--loss-dim); margin-bottom:16px;">
+          <div style="font-weight:700; font-size:14px; color:var(--loss);">
+            🚨 Bot chain halted after 3 consecutive errors: ${botRecovery.error || 'Inspection required'}
           </div>
         </div>
       ` : ''}

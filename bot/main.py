@@ -79,9 +79,16 @@ def main_loop(mode='demo'):
     registry.refresh(enabled,broker)
     http_worker('POST','/api/bot/ready',{'owner':OWNER,'models':list(registry.bundles),'mode':mode})
     lease=http_worker('POST','/api/bot/lock',{'owner':OWNER})
-    if not lease.get('acquired'):time.sleep(5);continue
+    if not lease.get('acquired'):
+     if os.environ.get('GITHUB_EVENT_NAME')=='schedule' and not was_leader:
+      log.info('Backup cron detected active runner holding lock; exiting to prevent duplicate')
+      return
+     time.sleep(5);continue
+    if not was_leader:
+     try:http_worker('POST','/api/bot/settings',{'bot_recovery':{'status':'recovered','recovered_at_utc':datetime.now(timezone.utc).isoformat(),'runner':OWNER}})
+     except Exception:pass
     was_leader=True
-    positions=broker.get_open_positions();deals=broker.get_history_deals(since)
+    positions=broker.get_open_positions();deals=broker.get_history_deals(since);acct=broker.account_info()
     http_worker('POST','/api/bot/heartbeat',{'mode':mode,'balance':acct['balance'],'equity':acct['equity'],'free_margin':acct['margin_free'],'loginid':str(acct['login'])[:2]+'***','currency':acct['currency'],'note':'active runner '+OWNER})
     ownership=[];ledgers={l['symbol']:l for l in session.get('ledger',[])}
     for symbol,bundle in registry.bundles.items():

@@ -26,7 +26,28 @@
 - **H5. No trading on weekends unless owner turns it on (V6 passed)**: Added `is_market_open` session checking in MT5Broker using broker symbol specifications. When `trade_weekends` is False (default), forex pairs are idle during market closure without spamming failed orders; Deriv synthetic volatility indices trade 24/7 unaffected. ExecutionAdapter and CFDSimulator reject orders on market closed sessions while preserving open positions with rollover/swap. Added toggle 'Trade on weekends (synthetic indices only trade 24/7)' in Risk and Settings pages. Passed tests/test_fix5_h5.py.
 
 ## In Progress
-- **H6. The failed or cancelled live action root cause and fix**: Inspecting last 40 GitHub Actions workflow runs, identifying cancelled and failed live bot/training actions, reading exact log lines, fixing root cause, and dispatching green 10+ min live run on demo.
+- **H6. The failed or cancelled live action root cause and fix**:
+  - **Root Cause 1 (Run 39933073507 & 39927748378)**: Windows runner crashed on `import resource` in `engine/sentinel_engine/sandbox.py`:
+    ```
+    Traceback (most recent call last):
+      File "D:\a\sentinel-fx\sentinel-fx\bot\main.py", line 10, in <module>
+        from sentinel_engine.bundle import load_bundle
+      File "C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages\sentinel_engine\pack.py", line 18, in <module>
+        from . import sandbox as _sandbox
+      File "C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages\sentinel_engine\sandbox.py", line 18, in <module>
+        import resource
+    ModuleNotFoundError: No module named 'resource'
+    ```
+  - **Root Cause 2**: In `.github/workflows/bot.yml`, the safety dispatch fallback failed with:
+    ```
+      File "<string>", line 2
+        import urllib.request, json, os
+    IndentationError: unexpected indent
+    ```
+    preventing automated chain recovery after the startup failure.
+  - **Root Cause 3**: In `bot/main.py`, `acct = broker.account_info()` was missing before line 85 (`http_worker('POST','/api/bot/heartbeat',{'mode':mode,'balance':acct['balance']...`), causing `NameError: name 'acct' is not defined`.
+  - **Fix Applied**: Replaced inline indented bash script in `bot.yml` with clean `tools/bot_safety_dispatch.py`, added `acct=broker.account_info()` in `bot/main.py`, guarded `import resource` with try/except in `sandbox.py`, and added duplicate prevention for the 4-hour backup cron.
+  - Next: Dispatch live demo bot run on GitHub Actions for >= 10 minutes and verify green run + live heartbeat in `/api/state`.
 
 ## Next
 - **H7. Consistency & cleanup**: Enforce 62-dim observation across all components, retire old 47-dim models.
