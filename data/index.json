@@ -741,6 +741,32 @@
   "frxUSDCHF": {
     "shard_releases": [
       "data-usdchf-01"
-    ]
+    ],
+    "bulk_years": {
+      "2000": {
+        "asset": "USDCHF_2000.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 151350,
+        "first_epoch": 959725380,
+        "last_epoch": 978107220,
+        "sha256": "5d357a5f338d2b8cd420aae14d2843fa776092f61bbb83d35caf7b4ef45fba28"
+      }
+    },
+    "last_epoch": 978107220,
+    "first_epoch": 959725380,
+    "rows": 151350,
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "source": "histdata-bid-only-synthetic-ask",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   }
 }
