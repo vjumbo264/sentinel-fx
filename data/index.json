@@ -1152,11 +1152,19 @@
         "first_epoch": 1609711200,
         "last_epoch": 1640987880,
         "sha256": "704a0656a74ab44b6282404b06c70fc626f77f1fd8196d009807a804d762148f"
+      },
+      "2022": {
+        "asset": "USDJPY_2022.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 372536,
+        "first_epoch": 1641160800,
+        "last_epoch": 1672437480,
+        "sha256": "4583d6777166957605d3a7bf8a225f3ef475520d58da4315483caa8d6c27bb91"
       }
     },
-    "last_epoch": 1640987880,
+    "last_epoch": 1672437480,
     "first_epoch": 959727480,
-    "rows": 7243660,
+    "rows": 7616196,
     "columns": [
       "epoch",
       "bid_open",
