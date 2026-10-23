@@ -1495,7 +1495,7 @@
         "status": "unavailable_not_complete"
       }
     },
-    "bulk_complete": false
+    "bulk_complete": true
   },
   "frxUSDCHF": {
     "shard_releases": [
