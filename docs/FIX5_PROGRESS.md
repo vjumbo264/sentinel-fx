@@ -257,3 +257,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H8: Add independent durable recovery and authorized-training watchdog
 - New watcher classifies original logs (scheduled login failures remain code failures), persists per-source-run cooldowns (30m/2h/6h/6h), stops code retries after3, checks active GitHub runs and Worker lease/READY claim before dispatch. Training watchdog only resumes owner_started active cycles with >30m stale heartbeat, never paused/new cycles. Not yet activated until Worker claim routes and workflow are deployed.
 - Next: H8/H9: add atomic Worker recovery record/claim routes, preserve existing handover, then wire independent watcher.
+
+### H8: Verify staged recovery decisions without activating incomplete integration
+- Six pure unit regressions PASS: real login/code error classification, runner/network errors, cancellation classification, third code failure halt, platform cooldown progression through repeated6h, idempotent source-run processing and post-recovery reset. This is NOT V8/V11 live evidence. Watcher is intentionally NOT wired to any workflow; atomic Worker record/claim routes and cancellation tests still required.
+- Next: Resume H8: implement atomic Worker recovery record/claim endpoints, wire independent watcher, then run real demo and training cancellation/recovery acceptance. H9/H10 not completed.
