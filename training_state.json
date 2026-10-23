@@ -16,10 +16,10 @@
   ],
   "active_pair": "EURUSD",
   "active_version": 1,
-  "total_steps_done": 800000,
+  "total_steps_done": 850000,
   "total_steps_target": 5000000,
-  "last_checkpoint_utc": "2026-10-23T12:31:11.922919+00:00",
-  "last_checkpoint_steps": 800000,
+  "last_checkpoint_utc": "2026-10-23T12:43:31.233418+00:00",
+  "last_checkpoint_steps": 850000,
   "pairs_done": [],
   "pairs_pending": [
     "EURUSD",
@@ -38,7 +38,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-23T12:31:14.073121+00:00",
+  "updated_utc": "2026-10-23T12:43:32.858532+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -78,10 +78,10 @@
   },
   "status": "training",
   "checkpoint": {
-    "asset": "EURUSD_v1_s800000.zip",
+    "asset": "EURUSD_v1_s850000.zip",
     "release_tag": "training-checkpoints",
-    "sha256": "61607b63dd31c5d20b4aef98cf0ab5c05a509986e343f8a9ff4957921ab4ad63"
+    "sha256": "5fb4d44054abfc756d2624b00813c054f01d94aafee7eda12c02ddf01b901b3f"
   },
-  "plateau_intervals": 8,
+  "plateau_intervals": 9,
   "previous_mean_reward": -1751.638998090909
 }
