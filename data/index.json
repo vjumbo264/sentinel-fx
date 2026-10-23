@@ -1301,5 +1301,14 @@
     ],
     "source": "histdata-bid-only-synthetic-ask",
     "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
+  },
+  "frxGBPAUD": {
+    "bulk_unavailable": {
+      "2000": {
+        "error": "There is no token. Please make sure your year/month/pair is correct.Example is year=2016, month=7, pair=eurgbp",
+        "checked_utc": "2026-10-23T07:58:47.830368+00:00",
+        "status": "unavailable_not_complete"
+      }
+    }
   }
 }
