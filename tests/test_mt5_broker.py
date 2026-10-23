@@ -62,6 +62,9 @@ class MockMT5Backend:
             digits = 5 if "EUR" in symbol else 3
             point = 0.00001 if "EUR" in symbol else 0.001
             trade_contract_size = 100000.0 if "EUR" in symbol else 1.0
+            trade_tick_size = point
+            trade_tick_value = 1.0
+            trade_freeze_level = 0
             volume_min = 0.01
             volume_max = 50.0
             volume_step = 0.01
@@ -195,3 +198,15 @@ def test_successful_order_check_and_open():
     assert deal["deal"] == 789012
     assert deal["sl"] == 1.08200
     assert "sfx:eurusd_v2" in deal["comment"]
+
+
+def test_windows_selects_native_without_importing_bridges(monkeypatch):
+    import sys
+    import types
+    import bot.mt5_broker as module
+    native = types.ModuleType("MetaTrader5")
+    monkeypatch.setitem(sys.modules, "MetaTrader5", native)
+    monkeypatch.setattr(module.os, "name", "nt")
+    broker = MT5Broker()
+    assert broker._get_api() is native
+    assert broker._backend_name == "native-windows"

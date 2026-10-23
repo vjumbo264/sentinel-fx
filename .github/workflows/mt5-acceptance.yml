@@ -1,0 +1,47 @@
+name: MT5 Windows Acceptance
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: mt5-acceptance
+  cancel-in-progress: false
+jobs:
+  acceptance:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      MT5_DEMO_LOGIN: ${{ secrets.MT5_DEMO_LOGIN || '41286446' }}
+      MT5_PASSWORD: ${{ secrets.MT5_PASSWORD }}
+      MT5_DEMO_SERVER: ${{ secrets.MT5_DEMO_SERVER || 'Deriv-Demo' }}
+      BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
+      WORKER_URL: https://sentinel-fx-worker.vjumbo264.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_CHAIN_PAT || github.token }}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - uses: ./.github/actions/mt5-windows
+      - name: Run all seven acceptance steps
+        run: python tools/mt5_acceptance.py
+      - name: Commit actual acceptance evidence
+        if: always()
+        shell: pwsh
+        run: |
+          git config user.name "sentinel-acceptance"
+          git config user.email "acceptance@users.noreply.github.com"
+          git add docs/mt5_windows_acceptance.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "Q2: record actual Windows MT5 acceptance evidence [skip ci]"
+            git pull --rebase origin main
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git push origin HEAD:main
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mt5-windows-acceptance
+          path: docs/mt5_windows_acceptance.json

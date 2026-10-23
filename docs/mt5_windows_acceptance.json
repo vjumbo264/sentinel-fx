@@ -1,0 +1,42 @@
+{
+  "status": "pending",
+  "executed": false,
+  "reason": "Windows MT5 acceptance must be triggered manually after merge; no live result claimed.",
+  "steps": [
+    {
+      "step": 1,
+      "name": "Connection and demo account",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "All 13 symbols and ticks",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "M1 candle history",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "Order check",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "name": "Demo lifecycle and D1",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "name": "Shared 47-float observation",
+      "status": "pending"
+    },
+    {
+      "step": 7,
+      "name": "ExecutionAdapter hold",
+      "status": "pending"
+    }
+  ]
+}

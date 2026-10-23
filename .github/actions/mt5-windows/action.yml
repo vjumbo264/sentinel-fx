@@ -1,0 +1,13 @@
+name: Native Windows MT5
+description: Install engine and Deriv MT5 without Wine or RPC bridges
+runs:
+  using: composite
+  steps:
+    - name: Install Python dependencies
+      shell: pwsh
+      run: |
+        python -m pip install MetaTrader5 pandas numpy requests lightgbm websockets
+        python -m pip install ./engine
+    - name: Install and launch Deriv terminal
+      shell: pwsh
+      run: ./tools/setup_mt5_windows.ps1

@@ -856,8 +856,8 @@
       {
         "id": "Q2",
         "title": "MT5 Windows runner migration",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Windows native bot/action and manual seven-step acceptance workflow implemented; syntax and 5 broker tests pass. Initial committed report is explicitly pending, not live proof. Victor must trigger mt5-acceptance workflow manually after merge to confirm Windows MT5 login. MT5_PASSWORD repository secret is set."
       },
       {
         "id": "Q3",
@@ -897,7 +897,8 @@
     "notes": "",
     "decisions": [
       "Credentials in original request are redacted in docs/BUILD_PROMPT.md. Secret names only are recorded. Preserve all earlier build sections; only overhaul queue governs this build.",
-      "Q1 resolves contradictory timing examples: WALL is dispatch trigger, HARD_STOP is loop end; subtracting handoff lead from WALL would dispatch 5 minutes too early. Workflow timeout also bounds setup and shutdown."
+      "Q1 resolves contradictory timing examples: WALL is dispatch trigger, HARD_STOP is loop end; subtracting handoff lead from WALL would dispatch 5 minutes too early. Workflow timeout also bounds setup and shutdown.",
+      "Retain lazy legacy broker fallbacks for compatibility/tests; Windows short-circuits to native API and production bot installs no Wine/rpyc/mt5linux. Updated stale unit mock with required tick-size/value/freeze fields."
     ],
     "secret_names_verified": [
       "BOT_SHARED_SECRET",
@@ -913,6 +914,9 @@
       "MT5_REAL_SERVER",
       "WORKER_URL"
     ],
-    "mt5_password_secret": "set"
+    "mt5_password_secret": "set",
+    "known_issues": [
+      "Live Windows acceptance not executed by builder; manual workflow must confirm installer, login, trading, history and D1. Initial report deliberately pending."
+    ]
   }
 }

@@ -208,6 +208,13 @@ class MT5Broker(BrokerBase):
         if self._mt5 is not None:
             return self._mt5
 
+        # Windows always uses native MT5, never a localhost bridge.
+        if os.name == "nt":
+            import MetaTrader5 as native_mt5
+            self._mt5 = native_mt5
+            self._backend_name = "native-windows"
+            return self._mt5
+
         # 1. Attempt RPyC classic connect (primary reliable Linux bridge)
         try:
             import rpyc
