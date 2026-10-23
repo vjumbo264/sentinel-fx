@@ -922,7 +922,8 @@
         "sha256": "f26ac21fa8adb450db2608a1a8b45b9056458b269e7cb25254aafa367c841fc4"
       }
     },
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "bulk_complete": true
   },
   "frxGBPUSD": {
     "shard_releases": [
