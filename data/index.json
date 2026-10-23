@@ -778,11 +778,19 @@
         "first_epoch": 1073001600,
         "last_epoch": 1104528540,
         "sha256": "0f5031cda4d974a7d77a2c28f26114508620bdd1aca505a8a5650879dd199236"
+      },
+      "2005": {
+        "asset": "EURGBP_2005.csv.gz",
+        "release_tag": "data-eurgbp-01",
+        "rows": 266943,
+        "first_epoch": 1104734880,
+        "last_epoch": 1135893480,
+        "sha256": "31f5525e1fe505d2ed870df6a43b752c36e84fb678364c8b5f564a8958a3e5b3"
       }
     },
-    "last_epoch": 1104528540,
+    "last_epoch": 1135893480,
     "first_epoch": 1015200240,
-    "rows": 794828,
+    "rows": 1061771,
     "columns": [
       "epoch",
       "bid_open",
