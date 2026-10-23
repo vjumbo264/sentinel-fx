@@ -1983,11 +1983,19 @@
         "first_epoch": 1420136280,
         "last_epoch": 1451599020,
         "sha256": "0d03ef8f064f3b0220b8b2c91d6caa7c89adbe5db648d6d37883faa4f69c5045"
+      },
+      "2016": {
+        "asset": "AUDJPY_2016.csv.gz",
+        "release_tag": "data-audjpy-01",
+        "rows": 373161,
+        "first_epoch": 1451858400,
+        "last_epoch": 1483134960,
+        "sha256": "3540b5a07aac10457585fa4dbab73b53a4ab698845c9adada52347a96f65e8e7"
       }
     },
-    "last_epoch": 1451599020,
+    "last_epoch": 1483134960,
     "first_epoch": 1029796320,
-    "rows": 4392629,
+    "rows": 4765790,
     "columns": [
       "epoch",
       "bid_open",
