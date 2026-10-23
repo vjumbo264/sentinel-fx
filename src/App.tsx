@@ -1148,7 +1148,7 @@ export default function App() {
               <div className={`p-5 rounded-2xl border ${isDark ? 'bg-[#0f1520] border-[#1e2d45]' : 'bg-white border-[#d0d9e8]'}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-bold">Weekend Trading Schedule</h3>
+                    <h3 className="text-sm font-bold">Trade on weekends (synthetic indices only trade 24/7)</h3>
                     <p className="text-xs text-slate-400 mt-1">
                       Forex markets close on weekends. Default OFF keeps forex idle when closed, while synthetics trade 24/7.
                     </p>

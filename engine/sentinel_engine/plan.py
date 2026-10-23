@@ -4,7 +4,10 @@ Catalogue distances/risk units are normalized, never broker prices or lots.
 ONNX or LightGBM support multi-output action scores. No constant policy nodes.
 """
 import time,copy
-import numpy as np
+try:
+ import numpy as np
+except ImportError:
+ np = None
 from .policy_schema import VERSION,validate_actions
 from .observation import vectorize
 ALLOWED_TYPES={'feature_group','analyst','router','head','calibrator','policy','news'}

@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H5: No trading on weekends unless owner turns it on; broker symbol info session checks",
+    "next_step": "H6: The failed or cancelled live action root cause, log line extraction, workflow fix, and green demo bot run",
     "items": [
       {
         "id": "H1",
@@ -161,10 +161,25 @@
       {
         "id": "H5",
         "title": "No trading on weekends unless owner turns it on",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "tests/test_fix5_h5.py: all 3 test suites passed",
+          "Forex idle on closed session with toggle OFF, synthetic trades 24/7, toggle ON permits trading",
+          "ExecutionAdapter rejects orders with market_closed when session is closed",
+          "SimulationBroker enforces closed forex sessions, allows 24/7 synthetics, preserves positions and charges rollover",
+          "Settings/Risk toggle 'Trade on weekends (synthetic indices only trade 24/7)' wired and persisted in risk.js and App.tsx"
+        ],
+        "files": [
+          "bot/main.py",
+          "bot/mt5_broker.py",
+          "engine/sentinel_engine/execution_adapter.py",
+          "engine/sentinel_engine/sim.py",
+          "engine/sentinel_engine/observation.py",
+          "site/js/pages/risk.js",
+          "src/App.tsx",
+          "tests/test_fix5_h5.py"
+        ]
       },
       {
         "id": "H6",
@@ -281,10 +296,19 @@
       {
         "id": "V6",
         "title": "Weekend: forex idle on closed session with toggle OFF, synthetic trades, simulator honors session",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "tests/test_fix5_h5.py: test_bot_weekend_forex_idle_synthetic_trades, test_execution_adapter_market_closed_rejection, test_simulator_broker_weekend_sessions passed",
+          "Forex idle on closed session with toggle OFF, synthetic trades 24/7, toggle ON permits trading, open positions preserved across weekend with rollover"
+        ],
+        "files": [
+          "bot/mt5_broker.py",
+          "bot/main.py",
+          "engine/sentinel_engine/execution_adapter.py",
+          "engine/sentinel_engine/sim.py",
+          "tests/test_fix5_h5.py"
+        ]
       },
       {
         "id": "V7",

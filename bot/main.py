@@ -152,9 +152,9 @@ def main_loop(mode='demo'):
      # Weekend check for forex (H5): if market closed and trade_weekends is False, stay idle
      is_forex=symbol.startswith('frx') or any(broker_symbol.endswith(c) for c in ['USD','JPY','GBP','EUR','CHF','CAD','AUD','NZD'])
      if is_forex and not trade_weekends:
-      trade_mode=specs.get('trade_mode',4)
-      if trade_mode==0:
-       log.info('Market closed for forex %s — weekend idle',broker_symbol)
+      is_open = broker.is_market_open(broker_symbol) if hasattr(broker, 'is_market_open') else (specs.get('trade_mode', 4) != 0)
+      if not is_open:
+       log.info('Market closed for forex %s — weekend idle (trade_weekends=False)', broker_symbol)
        continue
 
      candles=broker.get_candles(broker_symbol,'M1',2400)

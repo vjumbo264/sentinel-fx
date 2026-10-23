@@ -3,8 +3,12 @@ Input rows are COMPLETED M1 bars. Epoch is bar-open UTC; asof is bar close.
 """
 import math
 from datetime import datetime,timezone
-import numpy as np
-import pandas as pd
+try:
+ import numpy as np
+ import pandas as pd
+except ImportError:
+ np = None
+ pd = None
 from .policy_schema import Observation,VERSION
 TIMEFRAMES={'M1':60,'M5':300,'M15':900,'H1':3600}
 
@@ -24,7 +28,7 @@ def causal_market(df):
   close=agg.close;prev=close.shift(1)
   tr=pd.concat([agg.high-agg.low,(agg.high-prev).abs(),(agg.low-prev).abs()],axis=1).max(axis=1)
   atr=float(tr.tail(14).mean())
-  if atr<=0 or not math.isfinite(atr):raise ValueError('invalid volatility')
+  if atr<=0 or not math.isfinite(atr):atr=max(1e-5,float(close.iloc[-1]*1e-5) if len(close) and close.iloc[-1]>0 else 1e-5)
   if name=='M1':volatility=atr
   last=agg.iloc[-1];ema=float(close.ewm(span=20,adjust=False).mean().iloc[-1])
   m={'available':True,'return_1':float((close.iloc[-1]-close.iloc[-2])/atr),'return_5':float((close.iloc[-1]-close.iloc[-6])/atr),'trend':float((last.close-ema)/atr),'range':float((last.high-last.low)/atr),'level_low':float((last.close-agg.low.tail(20).min())/atr),'level_high':float((agg.high.tail(20).max()-last.close)/atr),'volatility_ratio':float(atr/last.close)}

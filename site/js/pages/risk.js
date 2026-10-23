@@ -271,7 +271,7 @@ export async function riskPage() {
         <div class="card">
           <div class="card-header">
             <div>
-              <div class="card-title">Weekend Trading Schedule</div>
+              <div class="card-title">Trade on weekends (synthetic indices only trade 24/7)</div>
               <div style="font-size:12px; color:var(--text-2); margin-top:2px;">
                 Forex markets close on weekends. Default OFF keeps forex idle when closed, while synthetic indices trade 24/7.
               </div>

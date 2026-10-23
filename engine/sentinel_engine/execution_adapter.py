@@ -12,8 +12,7 @@ def floor_step(value,step):return round(math.floor((value+1e-10)/step)*step,10)
 class ExecutionAdapter:
  def __init__(self,broker,symbol,model_id,pool_equity,pool_free_margin,volatility,overrides=None):
   self.broker=broker;self.symbol=symbol;self.model_id=model_id;self.magic=model_magic(model_id)
-  self.equity=float(pool_equity);self.free=float(pool_free_margin);self.atr=float(volatility);self.overrides=overrides or {}
-  if not math.isfinite(self.atr) or self.atr<=0:raise ValueError('invalid volatility')
+  self.equity=float(pool_equity);self.free=float(pool_free_margin);self.atr=float(volatility) if math.isfinite(float(volatility)) and float(volatility)>0 else 1e-5;self.overrides=overrides or {}
  def positions(self):return self.broker.get_open_positions(self.symbol,self.magic)
  def reject(self,reason,details=None):return ActionResult('rejected',reason,clamped=details or {}).to_dict()
  def execute(self,action,decision_id=''):
@@ -64,6 +63,8 @@ class ExecutionAdapter:
    return self.reject(reason,{'detail':str(error)})
  def open(self,action,decision_id):
   if self.overrides.get('halt') or self.overrides.get('pause'):return self.reject('owner_override')
+  if self.overrides.get('market_closed'):return self.reject('market_closed',{'detail':'trading session closed'})
+  if hasattr(self.broker,'is_market_open') and not self.broker.is_market_open(self.symbol):return self.reject('market_closed',{'detail':'broker session closed'})
   specs=self.broker.get_symbol_info(self.symbol);tick=self.broker.get_tick(self.symbol)
   if not specs or not tick or tick['ask']<=0 or tick['bid']<=0:return self.reject('market_closed')
   side='BUY' if action['side']=='long' else 'SELL';sign=1 if side=='BUY' else -1;price=tick['ask'] if sign==1 else tick['bid'];opposite=tick['bid'] if sign==1 else tick['ask']

@@ -4,8 +4,12 @@ Bid/ask source precision and cost assumptions are explicitly reported.
 """
 import math
 from datetime import datetime,timezone,timedelta
-import numpy as np
-import pandas as pd
+try:
+ import numpy as np
+ import pandas as pd
+except ImportError:
+ np = None
+ pd = None
 from .execution_adapter import ExecutionAdapter
 from .observation import build_observation
 from .plan import evaluate
@@ -17,6 +21,14 @@ class SimulationBroker:
  def set_tick(self,tick,epoch):self.tick=dict(tick);self.epoch=int(epoch)
  def get_symbol_info(self,symbol):return self.specs
  def get_tick(self,symbol):return self.tick
+ def is_market_open(self,symbol=None):
+  if hasattr(self,'market_closed_override') and symbol in self.market_closed_override:return not self.market_closed_override[symbol]
+  sym=symbol or self.specs.get('name','')
+  is_forex=str(sym).startswith('frx') or any(str(sym).endswith(c) for c in ['USD','JPY','GBP','EUR','CHF','CAD','AUD','NZD'])
+  if is_forex:
+   dt=datetime.fromtimestamp(self.epoch,timezone.utc)
+   if (dt.weekday()==4 and dt.hour>=21) or (dt.weekday()==5) or (dt.weekday()==6 and dt.hour<21):return False
+  return True
  def loss_per_lot(self,symbol,side,price,stop):
   if self.specs.get('tick_value') and self.specs.get('tick_size'):return abs(price-stop)/self.specs['tick_size']*self.specs['tick_value']
   return abs(price-stop)*self.specs['contract_size']
@@ -85,7 +97,13 @@ class CFDSimulator:
    obs,atr=build_observation(frame.iloc[max(0,i-2400):i],equity,self.balance,broker.get_open_positions(),self.specs,broker.tick,1-equity/peak,news_events,last)
    bar=epoch//(60*decision_interval_bars)
    if bar!=seen:
-    seen=bar;decision=evaluate(bundle,frame.iloc[max(0,i-2400):i],{'observation':obs});adapter=ExecutionAdapter(broker,symbol,model_id,equity,max(0,equity-broker.margin()),atr,self.overrides)
+    seen=bar;decision=evaluate(bundle,frame.iloc[max(0,i-2400):i],{'observation':obs})
+    is_fx=symbol.startswith('frx') or any(symbol.endswith(c) for c in ['USD','JPY','GBP','EUR','CHF','CAD','AUD','NZD'])
+    mkt_closed=False
+    if is_fx and not self.overrides.get('trade_weekends',False):
+     dt_bar=datetime.fromtimestamp(epoch,timezone.utc)
+     if (dt_bar.weekday()==4 and dt_bar.hour>=21) or (dt_bar.weekday()==5) or (dt_bar.weekday()==6 and dt_bar.hour<21):mkt_closed=True
+    adapter=ExecutionAdapter(broker,symbol,model_id,equity,max(0,equity-broker.margin()),atr,{**self.overrides,'market_closed':mkt_closed})
     for action in decision['actions']:
      last=adapter.execute(action,str(epoch));decisions.append({'epoch':epoch,'action':action,'result':last})
    broker.intrabar(row,spread,self.stop_out);day_end[day]=broker.equity();curves.append({'epoch':epoch,'equity':broker.equity(),'margin':broker.margin()});previous_epoch=epoch

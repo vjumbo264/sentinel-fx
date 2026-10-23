@@ -84,6 +84,11 @@ class BrokerBase(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def is_market_open(self, symbol: str) -> bool:
+        """Return True if market is currently open for new orders on symbol."""
+        pass
+
+    @abc.abstractmethod
     def get_candles(self, symbol: str, timeframe: str, count: int = 100) -> List[Dict[str, Any]]:
         """Fetch historical completed candles."""
         pass
@@ -510,6 +515,46 @@ class MT5Broker(BrokerBase):
         }
         self._symbols_cache[symbol] = info
         return info
+
+    def is_market_open(self, symbol: str) -> bool:
+        """Check if trading session is currently open for symbol using broker specifications."""
+        if hasattr(self, '_test_market_closed') and symbol in self._test_market_closed:
+            return not self._test_market_closed[symbol]
+
+        info = self.get_symbol_info(symbol)
+        if not info:
+            return False
+        # MT5 SYMBOL_TRADE_MODE_DISABLED is 0
+        if info.get('trade_mode') == 0:
+            return False
+
+        # Deriv synthetics trade 24/7
+        is_synthetic = any(symbol.startswith(p) for p in ['Volatility', '1HZ', 'R_']) or 'Index' in symbol
+        if is_synthetic:
+            return True
+
+        # Check broker trading sessions if available
+        try:
+            mt5 = self._get_api()
+            now_dt = datetime.now(timezone.utc)
+            dow = now_dt.weekday()
+            if hasattr(mt5, 'symbol_info_session_trade'):
+                has_sessions = False
+                in_session = False
+                sec_of_day = (now_dt.hour * 3600 + now_dt.minute * 60 + now_dt.second)
+                for s_idx in range(5):
+                    sess = mt5.symbol_info_session_trade(symbol, dow, s_idx)
+                    if sess is not None and getattr(sess, 'open', None) is not None:
+                        has_sessions = True
+                        if int(sess.open) <= sec_of_day <= int(sess.close):
+                            in_session = True
+                            break
+                if has_sessions and not in_session:
+                    return False
+        except Exception:
+            pass
+
+        return True
 
     def get_tick(self, symbol: str) -> Optional[Dict[str, Any]]:
         mt5 = self._get_api()
