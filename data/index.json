@@ -2074,11 +2074,19 @@
         "first_epoch": 1672617540,
         "last_epoch": 1703887080,
         "sha256": "1e5ddcd67a293d5a8fb0c8d28f56bf57b14d724d566c6dffc4a66ff67ca6eccf"
+      },
+      "2024": {
+        "asset": "EURJPY_2024.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 371471,
+        "first_epoch": 1704146760,
+        "last_epoch": 1735682280,
+        "sha256": "eda87ced5a3be851dd7649329d84ca0a4f4801b3c923c3207686de43a6d7ac9a"
       }
     },
-    "last_epoch": 1703887080,
+    "last_epoch": 1735682280,
     "first_epoch": 1015200180,
-    "rows": 7823689,
+    "rows": 8195160,
     "columns": [
       "epoch",
       "bid_open",
