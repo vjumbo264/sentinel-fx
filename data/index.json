@@ -1954,11 +1954,19 @@
         "first_epoch": 1735769100,
         "last_epoch": 1767218220,
         "sha256": "dcf3141dc1f13ebf55ca48a16f966084eb2e1ae8dd10ea480f9d003e5aa0ef46"
+      },
+      "2026": {
+        "asset": "GBPJPY_2026_through_09.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 277185,
+        "first_epoch": 1767305040,
+        "last_epoch": 1790830680,
+        "sha256": "b58f500b8eaf651df404fcf059e572196febc931bf25875825a16680f4629ad1"
       }
     },
-    "last_epoch": 1767218220,
+    "last_epoch": 1790830680,
     "first_epoch": 1020265200,
-    "rows": 8197357,
+    "rows": 8474542,
     "columns": [
       "epoch",
       "bid_open",
