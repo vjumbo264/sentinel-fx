@@ -869,7 +869,7 @@
         "id": "Q4",
         "title": "Resumable RL scalping training",
         "status": "done",
-        "notes": "PASS: python tools/train_agent.py --smoke-test runs exactly 1000 PPO steps offline; 47-dimensional shared engine observations, native SB3 save/resume, deterministic ONNX logits parity, complete engine bundle check and state update all verified. Six training tests plus four data and five broker tests pass. Synthetic smoke steps are isolated from real total_steps_done=0. No existing training-checkpoints release found. Trainer uses durable 50k-step assets, CAS commits, wall self-chain, 13-pair queue and 30-day retrain gate."
+        "notes": "PASS: python tools/train_agent.py --smoke-test runs exactly 1000 PPO steps offline; 47-dimensional shared engine observations, native SB3 save/resume, deterministic ONNX logits parity, complete engine bundle check and state update all verified. Six training tests plus four data and five broker tests pass. Synthetic smoke steps are isolated from real total_steps_done=0. No existing training-checkpoints release found. Trainer uses durable 50k-step assets, CAS commits, wall self-chain, 13-pair queue and 30-day retrain gate. Actual production data resolution verified: 1,240,240 training rows and 310,060 untouched holdout rows, strict chronological boundary, 47-float observations and all five action steps."
       },
       {
         "id": "Q5",
@@ -893,8 +893,8 @@
       "EURAUD",
       "GBPAUD"
     ],
-    "last_updated": "2026-10-23T06:26:30.587978+00:00",
-    "notes": "",
+    "last_updated": "2026-10-23T06:36:26.177804+00:00",
+    "notes": "Q1-Q5 implemented, individually verified, committed/pushed and deployed. Live browser/API and actual EURUSD history checks pass. MT5_PASSWORD is set. Manual Windows MT5 acceptance remains required; report honestly pending. Offline 1000-step PPO smoke includes durable save/reload and complete checked ONNX bundle parity; 15 overhaul tests pass. Full suite has 48 passes and 2 independently confirmed baseline reconnect-test failures.",
     "decisions": [
       "Credentials in original request are redacted in docs/BUILD_PROMPT.md. Secret names only are recorded. Preserve all earlier build sections; only overhaul queue governs this build.",
       "Q1 resolves contradictory timing examples: WALL is dispatch trigger, HARD_STOP is loop end; subtracting handoff lead from WALL would dispatch 5 minutes too early. Workflow timeout also bounds setup and shutdown.",
@@ -922,6 +922,17 @@
       "Live Windows acceptance not executed by builder; manual workflow must confirm installer, login, trading, history and D1. Initial report deliberately pending.",
       "Full pytest: 48 passed, 2 pre-existing reconnect-test failures (removed error_counts API and outdated expectation that http_worker swallows network errors). Both reproduced unchanged on baseline 8c43d01. No new overhaul test failures; no out-of-scope supervisor semantics change.",
       "Existing forward-eval.yml still contains legacy binary-option replay assumptions; outside Q1-Q5. New bundles explicitly do not claim profitability, and owner must enable/allocate models before live use."
-    ]
+    ],
+    "verification": {
+      "workflow_lint": "passing",
+      "overhaul_tests_passed": 15,
+      "overhaul_tests_failed": 0,
+      "full_suite_passed": 48,
+      "full_suite_baseline_failures": 2,
+      "credential_scan": "passing",
+      "live_dashboard": "passing",
+      "worker_version": "7e02bfb8-3b35-46dd-a893-415272540352",
+      "mt5_windows_acceptance": "pending_manual_workflow"
+    }
   }
 }

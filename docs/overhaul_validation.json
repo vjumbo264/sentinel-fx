@@ -1,0 +1,20 @@
+{
+  "workflow_lint": {
+    "exit_code": 0,
+    "output": ""
+  },
+  "overhaul_tests": {
+    "passed": 15,
+    "failed": 0
+  },
+  "full_suite": {
+    "passed": 48,
+    "failed": 2,
+    "baseline_failures_reproduced": true,
+    "known_failure_file": "tests/test_bot_reconnect.py"
+  },
+  "mt5_password_secret": "set",
+  "credential_scan": "passing",
+  "live_api": "passing",
+  "all_queue_done": true
+}
