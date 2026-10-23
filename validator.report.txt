@@ -1,1 +1,16 @@
-VALIDATOR {"ok": false, "problems": ["honesty gate: Wilson lower bound 0.5028 not above break-even at payout-3 (0.5495)"], "warnings": [], "symbol": "R_10", "version": 2, "verdict": "fail"}
+{
+  "ok": true,
+  "bundle": "R_10_v1.sfxmodel.zip",
+  "problems": [],
+  "warnings": [],
+  "checks": {
+    "archive_integrity": true,
+    "safe_data_formats": true,
+    "analysis_plan_dag": true,
+    "embedded_vectors_execution": true,
+    "contract_conformance": true,
+    "output_parity": true,
+    "adapter_conversions": true
+  },
+  "latency_ms": 0.416
+}

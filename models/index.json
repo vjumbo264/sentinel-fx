@@ -1,1 +1,26 @@
-{}
+{
+  "R_10": {
+    "active_version": null,
+    "candidate_version": 1,
+    "versions": [
+      {
+        "N": 1,
+        "asset": "R_10_v1.sfxmodel.zip",
+        "checkpoint_asset": "R_10_v1_s1000.zip",
+        "checkpoint_release_tag": "training-checkpoints",
+        "checkpoint_sha256": "45cfcfccfff7648430077a82b64a2fa99a3b6be6ccbdfa6c02d26c0a753bc1a1",
+        "created_utc": "2026-10-23T19:01:40Z",
+        "data_end_utc": "2026-10-23T18:24:00+00:00",
+        "mt5_symbol": "Volatility 10 Index",
+        "observation_dim": 62,
+        "policy_schema": "sentinel.policy.v2",
+        "release_decision": "Tiny 62-dim smoke model (test_only, not proven edge)",
+        "release_tag": "models-01",
+        "sha256": "b14f97dba4e04550a67fd4c7161722b60eec9cbe75b9badb0eb834b6b7943f05",
+        "size": 9063,
+        "steps": 1000,
+        "verdict": "test_only"
+      }
+    ]
+  }
+}
