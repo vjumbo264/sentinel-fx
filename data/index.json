@@ -1512,11 +1512,19 @@
         "first_epoch": 1136246400,
         "last_epoch": 1167427740,
         "sha256": "f969b8f590fb030eee7072199a59150b6c21818ac43da39c9ec5b632636b28b6"
+      },
+      "2007": {
+        "asset": "EURAUD_2007.csv.gz",
+        "release_tag": "data-euraud-01",
+        "rows": 353009,
+        "first_epoch": 1167699600,
+        "last_epoch": 1199137380,
+        "sha256": "6dbde4092ce2a8497dcfdec2eb9451b495ab6876e5b31c6dc8046e0a3a433bb0"
       }
     },
-    "last_epoch": 1167427740,
+    "last_epoch": 1199137380,
     "first_epoch": 1029796680,
-    "rows": 1489227,
+    "rows": 1842236,
     "columns": [
       "epoch",
       "bid_open",
