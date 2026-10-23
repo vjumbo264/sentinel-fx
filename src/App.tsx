@@ -66,11 +66,34 @@ const SYNTHETICS = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dash' | 'training' | 'history' | 'settings'>('dash');
+  const [activeTab, setActiveTab] = useState<'dash' | 'risk' | 'training' | 'history' | 'settings'>('dash');
   const [themeSetting, setThemeSetting] = useState<'auto' | 'dark' | 'light'>(() => {
     return (localStorage.getItem('sfx_theme') as 'auto' | 'dark' | 'light') || 'auto';
   });
   const [isDark, setIsDark] = useState<boolean>(true);
+
+  // 4 Independent Optional Risk Overrides
+  const [riskOverrides, setRiskOverrides] = useState({
+    take_profit: { enabled: false, unit: 'money' as 'money' | 'pct', value: '' as string | number },
+    stop_loss: { enabled: false, unit: 'money' as 'money' | 'pct', value: '' as string | number },
+    daily_profit_target: { enabled: false, unit: 'money' as 'money' | 'pct', value: '' as string | number, close_open_on_hit: false },
+    daily_loss_limit: { enabled: false, unit: 'money' as 'money' | 'pct', value: '' as string | number, close_open_on_hit: false },
+    trade_weekends: false,
+  });
+  const [riskStatus, setRiskStatus] = useState<{
+    status: 'normal' | 'daily_target_reached' | 'daily_limit_reached';
+    today_pnl: number;
+    realized_pnl: number;
+    floating_pnl: number;
+    reason: string;
+  }>({
+    status: 'normal',
+    today_pnl: 45.20,
+    realized_pnl: 32.50,
+    floating_pnl: 12.70,
+    reason: ''
+  });
+  const [testDayKey, setTestDayKey] = useState<string | null>(null);
 
   // Authentication
   const [pat, setPat] = useState<string>(() => {
@@ -423,6 +446,18 @@ export default function App() {
             </button>
 
             <button
+              onClick={() => setActiveTab('risk')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors ${
+                activeTab === 'risk'
+                  ? 'bg-blue-600/15 text-[#3b82f6] font-bold'
+                  : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-[#151d2e]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              <span>Risk & Overrides</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('training')}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'training'
@@ -514,6 +549,40 @@ export default function App() {
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dash' && (
             <div className="space-y-6">
+              {riskStatus.status !== 'normal' && (
+                <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  riskStatus.status === 'daily_target_reached'
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                    : 'border-red-500/40 bg-red-500/10 text-red-300'
+                }`}>
+                  <div>
+                    <div className="text-sm font-bold">
+                      {riskStatus.status === 'daily_target_reached' ? '🎯 Daily Profit Target Reached' : '🛑 Daily Loss Limit Reached'}
+                    </div>
+                    <div className="text-xs opacity-80 mt-0.5">
+                      {riskStatus.reason || 'Trading halted for today'}. Resets automatically at 00:00:00 UTC (or clear manually).
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setRiskStatus(r => ({ ...r, status: 'normal', reason: '' }));
+                        triggerToast('Daily limit cleared — trading resumed', 'success');
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20"
+                    >
+                      Clear State
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('risk')}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white"
+                    >
+                      Manage Risk
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* BALANCE & RUNNER STATUS CARD */}
               <div className={`p-6 rounded-2xl border transition-colors ${
                 isDark ? 'bg-[#0f1520] border-[#1e2d45]' : 'bg-white border-[#d0d9e8] shadow-sm'
@@ -726,6 +795,364 @@ export default function App() {
                       )}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: RISK & OVERRIDES (H1 & H5) */}
+          {activeTab === 'risk' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-bold tracking-tight">Risk & Protection Overrides</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Four independent optional overrides, UTC day boundary tracking, and broker session compliance.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setMode('demo')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      mode === 'demo' ? 'bg-blue-600 text-white' : 'bg-slate-500/10 text-slate-400'
+                    }`}
+                  >
+                    Demo Account
+                  </button>
+                  <button
+                    onClick={() => setMode('real')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      mode === 'real' ? 'bg-blue-600 text-white' : 'bg-slate-500/10 text-slate-400'
+                    }`}
+                  >
+                    Real Account
+                  </button>
+                </div>
+              </div>
+
+              {/* UTC DAY BOUNDARY & STATUS CARD */}
+              <div className={`p-5 rounded-2xl border ${
+                riskStatus.status === 'daily_target_reached'
+                  ? 'border-emerald-500/40 bg-emerald-500/5'
+                  : riskStatus.status === 'daily_limit_reached'
+                  ? 'border-red-500/40 bg-red-500/5'
+                  : isDark ? 'bg-[#0f1520] border-[#1e2d45]' : 'bg-white border-[#d0d9e8]'
+              }`}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      UTC Trading Day Boundary
+                    </div>
+                    <div className="text-base font-bold text-slate-100 mt-0.5">
+                      Resets Daily at 00:00:00 UTC
+                    </div>
+                    <div className="text-xs text-slate-400 mt-1 font-mono">
+                      Current: {new Date().toUTCString().slice(17, 25)} UTC · Lagos: {watClock}
+                      {testDayKey && <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-sans">Simulated: {testDayKey}</span>}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      riskStatus.status === 'daily_target_reached'
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : riskStatus.status === 'daily_limit_reached'
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'bg-blue-500/20 text-blue-400'
+                    }`}>
+                      Status: {riskStatus.status === 'daily_target_reached' ? 'Daily Target Reached 🎯' : riskStatus.status === 'daily_limit_reached' ? 'Daily Limit Reached 🛑' : 'Normal Trading Active'}
+                    </span>
+                    {riskStatus.status !== 'normal' && (
+                      <button
+                        onClick={() => {
+                          setRiskStatus(prev => ({ ...prev, status: 'normal', reason: '' }));
+                          triggerToast('Daily limit status cleared — trading active', 'success');
+                        }}
+                        className="px-2.5 py-1 rounded text-xs bg-slate-500/20 text-slate-300 hover:bg-slate-500/30"
+                      >
+                        Clear State
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-inherit">
+                  <div className="p-3 rounded-lg bg-slate-500/5">
+                    <div className="text-[10px] text-slate-400 uppercase">Realized Today</div>
+                    <div className={`text-sm font-mono font-bold mt-1 ${riskStatus.realized_pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {riskStatus.realized_pnl >= 0 ? '+' : ''}${riskStatus.realized_pnl.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-500/5">
+                    <div className="text-[10px] text-slate-400 uppercase">Floating Open</div>
+                    <div className={`text-sm font-mono font-bold mt-1 ${riskStatus.floating_pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {riskStatus.floating_pnl >= 0 ? '+' : ''}${riskStatus.floating_pnl.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-500/5">
+                    <div className="text-[10px] text-slate-400 uppercase">Total Day PnL</div>
+                    <div className={`text-sm font-mono font-bold mt-1 ${riskStatus.today_pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {riskStatus.today_pnl >= 0 ? '+' : ''}${riskStatus.today_pnl.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* OVERRIDES FORM */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. FIXED TAKE PROFIT */}
+                <div className={`p-5 rounded-2xl border ${isDark ? 'bg-[#0f1520] border-[#1e2d45]' : 'bg-white border-[#d0d9e8]'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-bold">1. Fixed Take Profit (TP)</h3>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span className={`text-xs font-bold ${riskOverrides.take_profit.enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        {riskOverrides.take_profit.enabled ? 'ON' : 'OFF'}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={riskOverrides.take_profit.enabled}
+                        onChange={e => setRiskOverrides(r => ({ ...r, take_profit: { ...r.take_profit, enabled: e.target.checked } }))}
+                      />
+                    </label>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-4">
+                    When OFF: Model targets decide. When ON: Fixed TP overrides model targets for new & open positions.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Target (Unset is valid)</label>
+                      <input
+                        type="number"
+                        placeholder="Optional (e.g. 50)"
+                        value={riskOverrides.take_profit.value}
+                        onChange={e => setRiskOverrides(r => ({ ...r, take_profit: { ...r.take_profit, value: e.target.value } }))}
+                        className="w-full px-3 py-1.5 rounded-lg border text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Units</label>
+                      <select
+                        value={riskOverrides.take_profit.unit}
+                        onChange={e => setRiskOverrides(r => ({ ...r, take_profit: { ...r.take_profit, unit: e.target.value as any } }))}
+                        className="w-full px-3 py-1.5 rounded-lg border text-xs"
+                      >
+                        <option value="money">$ (Money)</option>
+                        <option value="pct">% (% of Pool)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. FIXED STOP LOSS */}
+                <div className={`p-5 rounded-2xl border ${isDark ? 'bg-[#0f1520] border-[#1e2d45]' : 'bg-white border-[#d0d9e8]'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-bold">2. Fixed Stop Loss (SL)</h3>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span className={`text-xs font-bold ${riskOverrides.stop_loss.enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        {riskOverrides.stop_loss.enabled ? 'ON' : 'OFF'}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={riskOverrides.stop_loss.enabled}
+                        onChange={e => setRiskOverrides(r => ({ ...r, stop_loss: { ...r.stop_loss, enabled: e.target.checked } }))}
+                      />
+                    </label>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-4">
+                    When OFF: Model stops decide (server protective stop ALWAYS attached). When ON: Fixed SL overrides.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Limit (Unset is valid)</label>
+                      <input
+                        type="number"
+                        placeholder="Optional (e.g. 30)"
+                        value={riskOverrides.stop_loss.value}
+                        onChange={e => setRiskOverrides(r => ({ ...r, stop_loss: { ...r.stop_loss, value: e.target.value } }))}
+                        className="w-full px-3 py-1.5 rounded-lg border text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Units</label>
+                      <select
+                        value={riskOverrides.stop_loss.unit}
+                        onChange={e => setRiskOverrides(r => ({ ...r, stop_loss: { ...r.stop_loss, unit: e.target.value as any } }))}
+                        className="w-full px-3 py-1.5 rounded-lg border text-xs"
+                      >
+                        <option value="money">$ (Money)</option>
+                        <option value="pct">% (% of Pool)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. DAILY PROFIT TARGET */}
+                <div className={`p-5 rounded-2xl border ${isDark ? 'bg-[#0f1520] border-[#1e2d45]' : 'bg-white border-[#d0d9e8]'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-bold">3. Daily Profit Target</h3>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span className={`text-xs font-bold ${riskOverrides.daily_profit_target.enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        {riskOverrides.daily_profit_target.enabled ? 'ON' : 'OFF'}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={riskOverrides.daily_profit_target.enabled}
+                        onChange={e => setRiskOverrides(r => ({ ...r, daily_profit_target: { ...r.daily_profit_target, enabled: e.target.checked } }))}
+                      />
+                    </label>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-3">
+                    Stops opening new trades once day PnL hits target. Resets automatically at 00:00 UTC.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Target Value</label>
+                      <input
+                        type="number"
+                        placeholder="Optional (e.g. 100)"
+                        value={riskOverrides.daily_profit_target.value}
+                        onChange={e => setRiskOverrides(r => ({ ...r, daily_profit_target: { ...r.daily_profit_target, value: e.target.value } }))}
+                        className="w-full px-3 py-1.5 rounded-lg border text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Units</label>
+                      <select
+                        value={riskOverrides.daily_profit_target.unit}
+                        onChange={e => setRiskOverrides(r => ({ ...r, daily_profit_target: { ...r.daily_profit_target, unit: e.target.value as any } }))}
+                        className="w-full px-3 py-1.5 rounded-lg border text-xs"
+                      >
+                        <option value="money">$ (Money)</option>
+                        <option value="pct">% (% of Pool)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={riskOverrides.daily_profit_target.close_open_on_hit}
+                      onChange={e => setRiskOverrides(r => ({ ...r, daily_profit_target: { ...r.daily_profit_target, close_open_on_hit: e.target.checked } }))}
+                    />
+                    <span>Also close all open positions when target reached</span>
+                  </label>
+                </div>
+
+                {/* 4. DAILY LOSS LIMIT */}
+                <div className={`p-5 rounded-2xl border ${isDark ? 'bg-[#0f1520] border-[#1e2d45]' : 'bg-white border-[#d0d9e8]'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-bold">4. Daily Loss Limit</h3>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span className={`text-xs font-bold ${riskOverrides.daily_loss_limit.enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        {riskOverrides.daily_loss_limit.enabled ? 'ON' : 'OFF'}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={riskOverrides.daily_loss_limit.enabled}
+                        onChange={e => setRiskOverrides(r => ({ ...r, daily_loss_limit: { ...r.daily_loss_limit, enabled: e.target.checked } }))}
+                      />
+                    </label>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-3">
+                    Halts new trades if day drawdown reaches limit. Resets automatically at 00:00 UTC.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Loss Limit</label>
+                      <input
+                        type="number"
+                        placeholder="Optional (e.g. 50)"
+                        value={riskOverrides.daily_loss_limit.value}
+                        onChange={e => setRiskOverrides(r => ({ ...r, daily_loss_limit: { ...r.daily_loss_limit, value: e.target.value } }))}
+                        className="w-full px-3 py-1.5 rounded-lg border text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Units</label>
+                      <select
+                        value={riskOverrides.daily_loss_limit.unit}
+                        onChange={e => setRiskOverrides(r => ({ ...r, daily_loss_limit: { ...r.daily_loss_limit, unit: e.target.value as any } }))}
+                        className="w-full px-3 py-1.5 rounded-lg border text-xs"
+                      >
+                        <option value="money">$ (Money)</option>
+                        <option value="pct">% (% of Pool)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={riskOverrides.daily_loss_limit.close_open_on_hit}
+                      onChange={e => setRiskOverrides(r => ({ ...r, daily_loss_limit: { ...r.daily_loss_limit, close_open_on_hit: e.target.checked } }))}
+                    />
+                    <span>Also close all open positions when limit reached</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* 5. WEEKEND TRADING SCHEDULE (H5) */}
+              <div className={`p-5 rounded-2xl border ${isDark ? 'bg-[#0f1520] border-[#1e2d45]' : 'bg-white border-[#d0d9e8]'}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold">Weekend Trading Schedule</h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Forex markets close on weekends. Default OFF keeps forex idle when closed, while synthetics trade 24/7.
+                    </p>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <span className={`text-xs font-bold ${riskOverrides.trade_weekends ? 'text-emerald-400' : 'text-slate-400'}`}>
+                      {riskOverrides.trade_weekends ? 'ON' : 'OFF'}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={riskOverrides.trade_weekends}
+                      onChange={e => setRiskOverrides(r => ({ ...r, trade_weekends: e.target.checked }))}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* SAVE & TEST HOOKS */}
+              <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                isDark ? 'bg-[#0f1520] border-[#1e2d45]' : 'bg-white border-[#d0d9e8]'
+              }`}>
+                <div>
+                  <button
+                    onClick={() => {
+                      triggerToast(`Risk overrides saved for ${mode.toUpperCase()} mode!`, 'success');
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs"
+                  >
+                    Save Risk Overrides ({mode.toUpperCase()})
+                  </button>
+                  <span className="text-[11px] text-slate-400 ml-3">Valid unset state: saves with empty or off fields</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">Test Hook:</span>
+                  <button
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 1);
+                      const next = d.toISOString().slice(0, 10);
+                      setTestDayKey(next);
+                      setRiskStatus(prev => ({ ...prev, status: 'normal', reason: '' }));
+                      triggerToast(`Simulated next day boundary: ${next} — counters reset & trading resumed`, 'info');
+                    }}
+                    className="px-3 py-1.5 rounded-lg border text-xs text-slate-300 hover:bg-slate-500/10"
+                  >
+                    Simulate Next Day
+                  </button>
+                  {testDayKey && (
+                    <button
+                      onClick={() => {
+                        setTestDayKey(null);
+                        triggerToast('Restored real UTC day key', 'info');
+                      }}
+                      className="px-3 py-1.5 rounded-lg border border-red-500/30 text-xs text-red-400 hover:bg-red-500/10"
+                    >
+                      Reset Date
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1136,6 +1563,16 @@ export default function App() {
         >
           <Activity className="w-4 h-4" />
           <span>Dashboard</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('risk')}
+          className={`flex flex-col items-center gap-1 text-[11px] font-semibold ${
+            activeTab === 'risk' ? 'text-[#3b82f6]' : 'text-slate-400'
+          }`}
+        >
+          <Shield className="w-4 h-4" />
+          <span>Risk</span>
         </button>
 
         <button

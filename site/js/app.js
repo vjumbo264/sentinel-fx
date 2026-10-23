@@ -1,5 +1,6 @@
 import { register, handleRoute, navigate } from './router.js';
 import { dashPage } from './pages/dash.js';
+import { riskPage } from './pages/risk.js';
 import { trainingPage } from './pages/training.js';
 import { historyPage } from './pages/history.js';
 import { settingsPage } from './pages/settings.js';
@@ -13,6 +14,11 @@ function buildNav() {
       id: 'dash',
       label: 'Dashboard',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>'
+    },
+    {
+      id: 'risk',
+      label: 'Risk & Overrides',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
     },
     {
       id: 'training',
@@ -82,6 +88,7 @@ function isAuth() {
 
 register('login', loginPage);
 register('dash', () => isAuth() ? dashPage() : navigate('login'));
+register('risk', () => isAuth() ? riskPage() : navigate('login'));
 register('training', () => isAuth() ? trainingPage() : navigate('login'));
 register('history', () => isAuth() ? historyPage() : navigate('login'));
 register('settings', settingsPage);

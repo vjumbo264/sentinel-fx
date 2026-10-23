@@ -81,13 +81,6 @@ def main_loop(mode='demo'):
     lease=http_worker('POST','/api/bot/lock',{'owner':OWNER})
     if not lease.get('acquired'):time.sleep(5);continue
     was_leader=True
-    acct=broker.account_info()
-    training_locked=bool(settings.get('training_locked',False))
-    if training_locked:
-     log.info('Training lock active — bot idle, not opening new trades')
-     http_worker('POST','/api/bot/heartbeat',{'mode':mode,'balance':acct['balance'],'equity':acct['equity'],'free_margin':acct['margin_free'],'loginid':str(acct['login'])[:2]+'***','currency':acct['currency'],'note':'training_locked — idle'})
-     time.sleep(60)
-     continue
     positions=broker.get_open_positions();deals=broker.get_history_deals(since)
     http_worker('POST','/api/bot/heartbeat',{'mode':mode,'balance':acct['balance'],'equity':acct['equity'],'free_margin':acct['margin_free'],'loginid':str(acct['login'])[:2]+'***','currency':acct['currency'],'note':'active runner '+OWNER})
     ownership=[];ledgers={l['symbol']:l for l in session.get('ledger',[])}
@@ -97,11 +90,54 @@ def main_loop(mode='demo'):
      # Also adopt closed deals after restart from deterministic model magic.
      ownership += [{'position_id':d['position_id'],'model_symbol':symbol,'reason':d.get('comment','')} for d in deals if d['magic']==magic]
     http_worker('POST','/api/bot/cfd-sync',{'positions':positions,'deals':deals,'ownership':ownership,'mode':'demo','balance':acct['balance']})
-    halted=settings.get('halt') or settings.get('stop_all');ov=http_worker('GET','/api/bot/overrides').get('overrides',[])
+    
+    # Risk overrides & UTC daily target / loss limit
+    risk_ov=settings.get('risk_overrides_'+mode,{})
+    test_day=settings.get('test_day_key')
+    today_key=test_day or datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    deals_today=[d for d in deals if datetime.fromtimestamp(d.get('time',0),timezone.utc).strftime('%Y-%m-%d')==today_key]
+    realized_today=sum(float(d.get('profit',0))+float(d.get('swap',0))+float(d.get('commission',0)) for d in deals_today)
+    floating_today=sum(float(p.get('profit',0))+float(p.get('swap',0)) for p in positions)
+    today_pnl=realized_today+floating_today
+
+    daily_halt=False
+    daily_status='normal'
+    daily_reason=''
+
+    dpt=risk_ov.get('daily_profit_target',{})
+    if dpt.get('enabled') and dpt.get('value') not in (None,''):
+     val=float(dpt['value'])
+     target_thresh=val if dpt.get('unit','money')=='money' else (val/100.0)*float(acct['balance'])
+     if today_pnl>=target_thresh:
+      daily_halt=True;daily_status='daily_target_reached'
+      daily_reason=f'Daily profit target reached: +{today_pnl:.2f} >= +{target_thresh:.2f}'
+      if dpt.get('close_open_on_hit'):
+       for p in positions:
+        if p['magic'] in [model_magic(s+'@'+str(b.version)) for s,b in registry.bundles.items()]:broker.close_position(p['ticket'],p['symbol'],comment='sfx:daily_target')
+
+    dll=risk_ov.get('daily_loss_limit',{})
+    if dll.get('enabled') and dll.get('value') not in (None,''):
+     val=float(dll['value'])
+     limit_thresh=val if dll.get('unit','money')=='money' else (val/100.0)*float(acct['balance'])
+     if today_pnl<=-limit_thresh:
+      daily_halt=True;daily_status='daily_limit_reached'
+      daily_reason=f'Daily loss limit reached: {today_pnl:.2f} <= -{limit_thresh:.2f}'
+      if dll.get('close_open_on_hit'):
+       for p in positions:
+        if p['magic'] in [model_magic(s+'@'+str(b.version)) for s,b in registry.bundles.items()]:broker.close_position(p['ticket'],p['symbol'],comment='sfx:daily_limit')
+
+    http_worker('POST','/api/bot/risk-status',{'mode':mode,'today_date':today_key,'realized_pnl':realized_today,'floating_pnl':floating_today,'today_pnl':today_pnl,'status':daily_status,'reason':daily_reason})
+
+    halted=settings.get('halt') or settings.get('stop_all') or daily_halt;ov=http_worker('GET','/api/bot/overrides').get('overrides',[])
     halted=halted or any(o.get('symbol')=='*' and o.get('action')=='stop_all' for o in ov)
     if halted:
      for p in positions:
       if p['magic'] in [model_magic(s+'@'+str(b.version)) for s,b in registry.bundles.items()]:broker.close_position(p['ticket'],p['symbol'],comment='sfx:owner:halt')
+
+    fixed_tp=risk_ov.get('take_profit',{})
+    fixed_sl=risk_ov.get('stop_loss',{})
+    trade_weekends=bool(risk_ov.get('trade_weekends',False))
+
     for symbol,bundle in registry.bundles.items():
      if registry.errors.get(symbol,0)>=3:continue
      led=ledgers.get(symbol)
@@ -109,19 +145,40 @@ def main_loop(mode='demo'):
      if not led or not led.get('active') or float(led.get('allocated',0))<=0:continue
      broker_symbol=bundle.manifest.get('mt5_symbol') or symbol.removeprefix('frx');model_id=symbol+'@'+str(bundle.version);magic=model_magic(model_id)
      owned=broker.get_open_positions(broker_symbol,magic)
+     specs=broker.get_symbol_info(broker_symbol)
+     if not specs:continue
+
+     # Weekend check for forex (H5): if market closed and trade_weekends is False, stay idle
+     is_forex=symbol.startswith('frx') or any(broker_symbol.endswith(c) for c in ['USD','JPY','GBP','EUR','CHF','CAD','AUD','NZD'])
+     if is_forex and not trade_weekends:
+      trade_mode=specs.get('trade_mode',4)
+      if trade_mode==0:
+       log.info('Market closed for forex %s — weekend idle',broker_symbol)
+       continue
+
      candles=broker.get_candles(broker_symbol,'M1',2400)
      if len(candles)<120:continue
      entry_seconds=int(bundle.manifest.get('entry_seconds',60));completed=int(candles[-1]['epoch'])//entry_seconds
      if lastbars.get(symbol)==completed:continue
      lastbars[symbol]=completed
      share=float(led['balance']);equity=share+sum(p['profit']+p.get('swap',0) for p in owned);peaks[symbol]=max(peaks.get(symbol,equity),equity)
-     tick=broker.get_tick(broker_symbol);specs=broker.get_symbol_info(broker_symbol);frame=pd.DataFrame(candles)
+     tick=broker.get_tick(broker_symbol);frame=pd.DataFrame(candles)
      obs,atr=build_observation(frame,equity,float(led['allocated']),owned,specs,tick,max(0,1-equity/peaks[symbol]),last_result=lastresults.get(symbol))
      out=evaluate(bundle,frame,{'observation':obs})
      if out.get('error'):
       registry.errors[symbol]=registry.errors.get(symbol,0)+1;decision_log(symbol,obs,out,[]);continue
      pause=any(o.get('symbol')==symbol and o.get('action')=='pause' for o in ov)
-     overrides={'halt':bool(halted or pause or remaining<STOP),'max_exposure_enabled':bool(settings.get('ov_max_lot_enabled')),'max_exposure_lots':float(settings.get('ov_max_lot',0))}
+     overrides={
+      'halt':bool(halted or pause or remaining<STOP),
+      'max_exposure_enabled':bool(settings.get('ov_max_lot_enabled')),
+      'max_exposure_lots':float(settings.get('ov_max_lot',0)),
+      'fixed_tp_enabled':bool(fixed_tp.get('enabled')),
+      'fixed_tp_unit':fixed_tp.get('unit','money'),
+      'fixed_tp_value':fixed_tp.get('value'),
+      'fixed_sl_enabled':bool(fixed_sl.get('enabled')),
+      'fixed_sl_unit':fixed_sl.get('unit','money'),
+      'fixed_sl_value':fixed_sl.get('value')
+     }
      used=sum(broker.check_margin(broker_symbol,p['type'],p['volume'],p['price_current'])['required_margin'] for p in owned)
      adapter=ExecutionAdapter(broker,broker_symbol,model_id,equity,min(acct['margin_free'],max(0,float(led['allocated'])-used)),atr,overrides)
      results=[]

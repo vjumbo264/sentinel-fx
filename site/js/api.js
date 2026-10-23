@@ -46,6 +46,10 @@ export const api = {
   overrideSession: (d) => api.post('/api/session/override', d),
   resetDemoBalance: () => api.post('/api/account/reset-demo-balance'),
   setTrainLock: (locked, reason) => api.post('/api/settings/training-lock', { locked, reason }),
+  getRiskOverrides: (mode) => api.get('/api/risk/overrides?mode=' + (mode || 'demo')),
+  saveRiskOverrides: (mode, overrides) => api.post('/api/risk/overrides', { mode, overrides }),
+  clearDailyLimit: (mode) => api.post('/api/risk/clear-daily-limit', { mode }),
+  shiftDayKey: (test_day_key) => api.post('/api/test/shift-day-key', { test_day_key }),
 
   dispatchWorkflow: async (workflow, inputs) => {
     const token = getToken();

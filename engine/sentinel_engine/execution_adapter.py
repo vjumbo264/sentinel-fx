@@ -70,6 +70,15 @@ class ExecutionAdapter:
   protective=action.get('stop_distance') is None;distance=self.atr*(action.get('stop_distance') or 2)
   min_dist=max(specs.get('stops_level',0),specs.get('freeze_level',0))*specs['point']+specs['point']
   stop=round(opposite-sign*max(distance,min_dist),specs['digits'])
+  if self.overrides.get('fixed_sl_enabled') and self.overrides.get('fixed_sl_value') not in (None, ''):
+   sl_val=float(self.overrides['fixed_sl_value'])
+   if sl_val>0:
+    sl_unit=self.overrides.get('fixed_sl_unit','money')
+    target_loss=sl_val if sl_unit=='money' else (sl_val/100.0)*self.equity
+    tick_pt=float(specs.get('tick_value') or specs['point'])/max(float(specs.get('tick_size') or specs['point']),1e-9)
+    sl_pts=target_loss/max(self.equity*action['risk_fraction']*tick_pt,1e-9)
+    sl_delta=max(sl_pts*specs['point'],min_dist)
+    stop=round(opposite-sign*sl_delta,specs['digits'])
   if stop<=0:return self.reject('invalid',{'detail':'nonpositive server stop'})
   loss_per_lot=abs(price-stop)/float(specs.get('tick_size') or specs['point'])*float(specs.get('tick_value') or 0)
   if hasattr(self.broker,'loss_per_lot'):loss_per_lot=self.broker.loss_per_lot(self.symbol,side,price,stop)
@@ -84,13 +93,24 @@ class ExecutionAdapter:
    volume=floor_step(volume*available/max(margin['required_margin'],1e-12),step)
    if volume<specs['volume_min']:return self.reject('margin')
   targets=action.get('targets',[]);parts=[];left=volume
-  for target in targets:
-   size=floor_step(volume*target['fraction'],step)
-   if size>=specs['volume_min']:
-    tp=round(price+sign*max(target['distance']*self.atr,min_dist),specs['digits']);parts.append([size,tp]);left=round(left-size,10)
-  if left>=specs['volume_min']:parts.append([left,None])
-  elif left>0 and parts:parts[-1][0]+=left
-  if not parts:parts=[[volume,round(price+sign*max(targets[-1]['distance']*self.atr,min_dist),specs['digits']) if targets else None]]
+  if self.overrides.get('fixed_tp_enabled') and self.overrides.get('fixed_tp_value') not in (None, ''):
+   tp_val=float(self.overrides['fixed_tp_value'])
+   if tp_val>0:
+    tp_unit=self.overrides.get('fixed_tp_unit','money')
+    target_profit=tp_val if tp_unit=='money' else (tp_val/100.0)*self.equity
+    tick_pt=float(specs.get('tick_value') or specs['point'])/max(float(specs.get('tick_size') or specs['point']),1e-9)
+    tp_pts=target_profit/max(volume*tick_pt,1e-9)
+    tp_delta=max(tp_pts*specs['point'],min_dist)
+    tp_override=round(price+sign*tp_delta,specs['digits'])
+    parts=[[volume,tp_override]]
+  if not parts:
+   for target in targets:
+    size=floor_step(volume*target['fraction'],step)
+    if size>=specs['volume_min']:
+     tp=round(price+sign*max(target['distance']*self.atr,min_dist),specs['digits']);parts.append([size,tp]);left=round(left-size,10)
+   if left>=specs['volume_min']:parts.append([left,None])
+   elif left>0 and parts:parts[-1][0]+=left
+   if not parts:parts=[[volume,round(price+sign*max(targets[-1]['distance']*self.atr,min_dist),specs['digits']) if targets else None]]
   # Plans below a target's minimum size are conservatively combined; risk never increases.
   tickets=[];filled=0;weighted_price=0
   for size,tp in parts:

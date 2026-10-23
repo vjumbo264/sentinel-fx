@@ -80,7 +80,30 @@ export async function dashPage() {
     // Models list from session
     const modelAllocations = session.models || session.allocations || [];
 
+    const riskStatus = settings[`risk_status_${mode}`] || state.risk_status || {};
+    const isTargetHit = riskStatus.status === 'daily_target_reached';
+    const isLimitHit = riskStatus.status === 'daily_limit_reached';
+
     root.innerHTML = `
+      ${(isTargetHit || isLimitHit) ? `
+        <div class="card" style="border-left: 4px solid ${isTargetHit ? 'var(--profit)' : 'var(--loss)'}; background:${isTargetHit ? 'var(--profit-dim)' : 'var(--loss-dim)'}; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <div style="font-weight:700; font-size:14px; color:${isTargetHit ? 'var(--profit)' : 'var(--loss)'};">
+                ${isTargetHit ? '🎯 Daily Profit Target Reached' : '🛑 Daily Loss Limit Reached'}
+              </div>
+              <div style="font-size:12px; color:var(--text-2); margin-top:2px;">
+                ${riskStatus.reason || 'New trades paused for today'}. Counter resets automatically at 00:00:00 UTC (or clear manually).
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button id="dash-clear-limit-btn" class="btn btn-ghost btn-sm" style="font-size:11px;">Clear Limit State</button>
+              <a href="#risk" class="btn btn-primary btn-sm" style="font-size:11px;">Manage Risk Overrides</a>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
       <!-- TOP BALANCE & RUNNER STATUS CARD -->
       <div class="card">
         <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px;">
@@ -408,6 +431,17 @@ export async function dashPage() {
         }
       });
     }
+
+    // Clear limit state from banner
+    document.getElementById('dash-clear-limit-btn')?.addEventListener('click', async () => {
+      try {
+        await api.clearDailyLimit(mode);
+        toast('Daily limit cleared — trading resumed', 'success');
+        loadData();
+      } catch(e) {
+        toast(e.message, 'error');
+      }
+    });
 
     // Pool form
     const poolForm = document.getElementById('pool-form');

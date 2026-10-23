@@ -14,7 +14,10 @@ caller MUST refuse to run custom-code packs (fail closed).
 from __future__ import annotations
 import json
 import os
-import resource
+try:
+    import resource
+except ImportError:
+    resource = None
 import shutil
 import subprocess
 import sys
@@ -53,7 +56,7 @@ else:
 
 def sandbox_available() -> bool:
     """True iff we can launch a child with network disabled and empty env."""
-    if not shutil.which("unshare"):
+    if resource is None or not shutil.which("unshare"):
         return False
     try:
         r = subprocess.run(

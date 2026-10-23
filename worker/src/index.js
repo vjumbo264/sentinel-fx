@@ -400,6 +400,15 @@ export default {
           return json({ overrides: ov.results });
         }
 
+        if (path === "/api/bot/risk-status" && method === "POST") {
+          const m = body.mode || "demo";
+          await env.DB.prepare(
+            "INSERT INTO settings (key, value, updated_utc) VALUES (?,?,?) " +
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_utc=excluded.updated_utc"
+          ).bind(`risk_status_${m}`, JSON.stringify(body), nowUTC()).run();
+          return json({ ok: true });
+        }
+
         return err("not found", 404);
       }
 
@@ -650,6 +659,52 @@ export default {
           ).bind(k, JSON.stringify(v), nowUTC()).run();
         }
         return json({ ok: true });
+      }
+
+      if (path === "/api/risk/overrides" && method === "GET") {
+        const m = url.searchParams.get("mode") || "demo";
+        const def = {
+          take_profit: { enabled: false, unit: "money", value: null },
+          stop_loss: { enabled: false, unit: "money", value: null },
+          daily_profit_target: { enabled: false, unit: "money", value: null, close_open_on_hit: false },
+          daily_loss_limit: { enabled: false, unit: "money", value: null, close_open_on_hit: false },
+          trade_weekends: false,
+        };
+        const row = await env.DB.prepare("SELECT value FROM settings WHERE key=?").bind(`risk_overrides_${m}`).first();
+        const overrides = row ? JSON.parse(row.value) : def;
+        const statusRow = await env.DB.prepare("SELECT value FROM settings WHERE key=?").bind(`risk_status_${m}`).first();
+        const risk_status = statusRow ? JSON.parse(statusRow.value) : { status: "normal", today_pnl: 0 };
+        const testKeyRow = await env.DB.prepare("SELECT value FROM settings WHERE key='test_day_key'").first();
+        const test_day_key = testKeyRow ? JSON.parse(testKeyRow.value) : null;
+        return json({ ok: true, mode: m, overrides, risk_status, test_day_key, utc_now: nowUTC() });
+      }
+
+      if (path === "/api/risk/overrides" && method === "POST") {
+        const m = body.mode || "demo";
+        const overrides = body.overrides || {};
+        await env.DB.prepare(
+          "INSERT INTO settings (key, value, updated_utc) VALUES (?,?,?) " +
+          "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_utc=excluded.updated_utc"
+        ).bind(`risk_overrides_${m}`, JSON.stringify(overrides), nowUTC()).run();
+        return json({ ok: true, mode: m, overrides });
+      }
+
+      if (path === "/api/risk/clear-daily-limit" && method === "POST") {
+        const m = body.mode || "demo";
+        await env.DB.prepare(
+          "INSERT INTO settings (key, value, updated_utc) VALUES (?,?,?) " +
+          "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_utc=excluded.updated_utc"
+        ).bind(`risk_status_${m}`, JSON.stringify({ status: "normal", cleared_utc: nowUTC(), today_pnl: 0, reason: "cleared manually by owner" }), nowUTC()).run();
+        return json({ ok: true, mode: m, status: "normal" });
+      }
+
+      if (path === "/api/test/shift-day-key" && method === "POST") {
+        const dayKey = body.test_day_key ?? null;
+        await env.DB.prepare(
+          "INSERT INTO settings (key, value, updated_utc) VALUES (?,?,?) " +
+          "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_utc=excluded.updated_utc"
+        ).bind("test_day_key", JSON.stringify(dayKey), nowUTC()).run();
+        return json({ ok: true, test_day_key: dayKey });
       }
 
       if (path === "/api/pairs/update" && method === "POST") {

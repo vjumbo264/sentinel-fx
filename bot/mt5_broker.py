@@ -504,6 +504,7 @@ class MT5Broker(BrokerBase):
             "swap_long": float(s.swap_long),
             "swap_short": float(s.swap_short),
             "filling_mode": int(getattr(s, "filling_mode", 0)),
+            "trade_mode": int(getattr(s, "trade_mode", 4)),
             "ask": float(getattr(s, "ask", 0.0)),
             "bid": float(getattr(s, "bid", 0.0))
         }
