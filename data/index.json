@@ -1123,11 +1123,19 @@
         "first_epoch": 1167699600,
         "last_epoch": 1199138220,
         "sha256": "20caeeb40c6457ac0cf8a45a37604c33595d32d8a9d93f154b187467239da36f"
+      },
+      "2008": {
+        "asset": "USDCHF_2008.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 330894,
+        "first_epoch": 1199232000,
+        "last_epoch": 1230756600,
+        "sha256": "3df1a93122103102c8ff8fee609cc93f5cac1b7bcf60f3bc02ccd91f76a5152a"
       }
     },
-    "last_epoch": 1199138220,
+    "last_epoch": 1230756600,
     "first_epoch": 959725380,
-    "rows": 1953731,
+    "rows": 2284625,
     "columns": [
       "epoch",
       "bid_open",
