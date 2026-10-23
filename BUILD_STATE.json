@@ -13,19 +13,19 @@
     },
     {
       "id": "F2",
-      "title": "Training engine overhaul \u2014 observation v2, actions, reward, walk-forward",
+      "title": "Training engine overhaul — observation v2, actions, reward, walk-forward",
       "status": "done",
       "notes": "Completed v2 observation overhaul (62 dimensions, causally safe), 8-action catalog, scalper composite reward, and walk-forward validation (split 70/15/15). Policy schema version updated to sentinel.policy.v2. Smoke test and test_overhaul_training passed."
     },
     {
       "id": "F3",
-      "title": "Training interlock \u2014 bot pauses during training",
+      "title": "Training interlock — bot pauses during training",
       "status": "done",
       "notes": "Added /api/settings/training-lock endpoint in worker/src/index.js; purged dead packs/staging endpoints; updated bot/main.py with training_locked check and dynamic mode from settings; added lock/unlock steps and Saturday 2am UTC cron to train.yml."
     },
     {
       "id": "F4",
-      "title": "Complete site rebuild \u2014 4 pages, no polling, fast",
+      "title": "Complete site rebuild — 4 pages, no polling, fast",
       "status": "done",
       "notes": "Rebuilt site completely from scratch with a fresh, clean, automatic dark and light UI. 4 core pages (Dashboard, Training, History, Settings). Desktop left rail with Lagos WAT clock + mobile bottom nav. Zero polling when idle, ~69KB uncompressed JS payload. Also mirrored in AI Studio React supervisor applet."
     },
@@ -70,19 +70,30 @@
   },
   "observation_schema": "sentinel.policy.v2",
   "observation_dimension": 62,
-  "old_47dim_models": "incompatible \u2014 do not load",
+  "old_47dim_models": "incompatible — do not load",
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H1: Implement optional overrides for take profit, stop loss, daily profit target, and daily loss limit across Worker, Site, and Bot",
+    "next_step": "H2: Honest training ETA based on measured throughput from last 5 checkpoints",
     "items": [
       {
         "id": "H1",
         "title": "Optional overrides: take profit, stop loss, daily profit target, daily loss limit",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "Playwright mobile 375px live verification: docs/screenshots/v1_risk_mobile_off.png, docs/screenshots/v1_risk_mobile_on.png",
+          "Reload persistence verified on live site: https://sentinel-fx.pages.dev/#risk",
+          "Unit & integration tests: tests/test_fix5_h1.py all 4 test suites passed"
+        ],
+        "files": [
+          "site/js/pages/risk.js",
+          "worker/src/index.js",
+          "src/App.tsx",
+          "bot/main.py",
+          "engine/sentinel_engine/execution_adapter.py",
+          "tests/test_fix5_h1.py"
+        ]
       },
       {
         "id": "H2",
@@ -161,18 +172,30 @@
       {
         "id": "V1",
         "title": "Risk page overrides empty/OFF saves fine and persists, toggles ON/OFF, 375px screenshots",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "docs/screenshots/v1_risk_mobile_off.png",
+          "docs/screenshots/v1_risk_mobile_on.png"
+        ],
+        "files": [
+          "site/js/pages/risk.js",
+          "worker/src/index.js"
+        ]
       },
       {
         "id": "V2",
         "title": "Bot proof on demo: OFF keeps model SL/TP, ON overrides, daily limit stops trades, next-day reset",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "tests/test_fix5_h1.py output: all 4 tests passed (OFF keeps SL/TP, ON overrides, daily limit halts new trades, next-day reset resumes)"
+        ],
+        "files": [
+          "engine/sentinel_engine/execution_adapter.py",
+          "bot/main.py",
+          "tests/test_fix5_h1.py"
+        ]
       },
       {
         "id": "V3",

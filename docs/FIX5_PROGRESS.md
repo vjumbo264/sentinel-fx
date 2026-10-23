@@ -10,8 +10,11 @@
 - Pulled latest repo commits and inspected last 15 commits and workflow run history.
 - Confirmed active EURUSD v1 training is running smoothly without interruption.
 
+## Done
+- **H1. Optional overrides (V1, V2 passed)**: Implemented four independent optional overrides (TP, SL, Daily Profit Target, Daily Loss Limit) in Risk page, Worker D1, Bot, and ExecutionAdapter. Live verified with headless Chromium at 375px (screenshots saved to docs/screenshots/). Verified next-day rollover and override precedence.
+
 ## In Progress
-- **H1. Optional overrides**: Implementing four independent optional overrides (Take Profit, Stop Loss, Daily Profit Target, Daily Loss Limit) in Worker D1, Site/UI, and Bot with UTC day boundaries and persistence per mode.
+- **H2. Honest training ETA**: Implementing four independent optional overrides (Take Profit, Stop Loss, Daily Profit Target, Daily Loss Limit) in Worker D1, Site/UI, and Bot with UTC day boundaries and persistence per mode.
 
 ## Next
 - **H2. Honest training ETA**: Fix throughput formula on Training page based on measured step delta and timestamps from last 5 checkpoints.

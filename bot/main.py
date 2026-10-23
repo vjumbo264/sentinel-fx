@@ -128,11 +128,12 @@ def main_loop(mode='demo'):
 
     http_worker('POST','/api/bot/risk-status',{'mode':mode,'today_date':today_key,'realized_pnl':realized_today,'floating_pnl':floating_today,'today_pnl':today_pnl,'status':daily_status,'reason':daily_reason})
 
-    halted=settings.get('halt') or settings.get('stop_all') or daily_halt;ov=http_worker('GET','/api/bot/overrides').get('overrides',[])
-    halted=halted or any(o.get('symbol')=='*' and o.get('action')=='stop_all' for o in ov)
-    if halted:
+    owner_halt=settings.get('halt') or settings.get('stop_all');ov=http_worker('GET','/api/bot/overrides').get('overrides',[])
+    owner_halt=owner_halt or any(o.get('symbol')=='*' and o.get('action')=='stop_all' for o in ov)
+    if owner_halt:
      for p in positions:
       if p['magic'] in [model_magic(s+'@'+str(b.version)) for s,b in registry.bundles.items()]:broker.close_position(p['ticket'],p['symbol'],comment='sfx:owner:halt')
+    halted=bool(owner_halt or daily_halt)
 
     fixed_tp=risk_ov.get('take_profit',{})
     fixed_sl=risk_ov.get('stop_loss',{})
