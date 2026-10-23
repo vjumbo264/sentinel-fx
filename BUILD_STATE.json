@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H0: monitor Actions resume, run per-pair validation probes, collect verified checkpoint >900000 before beginning H9.",
+    "next_step": "H0: complete actual checkpoint validation CPU evidence and verify first >900000 Actions checkpoint before H9.",
     "items": [
       {
         "id": "H0",
@@ -95,6 +95,10 @@
           {
             "what": "Dispatch durable EURUSD v1 resume",
             "result": "Authenticated workflow_dispatch train.yml mode=resume accepted HTTP204 using committed safe validation. Existing900000 checkpoint and target5000000 preserved; acceptance awaits new checkpoint and real dataset probes."
+          },
+          {
+            "what": "Reproduce zero ATR on immutable history with the actual checkpoint",
+            "result": "All13 real pair data probes completed with actual EURUSD_v1_s900000.zip: original code raises invalid volatility on EURUSD epoch1626388800 and USDCHF epoch1790548200 flat14-bar windows; current shared62-dimensional pipeline remains finite and actual model inference succeeds for every pair. Evidence docs/evidence/h0_real_pair_probes.json. Initial full-history local scan exceeded sandbox memory; memory-bounded shard scan replaced it. Actions39992955869 is actively resuming900000 with safe validation; still awaiting >900000 durable checkpoint."
           }
         ],
         "evidence": [],

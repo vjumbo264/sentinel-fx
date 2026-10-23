@@ -1,0 +1,145 @@
+[
+  {
+    "pair": "EURUSD",
+    "sample_end_epoch": 1626388800,
+    "real_rows": 2400,
+    "zero_atr_windows_found": 1,
+    "original_error": "invalid volatility",
+    "current_atr": 1.1810000000000002e-05,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "GBPUSD",
+    "sample_end_epoch": 1767320400,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 8.28571428571147e-05,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "USDJPY",
+    "sample_end_epoch": 1767320640,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 0.011714285714284805,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "USDCHF",
+    "sample_end_epoch": 1790548200,
+    "real_rows": 2400,
+    "zero_atr_windows_found": 1,
+    "original_error": "invalid volatility",
+    "current_atr": 1e-05,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "AUDUSD",
+    "sample_end_epoch": 1767320460,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 9.499999999998796e-05,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "USDCAD",
+    "sample_end_epoch": 1767320340,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 8.857142857146958e-05,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "NZDUSD",
+    "sample_end_epoch": 1767320220,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 0.00010357142857144095,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "EURGBP",
+    "sample_end_epoch": 1767320640,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 3.35714285714106e-05,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "EURJPY",
+    "sample_end_epoch": 1767322140,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 0.011142857142853504,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "GBPJPY",
+    "sample_end_epoch": 1767320400,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 0.01657142857142852,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "AUDJPY",
+    "sample_end_epoch": 1767321120,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 0.011214285714285463,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "EURAUD",
+    "sample_end_epoch": 1767320520,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 0.0002121428571428195,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  },
+  {
+    "pair": "GBPAUD",
+    "sample_end_epoch": 1767320760,
+    "real_rows": 256,
+    "zero_atr_windows_found": 0,
+    "original_error": null,
+    "current_atr": 0.0002092857142857531,
+    "checkpoint_steps": 900000,
+    "input_dim": 62,
+    "finite": true
+  }
+]

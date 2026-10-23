@@ -292,3 +292,7 @@ Next: H0: verify real-data reproduction then start Actions resume from900000 and
 ## H0 — Dispatch durable EURUSD v1 resume
 Authenticated workflow_dispatch train.yml mode=resume accepted HTTP204 using committed safe validation. Existing900000 checkpoint and target5000000 preserved; acceptance awaits new checkpoint and real dataset probes.
 Next: H0: monitor Actions resume, run per-pair validation probes, collect verified checkpoint >900000 before beginning H9.
+
+## H0 — Reproduce zero ATR on immutable history with the actual checkpoint
+All13 real pair data probes completed with actual EURUSD_v1_s900000.zip: original code raises invalid volatility on EURUSD epoch1626388800 and USDCHF epoch1790548200 flat14-bar windows; current shared62-dimensional pipeline remains finite and actual model inference succeeds for every pair. Evidence docs/evidence/h0_real_pair_probes.json. Initial full-history local scan exceeded sandbox memory; memory-bounded shard scan replaced it. Actions39992955869 is actively resuming900000 with safe validation; still awaiting >900000 durable checkpoint.
+Next: H0: complete actual checkpoint validation CPU evidence and verify first >900000 Actions checkpoint before H9.
