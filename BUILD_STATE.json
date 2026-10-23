@@ -13,19 +13,19 @@
     },
     {
       "id": "F2",
-      "title": "Training engine overhaul — observation v2, actions, reward, walk-forward",
+      "title": "Training engine overhaul \u2014 observation v2, actions, reward, walk-forward",
       "status": "done",
       "notes": "Completed v2 observation overhaul (62 dimensions, causally safe), 8-action catalog, scalper composite reward, and walk-forward validation (split 70/15/15). Policy schema version updated to sentinel.policy.v2. Smoke test and test_overhaul_training passed."
     },
     {
       "id": "F3",
-      "title": "Training interlock — bot pauses during training",
+      "title": "Training interlock \u2014 bot pauses during training",
       "status": "done",
       "notes": "Added /api/settings/training-lock endpoint in worker/src/index.js; purged dead packs/staging endpoints; updated bot/main.py with training_locked check and dynamic mode from settings; added lock/unlock steps and Saturday 2am UTC cron to train.yml."
     },
     {
       "id": "F4",
-      "title": "Complete site rebuild — 4 pages, no polling, fast",
+      "title": "Complete site rebuild \u2014 4 pages, no polling, fast",
       "status": "done",
       "notes": "Rebuilt site completely from scratch with a fresh, clean, automatic dark and light UI. 4 core pages (Dashboard, Training, History, Settings). Desktop left rail with Lagos WAT clock + mobile bottom nav. Zero polling when idle, ~69KB uncompressed JS payload. Also mirrored in AI Studio React supervisor applet."
     },
@@ -70,11 +70,11 @@
   },
   "observation_schema": "sentinel.policy.v2",
   "observation_dimension": 62,
-  "old_47dim_models": "incompatible — do not load",
+  "old_47dim_models": "incompatible \u2014 do not load",
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H6: The failed or cancelled live action root cause, log line extraction, workflow fix, and green demo bot run",
+    "next_step": "H6: retrieve original Actions logs for the latest failed bot run; repair actual crash; verify a bounded demo-only 10-minute run before H7.",
     "items": [
       {
         "id": "H1",
@@ -189,6 +189,10 @@
           {
             "what": "Actions API audit of last 40 workflow runs",
             "result": "Identified exact failures: run 39933073507 (bot.yml) crashed with ModuleNotFoundError: No module named 'resource' on windows-latest in engine/sentinel_engine/sandbox.py:18; safety dispatch step failed with IndentationError: unexpected indent in python inline script; bot/main.py missing acct=broker.account_info() before line 85."
+          },
+          {
+            "what": "Resume: authenticated Actions API audit of last 40 runs",
+            "result": "HTTP 200. Latest bot run 39983309547 failed at c43649f. Training run 39929904179 is completed/failure, not currently running; preserve stored checkpoint and inspect before any resume."
           }
         ],
         "evidence": [],
@@ -370,6 +374,10 @@
         "evidence": [],
         "files": []
       }
-    ]
+    ],
+    "decisions": [
+      "Resume existing queue at H6. Earlier passing claims are inherited, not independently verified in this session; recheck integration evidence in V12. Never reset EURUSD training state or checkpoint. Demo-only tests; preserve existing styling."
+    ],
+    "resumed_at_utc": "2026-10-23T16:16:05.870996+00:00"
   }
 }

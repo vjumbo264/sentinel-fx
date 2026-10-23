@@ -57,3 +57,9 @@
 
 ## Problems / Blockers
 - None currently. Autonomous execution underway.
+
+## Fix5 resumed: evidence audit
+- Done: git pull, BUILD_STATE read, git log -15, authenticated last-40 Actions audit.
+- In progress: H6, latest failed bot run 39983309547 at c43649f.
+- Next: original run logs, minimal crash repair, bounded demo-only ten-minute verification; then H7.
+- Problems: inherited V2/V4/V5/V6 evidence cites local tests rather than required broker runs; those claims require independent V12 verification. Actions API reports original training run 39929904179 failed (not running). No checkpoint or training progress has been modified.
