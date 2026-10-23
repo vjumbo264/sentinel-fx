@@ -874,8 +874,8 @@
       {
         "id": "Q5",
         "title": "Training dashboard page",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Worker and Pages deployed. Real Chromium mobile/desktop checks pass: API 200, 13 live pairs, actual 0/5M progress, 30-second polling, desktop Training nav, route disposal and zero page errors. Evidence docs/overhaul_live_verification.json."
       }
     ],
     "pairs_target": [
@@ -898,7 +898,9 @@
     "decisions": [
       "Credentials in original request are redacted in docs/BUILD_PROMPT.md. Secret names only are recorded. Preserve all earlier build sections; only overhaul queue governs this build.",
       "Q1 resolves contradictory timing examples: WALL is dispatch trigger, HARD_STOP is loop end; subtracting handoff lead from WALL would dispatch 5 minutes too early. Workflow timeout also bounds setup and shutdown.",
-      "Retain lazy legacy broker fallbacks for compatibility/tests; Windows short-circuits to native API and production bot installs no Wine/rpyc/mt5linux. Updated stale unit mock with required tick-size/value/freeze fields."
+      "Retain lazy legacy broker fallbacks for compatibility/tests; Windows short-circuits to native API and production bot installs no Wine/rpyc/mt5linux. Updated stale unit mock with required tick-size/value/freeze fields.",
+      "Training causality takes priority over illustrative step ordering: execute selected action at its observed current-close tick, then process next bar intrabar and return next shared observation. This avoids executing stale-observation actions at an unseen future price; dedicated regression test passes.",
+      "GH_CHAIN_PAT and supplied Cloudflare credentials encrypted directly into existing Actions secret names; no secret values committed. Public training state endpoint is read-only and exposes no secrets."
     ],
     "secret_names_verified": [
       "BOT_SHARED_SECRET",
@@ -916,7 +918,9 @@
     ],
     "mt5_password_secret": "set",
     "known_issues": [
-      "Live Windows acceptance not executed by builder; manual workflow must confirm installer, login, trading, history and D1. Initial report deliberately pending."
+      "Live Windows acceptance not executed by builder; manual workflow must confirm installer, login, trading, history and D1. Initial report deliberately pending.",
+      "Full pytest: 48 passed, 2 pre-existing reconnect-test failures (removed error_counts API and outdated expectation that http_worker swallows network errors). Both reproduced unchanged on baseline 8c43d01. No new overhaul test failures; no out-of-scope supervisor semantics change.",
+      "Existing forward-eval.yml still contains legacy binary-option replay assumptions; outside Q1-Q5. New bundles explicitly do not claim profitability, and owner must enable/allocate models before live use."
     ]
   }
 }

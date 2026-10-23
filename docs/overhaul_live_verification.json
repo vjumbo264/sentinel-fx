@@ -1,0 +1,31 @@
+{
+  "status": "passing",
+  "checked_utc": "2026-10-23T06:29:36.273Z",
+  "pages_url": "https://sentinel-fx.pages.dev/#/training",
+  "api_url": "https://sentinel-fx-worker.vjumbo264.workers.dev/api/training/state",
+  "queue_count": 13,
+  "progress_label": "0 / 5,000,000 steps (0.0%)",
+  "api_responses": [
+    {
+      "url": "https://sentinel-fx-worker.vjumbo264.workers.dev/api/training/state",
+      "status": 200
+    },
+    {
+      "url": "https://sentinel-fx-worker.vjumbo264.workers.dev/api/training/state",
+      "status": 200
+    },
+    {
+      "url": "https://sentinel-fx-worker.vjumbo264.workers.dev/api/training/state",
+      "status": 200
+    },
+    {
+      "url": "https://sentinel-fx-worker.vjumbo264.workers.dev/api/training/state",
+      "status": 200
+    }
+  ],
+  "polling_30_seconds": "passing",
+  "route_disposal": "passing",
+  "desktop_nav": "passing",
+  "mobile_view": "passing",
+  "page_errors": []
+}

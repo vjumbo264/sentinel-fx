@@ -1,0 +1,12 @@
+{
+  "status": "passing",
+  "source": "actual indexed GitHub Release annual/combined assets",
+  "pair": "EURUSD",
+  "training_rows": 1240240,
+  "holdout_rows": 310060,
+  "training_end_epoch": 1718900100,
+  "holdout_start_epoch": 1718900160,
+  "observation_dim": 47,
+  "live_engine_five_action_steps": "passing",
+  "training_started": false
+}
