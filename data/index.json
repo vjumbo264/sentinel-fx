@@ -929,11 +929,19 @@
         "first_epoch": 959727480,
         "last_epoch": 978107220,
         "sha256": "cd4d61ae93fa27e637c52dc2f7918f79bee57f370bf9698c0be41562c9e4bbcb"
+      },
+      "2005": {
+        "asset": "USDJPY_2005.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 312962,
+        "first_epoch": 1104734880,
+        "last_epoch": 1135893420,
+        "sha256": "3d0fd4d242276e930c3ded7015bf7be6ad54265ad876b8bdbe9278fd9e40e779"
       }
     },
-    "last_epoch": 1104528540,
+    "last_epoch": 1135893420,
     "first_epoch": 959727480,
-    "rows": 1266517,
+    "rows": 1579479,
     "columns": [
       "epoch",
       "bid_open",
