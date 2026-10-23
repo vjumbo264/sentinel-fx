@@ -779,6 +779,11 @@
         "error": "JSON CAS retries exhausted: data/index.json",
         "checked_utc": "2026-10-23T07:56:35.040924+00:00",
         "status": "unavailable_not_complete"
+      },
+      "2022": {
+        "error": "JSON CAS retries exhausted: data/index.json",
+        "checked_utc": "2026-10-23T07:56:35.040924+00:00",
+        "status": "unavailable_not_complete"
       }
     },
     "shard_releases": [
