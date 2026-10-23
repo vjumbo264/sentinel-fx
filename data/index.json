@@ -906,7 +906,33 @@
     },
     "shard_releases": [
       "data-eurjpy-01"
-    ]
+    ],
+    "bulk_years": {
+      "2002": {
+        "asset": "EURJPY_2002.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 224329,
+        "first_epoch": 1015200180,
+        "last_epoch": 1041357480,
+        "sha256": "82a0b381cc6700fe6d442813633ad3f7d664f1f19376bebf7fd99a5bb615800a"
+      }
+    },
+    "last_epoch": 1041357480,
+    "first_epoch": 1015200180,
+    "rows": 224329,
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "source": "histdata-bid-only-synthetic-ask",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   },
   "frxNZDUSD": {
     "bulk_unavailable": {
