@@ -1960,11 +1960,19 @@
         "first_epoch": 1191189600,
         "last_epoch": 1199137200,
         "sha256": "b800c7c98689aac5bd0f8003a12a8a1741fb350189ff327e90a73fec1751faa8"
+      },
+      "2008": {
+        "asset": "GBPAUD_2008.csv.gz",
+        "release_tag": "data-gbpaud-01",
+        "rows": 363552,
+        "first_epoch": 1199232000,
+        "last_epoch": 1230757080,
+        "sha256": "155b9e2f6b745148303a9cd433216dc272f6adad04f234d891f22f778fe49f0b"
       }
     },
-    "last_epoch": 1199137200,
+    "last_epoch": 1230757080,
     "first_epoch": 1191189600,
-    "rows": 68842,
+    "rows": 432394,
     "columns": [
       "epoch",
       "bid_open",
