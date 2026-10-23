@@ -142,7 +142,14 @@
         "sha256": "774937eafceeb952a8581d42e31a335aef573aeae740595f7e8e3ebcb215ecba"
       }
     },
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "bulk_unavailable": {
+      "2001": {
+        "error": "invalid HistData OHLC row",
+        "checked_utc": "2026-10-23T08:47:50.672804+00:00",
+        "status": "unavailable_not_complete"
+      }
+    }
   },
   "R_25": {
     "symbol": "R_25",
