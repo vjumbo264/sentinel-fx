@@ -1291,11 +1291,19 @@
         "first_epoch": 1294005600,
         "last_epoch": 1325282280,
         "sha256": "f5450e2119435db3b989743ed17fc0310f01434e970487f8e38cf19b3155f2b4"
+      },
+      "2012": {
+        "asset": "USDCHF_2012.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 371726,
+        "first_epoch": 1325487600,
+        "last_epoch": 1356991080,
+        "sha256": "17e32f4f8ccffab67676b0f8274ae7d7b98df0c9eb6331bf930703a49ce18243"
       }
     },
-    "last_epoch": 1325282280,
+    "last_epoch": 1356991080,
     "first_epoch": 959725380,
-    "rows": 2969373,
+    "rows": 3341099,
     "columns": [
       "epoch",
       "bid_open",
