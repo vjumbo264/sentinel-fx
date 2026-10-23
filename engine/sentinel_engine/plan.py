@@ -8,7 +8,7 @@ try:
  import numpy as np
 except ImportError:
  np = None
-from .policy_schema import VERSION,validate_actions
+from .policy_schema import VERSION,validate_actions,OBSERVATION_DIM
 from .observation import vectorize
 ALLOWED_TYPES={'feature_group','analyst','router','head','calibrator','policy','news'}
 class PlanError(ValueError):pass
@@ -86,7 +86,12 @@ def evaluate(bundle,df,ctx=None,latency_ms=600):
     x=vectorize(obs).tolist()
     for dep in node.get('inputs',[]):
      if isinstance(values[dep],np.ndarray):x.extend(values[dep].reshape(-1).tolist())
-    scores=predict_model(bundle.model(node['model']),x);catalog=node['action_catalog']
+    if len(x)!=OBSERVATION_DIM:raise PlanError(f'policy input size mismatch: expected {OBSERVATION_DIM}, got {len(x)}')
+    mdl=bundle.model(node['model'])
+    if hasattr(mdl,'get_inputs'):
+     shape=mdl.get_inputs()[0].shape
+     if len(shape)!=2 or shape[1]!=OBSERVATION_DIM:raise PlanError(f'policy model input size mismatch: expected {OBSERVATION_DIM}, got {shape}')
+    scores=predict_model(mdl,x);catalog=node['action_catalog']
     if len(scores)!=len(catalog):raise PlanError('model output dimension differs from action catalogue')
     chosen=int(np.argmax(scores));actions=copy.deepcopy(catalog[chosen])
     for action in actions:

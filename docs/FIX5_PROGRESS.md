@@ -209,3 +209,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Reject retired policy metadata and ONNX input shapes before loading
 - Bundle verifier now rejects policy metadata not sentinel.policy.v2/62 and reads actual ONNX policy graph input width; changing metadata cannot conceal a 47-dimensional network. Bot and sfx check share this verifier.
 - Next: H7: run actual sfx mismatch checks, expose compatible model index and document exact behavior.
+
+### H7: Enforce policy input size at inference
+- Plan evaluator requires exactly 62 policy inputs and checks runtime ONNX shape before inference; extended analyst inputs cannot silently change the policy contract.
+- Next: H7: generate real ONNX mismatch fixtures and run sfx check.
