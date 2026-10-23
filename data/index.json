@@ -1043,7 +1043,10 @@
         "checked_utc": "2026-10-23T07:56:45.442181+00:00",
         "status": "unavailable_not_complete"
       }
-    }
+    },
+    "shard_releases": [
+      "data-audjpy-01"
+    ]
   },
   "frxEURAUD": {
     "bulk_unavailable": {
