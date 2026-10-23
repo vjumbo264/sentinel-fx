@@ -398,13 +398,13 @@
   "frxAUDUSD": {
     "symbol": "frxAUDUSD",
     "granularity": 60,
-    "rows": 1112861,
+    "rows": 1114297,
     "first_epoch": 1698019200,
-    "last_epoch": 1792627140,
+    "last_epoch": 1792713540,
     "first_utc": "2023-10-23T00:00:00+00:00",
-    "last_utc": "2026-10-21T23:59:00+00:00",
+    "last_utc": "2026-10-22T23:59:00+00:00",
     "years_back": 3.0,
-    "sha256": "4f71994f26dcd0acab8d72746f2180707d7c8fcf90f7578e59d8c337478107ca",
+    "sha256": "3ed33b3ace1d27ec7f8a40f9dd3cc3f3b14a1de215e0b7f91ef02b5a89cff488",
     "gaps_flagged": [
       {
         "from": 1703460420,
@@ -508,7 +508,7 @@
       }
     ],
     "source": "dukascopy-m1",
-    "last_checked_utc": "2026-10-22T07:07:51Z",
+    "last_checked_utc": "2026-10-23T07:07:18Z",
     "file": "frxAUDUSD_60s.csv.gz",
     "columns": [
       "epoch",
@@ -518,9 +518,9 @@
       "close",
       "volume"
     ],
-    "asset": "frxAUDUSD_60s.4f71994f26dcd0ac.csv.gz",
+    "asset": "frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz",
     "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.4f71994f26dcd0ac.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.4f71994f26dcd0ac.csv.gz.report.json"
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz.report.json"
   }
 }
