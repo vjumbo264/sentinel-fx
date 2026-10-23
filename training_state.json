@@ -38,7 +38,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-23T06:23:53.144900+00:00",
+  "updated_utc": "2026-10-23T06:26:10.101809+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -48,7 +48,6 @@
     "checkpoint_resume": "passing",
     "onnx_bundle_check": {
       "ok": true,
-      "bundle": "/home/user/sentinel-fx/cache/training/smoke/frxEURUSD_v1.sfxmodel.zip",
       "problems": [],
       "warnings": [],
       "checks": {
@@ -60,9 +59,9 @@
         "output_parity": true,
         "adapter_conversions": true
       },
-      "latency_ms": 0.281
+      "latency_ms": 0.241
     },
-    "updated_utc": "2026-10-23T06:23:53.144848+00:00",
-    "duration_seconds": 52.67
+    "updated_utc": "2026-10-23T06:26:10.101791+00:00",
+    "duration_seconds": 26.23
   }
 }

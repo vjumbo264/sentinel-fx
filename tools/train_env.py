@@ -118,21 +118,21 @@ class SentinelScalpEnv(gym.Env):
         if not self.action_space.contains(action):
             raise ValueError('action out of range')
         previous = self.broker.equity()
+        self._sync_position()
+        had_position = self._position is not None
+        adapter = ExecutionAdapter(self.broker, self.symbol, 'training',
+                                   pool_equity=self.broker.equity(),
+                                   pool_free_margin=max(0, self.broker.equity()-self.broker.margin()),
+                                   volatility=self.atr)
+        # The action was selected from the CURRENT returned observation, so fill
+        # at its close tick, not at an unseen future close (a one-bar lag/leak).
+        self.last_result = adapter.execute(self._action_to_dict(action), str(self.broker.epoch))
         old_epoch = self.broker.epoch
         self.i += 1
         row = self.frame.iloc[self.i]
         spread = float(row.get('ask_open', row['open']+self.specs.get('typical_spread_pts', 1.5)*self.specs['point']))-float(row.get('bid_open', row['open']))
         self._rollover(old_epoch, int(row['epoch'])+60)
-        # Only process the newly COMPLETED bar before inference; never expose next bar.
         self.broker.intrabar(row, spread)
-        self._sync_position()
-        had_position = self._position is not None
-        self._observe()
-        adapter = ExecutionAdapter(self.broker, self.symbol, 'training',
-                                   pool_equity=self.broker.equity(),
-                                   pool_free_margin=max(0, self.broker.equity()-self.broker.margin()),
-                                   volatility=self.atr)
-        self.last_result = adapter.execute(self._action_to_dict(action), str(int(row['epoch'])))
         self._sync_position()
         terminated = self.broker.equity() < self.initial_balance*.1
         truncated = self.i >= len(self.frame)-1

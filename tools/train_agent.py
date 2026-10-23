@@ -85,7 +85,7 @@ def load_data(gh, pair):
     for tag in entry.get('shard_releases', []):
         for asset in gh.assets(release(tag)):
             # Accept existing EURUSD history naming as well as new annual archives.
-            if asset['name'].lower().endswith('.csv.gz') and pair.lower() in asset['name'].lower():
+            if re.fullmatch(r'(?:frx)?'+re.escape(pair)+r'_\d{4}(?:_60s\.[a-f0-9]+|_through_\d{2})?\.csv\.gz', asset['name'], re.IGNORECASE):
                 candidates.append((asset, None))
     if entry.get('asset'):
         rel = release(entry['release_tag'])
@@ -118,6 +118,18 @@ def checkpoint(gh, model, state, stats):
     cache = ROOT / 'cache/training'; cache.mkdir(parents=True, exist_ok=True)
     name = f'{pair}_v{version}_s{steps}.zip'
     path = cache / name
+    rel = gh.ensure_release('training-checkpoints')
+    existing = next((a for a in gh.assets(rel) if a['name'] == name), None)
+    if existing:
+        raw = gh.download(existing)
+        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+            meta = json.loads(archive.read('sentinel_checkpoint.json'))
+        assert meta['steps'] == steps and meta['pair'] == pair and meta['version'] == version
+        path.write_bytes(raw)
+        state.update(total_steps_done=steps,last_checkpoint_steps=steps,last_checkpoint_utc=meta['saved_utc'],
+                     checkpoint={'asset':name,'release_tag':'training-checkpoints','sha256':hashlib.sha256(raw).hexdigest()})
+        save_state(gh,state,f'Q4: recover existing {pair} checkpoint {steps}')
+        return path
     model.save(str(path))
     meta = {'pair':pair,'version':version,'steps':steps,'saved_utc':utc(), **stats}
     with zipfile.ZipFile(path,'a',zipfile.ZIP_DEFLATED) as archive:
@@ -203,7 +215,16 @@ def publish(gh, model, env, holdout, state):
     rel = max(releases,key=lambda r:int(r['tag_name'].split('-')[-1])) if releases else gh.ensure_release('models-01')
     if sum(a['size'] for a in gh.assets(rel))+len(raw) > 1800*1024*1024:
         rel = gh.ensure_release('models-'+f"{int(rel['tag_name'].split('-')[-1])+1:02d}")
-    gh.upload(rel,bundle.name,raw)
+    existing = next((a for a in gh.assets(rel) if a['name'] == bundle.name),None)
+    if existing:
+        previous = gh.download(existing)
+        with zipfile.ZipFile(io.BytesIO(previous)) as archive:
+            previous_report = json.loads(archive.read('training_report.json'))
+        if previous_report['steps'] != model.num_timesteps:
+            raise ValueError('model version already published with different trained steps')
+        raw = previous
+    else:
+        gh.upload(rel,bundle.name,raw)
     def merge(index):
         entry = index.setdefault('frx'+pair,{'active_version':None,'versions':[]})
         entry['versions'] = [v for v in entry['versions'] if v['N'] != version]
@@ -250,7 +271,7 @@ def smoke_test():
     bundle,health = export_bundle(loaded,env,'EURUSD',1,cache,{'smoke_test':True,'profitability_verified':False})
     state = json.loads(STATE.read_text()) if STATE.exists() else new_state()
     state['smoke_test'] = {'status':'passing','steps':1000,'synthetic':True,'network_uploads':False,
-                           'observation_dim':47,'checkpoint_resume':'passing','onnx_bundle_check':health,
+                           'observation_dim':47,'checkpoint_resume':'passing','onnx_bundle_check':{k:v for k,v in health.items() if k!='bundle'},
                            'updated_utc':utc(),'duration_seconds':round(time.monotonic()-t0,2)}
     state['updated_utc'] = utc()
     STATE.write_text(json.dumps(state,indent=2)+'\n')

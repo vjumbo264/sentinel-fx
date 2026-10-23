@@ -868,8 +868,8 @@
       {
         "id": "Q4",
         "title": "Resumable RL scalping training",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "PASS: python tools/train_agent.py --smoke-test runs exactly 1000 PPO steps offline; 47-dimensional shared engine observations, native SB3 save/resume, deterministic ONNX logits parity, complete engine bundle check and state update all verified. Six training tests plus four data and five broker tests pass. Synthetic smoke steps are isolated from real total_steps_done=0. No existing training-checkpoints release found. Trainer uses durable 50k-step assets, CAS commits, wall self-chain, 13-pair queue and 30-day retrain gate."
       },
       {
         "id": "Q5",
@@ -893,7 +893,7 @@
       "EURAUD",
       "GBPAUD"
     ],
-    "last_updated": "2026-10-23T06:19:47.755303+00:00",
+    "last_updated": "2026-10-23T06:26:30.587978+00:00",
     "notes": "",
     "decisions": [
       "Credentials in original request are redacted in docs/BUILD_PROMPT.md. Secret names only are recorded. Preserve all earlier build sections; only overhaul queue governs this build.",
