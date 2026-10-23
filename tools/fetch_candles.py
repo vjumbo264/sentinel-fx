@@ -38,7 +38,7 @@ PUBLIC_WS_PRIMARY = "wss://ws.derivws.com/websockets/v3?app_id=1089"
 PUBLIC_WS_FALLBACK = "wss://ws.binaryws.com/websockets/v3?app_id=1089"
 
 MAX_PER_REQ = 5000
-DEADLINE_S = 1500  # hard cap: 25 minutes
+DEADLINE_S = int(os.environ.get("FETCH_DEADLINE_S", "17100"))  # dispatch/checkpoint wall
 
 def get_auth_otp_url():
     if not DERIV_TOKEN or not DERIV_APP_ID:
@@ -121,6 +121,9 @@ async def pull(symbol, gran, start_after=None):
             print("[fetch] deadline reached; writing what we have", flush=True)
             break
         
+        if start_after is not None and end != "latest" and int(end) <= start_after + 1:
+            break
+
         # Ensure connected
         if ws is None:
             try:
@@ -230,6 +233,14 @@ def main():
             print(f"[merge] existing {len(existing)} rows, refetch after {start_after}", flush=True)
 
     rows, source_used = asyncio.run(pull(a.symbol, a.granularity, start_after))
+    if not rows and not existing and last_epoch:
+        fname = f"{a.symbol}_{a.granularity}s.csv.gz"
+        columns = index.get(a.symbol, {}).get('columns') or ['epoch','open','high','low','close']
+        with gzip.open(os.path.join(a.out, fname), 'wt', newline='') as output:
+            csv.writer(output).writerow(columns)
+        print('STATS '+json.dumps({'symbol': a.symbol, 'file': fname, 'rows': 0,
+                                   'no_new_data': True, 'last_epoch': last_epoch, 'source': source_used}))
+        return
 
     for c in rows:
         ep = int(c["epoch"])
@@ -303,6 +314,8 @@ def main():
         "source": source_used,
         "last_checked_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "file": fname,
+        "no_new_data": not bool(rows),
+        "ask_assumption": "synthetic ask from registry spread" if is_fx else None,
     }
     print("STATS " + json.dumps(stats), flush=True)
 

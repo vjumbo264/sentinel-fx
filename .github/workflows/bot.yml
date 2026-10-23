@@ -39,7 +39,7 @@ jobs:
       BOT_CHAIN: ${{ inputs.chain || 'true' }}
       BOT_WALL_SECONDS: ${{ inputs.wall_seconds || '17100' }}      # 4h45m dispatch trigger
       BOT_HARD_STOP_SECONDS: "18000"
-      BOT_HANDOFF_LEAD_S: "300"      # dispatch next run 5min before stop
+      BOT_HANDOFF_LEAD_S: "300"      # legacy lead retained; WALL controls 4h45m dispatch
       BOT_STOP_OPEN_LEAD_S: "120"    # stop opening 2min before end
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +61,7 @@ jobs:
         run: |
           if [ "$JOB_STATUS" != "success" ]; then
             echo "Run ended with status: $JOB_STATUS"
-            FAIL_COUNT=$(python3 -c "
+            FAIL_COUNT=$(python -c "
             import urllib.request, json, os
             token = os.environ.get('GH_TOKEN_FOR_CHAIN')
             repo = os.environ.get('GITHUB_REPOSITORY')
@@ -81,7 +81,7 @@ jobs:
             except Exception:
                 pass
             print(consecutive)
-            ")
+            " | tr -d '\r')
             echo "Consecutive bot failures detected: $FAIL_COUNT"
             if [ "$FAIL_COUNT" -ge 3 ]; then
               echo "CRITICAL: 3 or more consecutive bot failures ($FAIL_COUNT). Circuit breaker opened; halting automated chain."

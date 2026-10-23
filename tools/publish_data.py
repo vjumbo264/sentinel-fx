@@ -24,6 +24,8 @@ def upload(tag,name,data):
 
 def main():
  path=Path(sys.argv[1]);report=json.loads(Path(str(path)+'.report.json').read_text());sym=report['symbol']
+ if report.get('no_new_data'):
+  print('NO_NEW_DATA '+sym);return
  content=api('/contents/data/index.json').json();index=json.loads(base64.b64decode(content['content']));old=index.get(sym)
  rows={}
  if old and old.get("asset"):
