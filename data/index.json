@@ -2034,11 +2034,19 @@
         "first_epoch": 1294005600,
         "last_epoch": 1325282280,
         "sha256": "93efe8f7bca9d7f8a2d9176d684b120a925253674b1c48076cb480f8a95edd09"
+      },
+      "2012": {
+        "asset": "EURAUD_2012.csv.gz",
+        "release_tag": "data-euraud-01",
+        "rows": 372653,
+        "first_epoch": 1325487600,
+        "last_epoch": 1356991080,
+        "sha256": "f63c63df5c485cabf5d1654cdce9655a66990febae0efd052eac8f61b6736983"
       }
     },
-    "last_epoch": 1325282280,
+    "last_epoch": 1356991080,
     "first_epoch": 1029796680,
-    "rows": 3309315,
+    "rows": 3681968,
     "columns": [
       "epoch",
       "bid_open",
