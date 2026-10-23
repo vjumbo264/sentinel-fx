@@ -2658,7 +2658,8 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "bulk_complete": false
   },
   "frxEURAUD": {
     "bulk_unavailable": {
