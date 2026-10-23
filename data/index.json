@@ -813,11 +813,19 @@
         "first_epoch": 978426600,
         "last_epoch": 1009823160,
         "sha256": "6ebfe8c10697403cd966a35275cd671b8da59fd79f8224ac44231966d8a77a3b"
+      },
+      "2002": {
+        "asset": "USDCAD_2002.csv.gz",
+        "release_tag": "data-usdcad-01",
+        "rows": 127353,
+        "first_epoch": 1009952760,
+        "last_epoch": 1041357420,
+        "sha256": "fc6a926a7e1f076184ff8161f6928e8630428efeb560b12b3dce6a63776df99b"
       }
     },
-    "last_epoch": 1009823160,
+    "last_epoch": 1041357420,
     "first_epoch": 960834300,
-    "rows": 99444,
+    "rows": 226797,
     "columns": [
       "epoch",
       "bid_open",
