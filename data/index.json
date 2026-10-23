@@ -1431,11 +1431,19 @@
         "first_epoch": 1325487600,
         "last_epoch": 1356991080,
         "sha256": "b9009c5da552a634916d65f8363a4e3a14eae1470f61ad12cad28bb60e991658"
+      },
+      "2013": {
+        "asset": "GBPJPY_2013.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 371327,
+        "first_epoch": 1357077600,
+        "last_epoch": 1388523540,
+        "sha256": "3edf51fe71911a69bdde5ac1c57a292d90aeb288004f66ab4e2d814259bc08b7"
       }
     },
-    "last_epoch": 1356991080,
+    "last_epoch": 1388523540,
     "first_epoch": 1020265200,
-    "rows": 3415105,
+    "rows": 3786432,
     "columns": [
       "epoch",
       "bid_open",
