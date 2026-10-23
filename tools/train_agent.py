@@ -334,7 +334,8 @@ def publish(gh, model, env, full_data, state):
                                   'sha256':hashlib.sha256(raw).hexdigest(),'size':len(raw),
                                   'created_utc':utc(),'verdict':verdict,'profitability_verified':(verdict=='pass'),
                                   'observation_dim':env.observation_space.shape[0], 'policy_schema':'sentinel.policy.v2'})
-        entry['active_version'] = version
+        # Publishing a candidate never switches the owner's trading allocation.
+        entry['candidate_version'] = version
         return index
     gh.commit_json('models/index.json',merge,f'Q4: publish health-checked {pair} v{version} [skip ci]')
 
@@ -344,16 +345,20 @@ def advance(state):
     if pair not in state['pairs_done']:
         state['pairs_done'].append(pair)
     state['pairs_pending'] = [p for p in state['queue'] if p not in state['pairs_done']]
+    state.setdefault('pair_results', {})[pair] = {
+        'version': state['active_version'], 'steps': state['total_steps_done'],
+        'verdict': state.get('verdict', 'no_edge'), 'note': state.get('release_decision', ''),
+        'holdout': state.get('holdout_result'), 'finished_utc': utc()}
+    state['next_retrain_after_utc'] = None
     if not state['pairs_pending']:
-        state.update(retrain_cycle=state['retrain_cycle']+1,
-                     next_retrain_after_utc=(datetime.now(timezone.utc)+timedelta(days=30)).isoformat(),
-                     pairs_done=[],pairs_pending=state['queue'].copy(),active_pair=state['queue'][0],
-                     active_version=state['active_version']+1)
-    else:
-        state['active_pair'] = state['pairs_pending'][0]
+        state.update(status='idle', active_pair=None)
+        return  # Only another owner action may create a new cycle.
+    state['active_pair'] = state['pairs_pending'][0]
     state.update(total_steps_done=0,last_checkpoint_steps=0,last_checkpoint_utc=None,
                  plateau_intervals=0,previous_mean_reward=None,status='queued')
-    state.pop('checkpoint',None)
+    for key in ('checkpoint','best_checkpoint','checkpoint_history','holdout_looks','holdout_result',
+                'verdict','release_decision','last_error','data_snapshot','cycle_started_utc'):
+        state.pop(key,None)
 
 
 def smoke_test():
@@ -395,9 +400,8 @@ def main():
         token = os.environ.get("GITHUB_TOKEN") or ""
     gh = GitHub(token)
     deadline = time.monotonic()+int(os.environ.get('TRAIN_WALL_SECONDS','17100'))
-    due = state.get('next_retrain_after_utc')
-    if due and datetime.fromisoformat(due)>datetime.now(timezone.utc):
-        print('Next cycle is not due until',due);return
+    if not state.get('pairs_pending') or state.get('status') == 'idle':
+        print('Owner cycle complete; manual action required for another cycle.');return
     if state['active_pair'] in state['pairs_done']:
         advance(state);save_state(gh,state,'Q4: advance completed pair')
     pair = state['active_pair']
@@ -415,7 +419,7 @@ def main():
                     reset_num_timesteps=False,callback=callback)
         if callback.wall:
             state['status']='checkpointed';save_state(gh,state,'Q4: wall checkpoint '+pair)
-            gh.dispatch('train.yml',{'mode':'resume'});return
+            return  # workflow_run owns continuation, including runner failures.
 
         # Target 5,000,000 steps reached: evaluate and release BEST checkpoint on hold-out
         best_meta = state.get('best_checkpoint')
@@ -432,7 +436,12 @@ def main():
         best_model = PPO.load(str(best_path), env=monitored, device='cpu') if best_path.exists() else model
         state['holdout_looks'] = state.get('holdout_looks', 0) + 1
         holdout_res = holdout_eval(best_model, full_data, specs, pair)
+        state['holdout_result'] = holdout_res
+        if not best_meta or not best_meta.get('val_metrics', {}).get('eligible'):
+            holdout_res['passed_gates'] = False
+            holdout_res['reason'] = 'No eligible validation checkpoint'
         if holdout_res.get('passed_gates'):
+            state['verdict'] = 'pass'
             publish(gh, best_model, env, full_data, state)
             state['release_decision'] = f"Released best checkpoint s{best_step} (Sharpe: {holdout_res['sharpe_annualized']}, Return: +{holdout_res['total_return_pct']}%, DD: {holdout_res['max_drawdown_pct']}%)"
         else:
@@ -442,8 +451,7 @@ def main():
             print(f"[RELEASE REFUSED] {pair}: {reason}")
 
         advance(state);save_state(gh,state,'Q4: completed '+pair+'; advance queue')
-        if not state['next_retrain_after_utc']:
-            gh.dispatch('train.yml',{'mode':'resume'})
+        # Completion-triggered continuation advances the existing queue only.
     except Exception as exc:
         state.update(status='blocked',last_error=str(exc))
         save_state(gh,state,'Q4: record training blocker '+pair)
