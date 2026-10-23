@@ -71,15 +71,6 @@ class ExecutionAdapter:
   protective=action.get('stop_distance') is None;distance=self.atr*(action.get('stop_distance') or 2)
   min_dist=max(specs.get('stops_level',0),specs.get('freeze_level',0))*specs['point']+specs['point']
   stop=round(opposite-sign*max(distance,min_dist),specs['digits'])
-  if self.overrides.get('fixed_sl_enabled') and self.overrides.get('fixed_sl_value') not in (None, ''):
-   sl_val=float(self.overrides['fixed_sl_value'])
-   if sl_val>0:
-    sl_unit=self.overrides.get('fixed_sl_unit','money')
-    target_loss=sl_val if sl_unit=='money' else (sl_val/100.0)*self.equity
-    tick_pt=float(specs.get('tick_value') or specs['point'])/max(float(specs.get('tick_size') or specs['point']),1e-9)
-    sl_pts=target_loss/max(self.equity*action['risk_fraction']*tick_pt,1e-9)
-    sl_delta=max(sl_pts*specs['point'],min_dist)
-    stop=round(opposite-sign*sl_delta,specs['digits'])
   if stop<=0:return self.reject('invalid',{'detail':'nonpositive server stop'})
   loss_per_lot=abs(price-stop)/float(specs.get('tick_size') or specs['point'])*float(specs.get('tick_value') or 0)
   if hasattr(self.broker,'loss_per_lot'):loss_per_lot=self.broker.loss_per_lot(self.symbol,side,price,stop)
@@ -93,15 +84,25 @@ class ExecutionAdapter:
   if margin['required_margin']>available:
    volume=floor_step(volume*available/max(margin['required_margin'],1e-12),step)
    if volume<specs['volume_min']:return self.reject('margin')
+  # Select the model's lot budget first, then translate optional MONEY targets
+  # using native account-currency profit conversion for that actual volume.
+  value_per_price=loss_per_lot/max(abs(price-stop),specs['point'])
+  sl_override=None
+  if self.overrides.get('fixed_sl_enabled') and self.overrides.get('fixed_sl_value') not in (None,''):
+   sl_val=float(self.overrides['fixed_sl_value'])
+   if sl_val>0:
+    sl_override=sl_val if self.overrides.get('fixed_sl_unit','money')=='money' else sl_val/100*self.equity
+    distance=max(sl_override/(volume*value_per_price),min_dist+abs(price-opposite))
+    stop=round(price-sign*distance,specs['digits'])
+    if stop<=0:return self.reject('invalid',{'detail':'override requires nonpositive stop'})
+    loss_per_lot=abs(price-stop)*value_per_price
   targets=action.get('targets',[]);parts=[];left=volume
   if self.overrides.get('fixed_tp_enabled') and self.overrides.get('fixed_tp_value') not in (None, ''):
    tp_val=float(self.overrides['fixed_tp_value'])
    if tp_val>0:
     tp_unit=self.overrides.get('fixed_tp_unit','money')
     target_profit=tp_val if tp_unit=='money' else (tp_val/100.0)*self.equity
-    tick_pt=float(specs.get('tick_value') or specs['point'])/max(float(specs.get('tick_size') or specs['point']),1e-9)
-    tp_pts=target_profit/max(volume*tick_pt,1e-9)
-    tp_delta=max(tp_pts*specs['point'],min_dist)
+    tp_delta=max(target_profit/max(volume*value_per_price,1e-9),min_dist)
     tp_override=round(price+sign*tp_delta,specs['digits'])
     parts=[[volume,tp_override]]
   if not parts:
@@ -129,6 +130,7 @@ class ExecutionAdapter:
      tick=self.broker.get_tick(self.symbol);price=tick['ask'] if sign==1 else tick['bid'];opposite=tick['bid'] if sign==1 else tick['ask'];stop=round(opposite-sign*max(distance,min_dist*1.5),specs['digits'])
      # Recompute risk: a widened retry stop must not increase allocated loss.
      retry_loss=self.broker.loss_per_lot(self.symbol,side,price,stop) if hasattr(self.broker,'loss_per_lot') else abs(price-stop)/specs['tick_size']*specs['tick_value']
-     size=floor_step(min(size,self.equity*action['risk_fraction']/retry_loss),step)
+     budget=sl_override if sl_override is not None else self.equity*action['risk_fraction']
+     size=floor_step(min(size,budget/retry_loss),step)
      if size<specs['volume_min']:raise ValueError('retry size below broker minimum')
   return ActionResult('filled',price=weighted_price/filled,size=filled,clamped={'sl':stop,'risk_fraction':filled*loss_per_lot/self.equity,'protective_stop':protective,'targets':parts},tickets=tickets).to_dict()
