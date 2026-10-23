@@ -948,6 +948,11 @@
         "error": "JSON CAS retries exhausted: data/index.json",
         "checked_utc": "2026-10-23T07:56:28.200836+00:00",
         "status": "unavailable_not_complete"
+      },
+      "2016": {
+        "error": "404 Client Error: Not Found for url: https://api.github.com/repos/vjumbo264/sentinel-fx/releases/assets/668426942",
+        "checked_utc": "2026-10-23T07:49:57.583765+00:00",
+        "status": "unavailable_not_complete"
       }
     },
     "bulk_years": {
