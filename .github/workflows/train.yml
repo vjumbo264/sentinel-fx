@@ -4,8 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: resume an owner-started cycle; new starts/updates use the Training page request queue
+        description: resume existing cycle, start new weights, or update existing weights
+        type: choice
+        options: [resume, start, update]
         default: resume
+      pair:
+        description: pair, comma-separated pairs, or all for Update all
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -24,6 +30,8 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TRAIN_WALL_SECONDS: '17100'
       TRAIN_CPU_THREADS: '2'
+      TRAIN_MODE: ${{ inputs.mode || 'resume' }}
+      TRAIN_PAIR: ${{ inputs.pair || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
