@@ -249,3 +249,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ## H8,H9: doing
 - Related Actions/recovery/manual-start changes are one unit, separately accepted. Preserve current bot READY lease, per-run concurrency, backup cron and training single-writer group.
 - Next: H8/H9: read current training lifecycle/retry helpers, implement durable recovery scheduling and owner-start intent without automatic fresh cycles.
+
+### H8: Add bounded retry helper for flaky HTTP transports
+- New tools/net_retry.py retries only network resets/timeouts and transient HTTP408/429/5xx, with bounded backoff. Authentication and other code failures propagate immediately. Broker orders are not retried by this helper.
+- Next: H8/H9: add durable classified recovery state, an independent completion/scheduled watcher, and training owner intent.

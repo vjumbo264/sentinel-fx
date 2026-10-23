@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H8/H9: read current training lifecycle/retry helpers, implement durable recovery scheduling and owner-start intent without automatic fresh cycles.",
+    "next_step": "H8/H9: add durable classified recovery state, an independent completion/scheduled watcher, and training owner intent.",
     "items": [
       {
         "id": "H1",
@@ -315,6 +315,10 @@
           {
             "what": "Verified status transition",
             "result": "Related Actions/recovery/manual-start changes are one unit, separately accepted. Preserve current bot READY lease, per-run concurrency, backup cron and training single-writer group."
+          },
+          {
+            "what": "Add bounded retry helper for flaky HTTP transports",
+            "result": "New tools/net_retry.py retries only network resets/timeouts and transient HTTP408/429/5xx, with bounded backoff. Authentication and other code failures propagate immediately. Broker orders are not retried by this helper."
           }
         ],
         "evidence": [],
