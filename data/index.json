@@ -1594,11 +1594,19 @@
         "first_epoch": 1230854340,
         "last_epoch": 1262296740,
         "sha256": "a328e26f053fb50e8253f33ec63d9d5cc2adf8b31ae59f5d61c894a59428a121"
+      },
+      "2010": {
+        "asset": "AUDJPY_2010.csv.gz",
+        "release_tag": "data-audjpy-01",
+        "rows": 363476,
+        "first_epoch": 1262556120,
+        "last_epoch": 1293825480,
+        "sha256": "65ffdedc53c9397ec0b0624e872a984c938d373fbd382abdc057d5b9de2ad795"
       }
     },
-    "last_epoch": 1262296740,
+    "last_epoch": 1293825480,
     "first_epoch": 1029796320,
-    "rows": 2517419,
+    "rows": 2880895,
     "columns": [
       "epoch",
       "bid_open",
