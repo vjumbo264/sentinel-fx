@@ -1690,11 +1690,19 @@
         "first_epoch": 1420135260,
         "last_epoch": 1451599080,
         "sha256": "37bc267b7fc2768990fa946676b02604e784d2906081ba58fb7aedf909ca76b4"
+      },
+      "2016": {
+        "asset": "EURJPY_2016.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 373130,
+        "first_epoch": 1451858400,
+        "last_epoch": 1483134960,
+        "sha256": "fdd0b0e1ef085970b63fa8933000becd064a81aaf2b1206445ce2ffd4cd06120"
       }
     },
-    "last_epoch": 1451599080,
+    "last_epoch": 1483134960,
     "first_epoch": 1015200180,
-    "rows": 4893381,
+    "rows": 5266511,
     "columns": [
       "epoch",
       "bid_open",
