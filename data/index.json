@@ -1806,11 +1806,19 @@
         "first_epoch": 1609711200,
         "last_epoch": 1640987880,
         "sha256": "31b83c6be7fece19942e211e2f712bae30d8255453446bc91c449aa47ffe12a0"
+      },
+      "2022": {
+        "asset": "GBPJPY_2022.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 372229,
+        "first_epoch": 1641162000,
+        "last_epoch": 1672437480,
+        "sha256": "34133a06ad555d9d500e86ef778e6c3cf88f2894fd0e3b50ca9b793383d9fa95"
       }
     },
-    "last_epoch": 1640987880,
+    "last_epoch": 1672437480,
     "first_epoch": 1020265200,
-    "rows": 6759459,
+    "rows": 7131688,
     "columns": [
       "epoch",
       "bid_open",
