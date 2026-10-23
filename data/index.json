@@ -1306,11 +1306,19 @@
         "first_epoch": 1230854340,
         "last_epoch": 1262296740,
         "sha256": "87079a561f2426b0e7ae8c1ccb52ce4c88e797d08bfaa289606a9b9af66f03fe"
+      },
+      "2010": {
+        "asset": "GBPJPY_2010.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 367108,
+        "first_epoch": 1262556000,
+        "last_epoch": 1293825540,
+        "sha256": "d46030817aaaea3c54a7acbc3333610216cc22d2881acdeec45474cc8880441e"
       }
     },
-    "last_epoch": 1262296740,
+    "last_epoch": 1293825540,
     "first_epoch": 1020265200,
-    "rows": 2312160,
+    "rows": 2679268,
     "columns": [
       "epoch",
       "bid_open",
