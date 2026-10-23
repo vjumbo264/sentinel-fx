@@ -2238,11 +2238,19 @@
         "first_epoch": 1514844000,
         "last_epoch": 1546293480,
         "sha256": "cd35501fa1fa054d73c39f2fbce519fa7895bc75445efa86c58b26840ce82a3a"
+      },
+      "2019": {
+        "asset": "AUDJPY_2019.csv.gz",
+        "release_tag": "data-audjpy-01",
+        "rows": 372885,
+        "first_epoch": 1546380000,
+        "last_epoch": 1577829480,
+        "sha256": "3cd84670777f65c80767013409aeaad85e979b6326609f06dab36c78b513f902"
       }
     },
-    "last_epoch": 1546293480,
+    "last_epoch": 1577829480,
     "first_epoch": 1029796320,
-    "rows": 5510797,
+    "rows": 5883682,
     "columns": [
       "epoch",
       "bid_open",
