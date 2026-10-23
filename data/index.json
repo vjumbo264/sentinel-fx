@@ -719,11 +719,19 @@
         "first_epoch": 1672614240,
         "last_epoch": 1703887080,
         "sha256": "75d40076a5f18432cfd6450ac58a02c37dd83f0b57d4ceedbcfe979749667f61"
+      },
+      "2024": {
+        "asset": "GBPUSD_2024.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 372047,
+        "first_epoch": 1704146400,
+        "last_epoch": 1735682280,
+        "sha256": "d7877a6a62caf98a30b72c50c218a6c6aae41b09b0d4748fb3a1fda3065b8d61"
       }
     },
-    "last_epoch": 1703887080,
+    "last_epoch": 1735682280,
     "first_epoch": 959727540,
-    "rows": 7862442,
+    "rows": 8234489,
     "columns": [
       "epoch",
       "bid_open",
