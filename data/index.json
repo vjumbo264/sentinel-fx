@@ -1849,6 +1849,11 @@
         "error": "There is no token. Please make sure your year/month/pair is correct.Example is year=2016, month=7, pair=eurgbp",
         "checked_utc": "2026-10-23T07:56:35.401146+00:00",
         "status": "unavailable_not_complete"
+      },
+      "2025": {
+        "error": "502 Server Error: Bad Gateway for url: https://api.github.com/repos/vjumbo264/sentinel-fx/contents/data/index.json",
+        "checked_utc": "2026-10-23T07:56:35.401146+00:00",
+        "status": "unavailable_not_complete"
       }
     },
     "shard_releases": [
