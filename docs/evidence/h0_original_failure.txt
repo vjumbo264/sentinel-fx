@@ -1,0 +1,28 @@
+2026-10-23T12:55:19.9915354Z -----------------------------------------
+2026-10-23T12:59:35.5997209Z Traceback (most recent call last):
+2026-10-23T12:59:35.6005907Z   File "/home/runner/work/sentinel-fx/sentinel-fx/tools/train_agent.py", line 385, in <module>
+2026-10-23T12:59:35.6006336Z     main()
+2026-10-23T12:59:35.6006685Z   File "/home/runner/work/sentinel-fx/sentinel-fx/tools/train_agent.py", line 371, in main
+2026-10-23T12:59:35.6007257Z     publish(gh,model,env,full_data,state)
+2026-10-23T12:59:35.6007671Z   File "/home/runner/work/sentinel-fx/sentinel-fx/tools/train_agent.py", line 256, in publish
+2026-10-23T12:59:35.6008102Z     wf = walk_forward_eval(model, full_data, env.specs, pair)
+2026-10-23T12:59:35.6008391Z          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-23T12:59:35.6008862Z   File "/home/runner/work/sentinel-fx/sentinel-fx/tools/train_agent.py", line 224, in walk_forward_eval
+2026-10-23T12:59:35.6009621Z     obs, reward, terminated, truncated, info = val_env.step(int(action))
+2026-10-23T12:59:35.6009946Z                                                ^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-23T12:59:35.6010338Z   File "/home/runner/work/sentinel-fx/sentinel-fx/tools/train_env.py", line 197, in step
+2026-10-23T12:59:35.6010770Z     return self._observe(), reward, bool(terminated), bool(truncated), {
+2026-10-23T12:59:35.6011075Z            ^^^^^^^^^^^^^^^
+2026-10-23T12:59:35.6011419Z   File "/home/runner/work/sentinel-fx/sentinel-fx/tools/train_env.py", line 49, in _observe
+2026-10-23T12:59:35.6011828Z     self.last_observation, self.atr = build_observation(
+2026-10-23T12:59:35.6012107Z                                       ^^^^^^^^^^^^^^^^^^
+2026-10-23T12:59:35.6012641Z   File "/opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages/sentinel_engine/observation.py", line 82, in build_observation
+2026-10-23T12:59:35.6013439Z     market,atr,asof=causal_market(df);dt=datetime.fromtimestamp(asof,timezone.utc)
+2026-10-23T12:59:35.6013788Z                     ^^^^^^^^^^^^^^^^^
+2026-10-23T12:59:35.6014273Z   File "/opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages/sentinel_engine/observation.py", line 27, in causal_market
+2026-10-23T12:59:35.6014837Z     if atr<=0 or not math.isfinite(atr):raise ValueError('invalid volatility')
+2026-10-23T12:59:35.6015180Z                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-23T12:59:35.6015446Z ValueError: invalid volatility
+2026-10-23T12:59:36.4861937Z ##[error]Process completed with exit code 1.
+2026-10-23T12:59:36.4898980Z ##[group]Run curl -sS -X POST "$WORKER_URL/api/settings/training-lock" \
+2026-10-23T12:59:36.4899274Z [36;1mcurl -sS -X POST "$WORKER_URL/api/settings/training-lock" \[0m

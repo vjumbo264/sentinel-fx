@@ -304,3 +304,7 @@ Next: H0: wait for real CPU validation and Actions checkpoint950000, commit run/
 ## H0 — Verify actual checkpoint purged validation on real candles
 Actual EURUSD_v1_s900000.zip CPU evaluation on real EURUSD2025 release candles completed:3069 evaluated bars across3 fixed purged windows,1077 trades, return -34.714882%, maxDD78.820308%, verdict no_edge. Poisoned locked holdout was not accessed. Evidence docs/evidence/h0_real_validation_cpu.json. This proves evaluator operation, NOT profitability. Actions39992955869 remains active at last durable900000; awaiting950000.
 Next: H0: verify Actions checkpoint >900000 with recorded validation; then H9 manual training only. Do not release this unproven model.
+
+## H0 — Record original stack and completed regressions
+Six actual local regressions PASS after correcting shell PATH to expose the installed sfx CLI: real47-dimensional archive rejected; forged metadata rejected;62 shape accepted; nonfatal invalid-window tests pass. Original stack evidence is committed. These checks do not substitute for the pending actual post-resume checkpoint.
+Next: H0: confirm >900000 verified checkpoint on https://github.com/vjumbo264/sentinel-fx/actions/runs/39992955869 and validation metrics; only then begin H9.
