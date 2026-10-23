@@ -265,3 +265,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H8: Record final source, log, API and checkpoint integrity checks
 - Scanned tracked worktree, retrieved Actions logs and live state/account/model/login APIs for exact supplied PAT/password/Cloudflare token: no plaintext matches. Write-only password absent from account API. Training_state.json unchanged from starting commit; 900000 EURUSD v1 steps preserved. Mode remains demo. Twelve local startup/schema/staged-recovery regressions pass. This is a partial check, not the full V12 acceptance rerun.
 - Next: First re-audit unproven inherited H1-H5 acceptance; H8 remains staged/incomplete; H9/H10 and full live suite remain unfinished.
+
+### H8: Fail closed when staged recovery integration is invoked prematurely
+- Added explicit activation guard to staged watcher: it exits with a clear prerequisite message unless FIX5_RECOVERY_INTEGRATION_READY=true. No recovery schedule or Worker claim routes are installed; this prevents accidentally activating half-complete recovery. Existing bot chain and backup schedule remain in place.
+- Next: Acceptance audit remains incomplete: reopen inherited H1-H5 claims, preserve independently verified H6/H7, and record remaining work without claiming owner blockage.

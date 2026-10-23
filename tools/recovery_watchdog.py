@@ -122,6 +122,11 @@ class Watchdog:
 
 
 def main():
+    # Deliberately staged: atomic Worker record/claim routes and live recovery
+    # acceptance are not yet installed. Do not turn an incomplete integration
+    # into an automatically scheduled chain.
+    if os.environ.get('FIX5_RECOVERY_INTEGRATION_READY') != 'true':
+        raise SystemExit('Recovery integration is staged, not enabled: install/verify Worker recovery-record and recovery-claim routes first')
     watcher=Watchdog();watcher.bot();watcher.training()
 
 if __name__=='__main__':main()
