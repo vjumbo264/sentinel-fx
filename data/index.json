@@ -1738,7 +1738,8 @@
         "checked_utc": "2026-10-23T07:56:28.136508+00:00",
         "status": "unavailable_not_complete"
       }
-    }
+    },
+    "bulk_complete": true
   },
   "frxGBPJPY": {
     "bulk_unavailable": {
