@@ -2,11 +2,11 @@
   "R_10": {
     "symbol": "R_10",
     "granularity": 60,
-    "rows": 543381,
+    "rows": 543610,
     "first_epoch": 1760163305,
-    "last_epoch": 1792766100,
+    "last_epoch": 1792779840,
     "first_utc": "2025-10-11T06:15:05+00:00",
-    "last_utc": "2026-10-23T14:35:00+00:00",
+    "last_utc": "2026-10-23T18:24:00+00:00",
     "years_back": 1.03,
     "sha256": "a6822d6fe84a9640094ddf41cab49964809e26efdb22f48bfa8e7dac117fde36",
     "gaps_flagged": [
@@ -17,7 +17,7 @@
       }
     ],
     "source": "auth-otp",
-    "last_checked_utc": "2026-10-23T14:35:39Z",
+    "last_checked_utc": "2026-10-23T18:25:48.785065+00:00",
     "file": "R_10_60s.csv.gz",
     "columns": [
       "epoch",
@@ -32,7 +32,23 @@
     "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_10_60s.a6822d6fe84a9640.csv.gz.report.json",
     "no_new_data": false,
     "handoff_required": false,
-    "ask_assumption": null
+    "ask_assumption": null,
+    "appends": [
+      {
+        "asset": "R_10_1792766160_1792779840.ce975a7b03d630be.csv.gz",
+        "release_tag": "data-deriv-appends-01",
+        "sha256": "ce975a7b03d630bec4b07eb888848265a4655a2e16d76079bd83a1e3207f24b6",
+        "rows": 229,
+        "first_epoch": 1792766160,
+        "last_epoch": 1792779840,
+        "source": "Deriv UTC",
+        "last_update_utc": "2026-10-23T18:25:48.589107+00:00"
+      }
+    ],
+    "last_update_utc": "2026-10-23T18:25:48.785062+00:00",
+    "join_median_difference": 0.0,
+    "join_overlap_rows": 5999,
+    "timezone": "UTC"
   },
   "R_100": {
     "symbol": "R_100",
