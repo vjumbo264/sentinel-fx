@@ -25,7 +25,8 @@ def report_to_worker(result):
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
-            "X-Bot-Secret": os.environ.get("BOT_SHARED_SECRET", "")
+            "X-Bot-Secret": os.environ.get("BOT_SHARED_SECRET", ""),
+            "User-Agent": "sentinel-mt5-login/1.0"
         },
         method="POST"
     )

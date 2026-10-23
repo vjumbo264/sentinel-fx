@@ -169,3 +169,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H6: Restore last verified MT5 runtime after native IPC repair failed
 - Run 39985636231 still failed with IPC timeout on all three authenticated 60s initialization attempts, even with exact portable terminal path; login reporting separately returned HTTP 403. Rather than guessing further, bot.yml now uses the unchanged Linux stack from green run 39907951207 at 559d4762, preserving current READY handover, lease, concurrency and 4h backup cron.
 - Next: H6: dispatch bounded demo run on restored known-green stack; verify actual Worker heartbeat and final logs.
+
+### H6: Fix proven Cloudflare reporting User-Agent rejection
+- Native bot run 39985787304 failed with the same IPC timeout; no more speculative native retries. Separate real transport probe: default Python urllib UA gives HTTP 403 / error code 1010; sentinel-mt5-login/1.0 gives HTTP 200 for the same read-only authenticated endpoint. Added explicit User-Agent to login result reporting. Restored Linux demo run 39986703235 is starting.
+- Next: H6: verify restored Linux demo run for at least 600 seconds and green completion.

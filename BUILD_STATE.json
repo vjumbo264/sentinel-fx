@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H6: dispatch bounded demo run on restored known-green stack; verify actual Worker heartbeat and final logs.",
+    "next_step": "H6: verify restored Linux demo run for at least 600 seconds and green completion.",
     "items": [
       {
         "id": "H1",
@@ -225,6 +225,10 @@
           {
             "what": "Restore last verified MT5 runtime after native IPC repair failed",
             "result": "Run 39985636231 still failed with IPC timeout on all three authenticated 60s initialization attempts, even with exact portable terminal path; login reporting separately returned HTTP 403. Rather than guessing further, bot.yml now uses the unchanged Linux stack from green run 39907951207 at 559d4762, preserving current READY handover, lease, concurrency and 4h backup cron."
+          },
+          {
+            "what": "Fix proven Cloudflare reporting User-Agent rejection",
+            "result": "Native bot run 39985787304 failed with the same IPC timeout; no more speculative native retries. Separate real transport probe: default Python urllib UA gives HTTP 403 / error code 1010; sentinel-mt5-login/1.0 gives HTTP 200 for the same read-only authenticated endpoint. Added explicit User-Agent to login result reporting. Restored Linux demo run 39986703235 is starting."
           }
         ],
         "evidence": [],
