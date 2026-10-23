@@ -1410,11 +1410,19 @@
         "first_epoch": 1325487600,
         "last_epoch": 1356991020,
         "sha256": "1d438e6e0e594ef4e52e6b578b5131a3d38a9acdcd777a1f5ff028562958df5a"
+      },
+      "2013": {
+        "asset": "NZDUSD_2013.csv.gz",
+        "release_tag": "data-nzdusd-01",
+        "rows": 369180,
+        "first_epoch": 1357077600,
+        "last_epoch": 1388523540,
+        "sha256": "4462fea708fbb2ddde83c7d04d60280b4061ebf35ad7e282705dd87ba94b7743"
       }
     },
-    "last_epoch": 1356991020,
+    "last_epoch": 1388523540,
     "first_epoch": 1123884060,
-    "rows": 2217967,
+    "rows": 2587147,
     "columns": [
       "epoch",
       "bid_open",
