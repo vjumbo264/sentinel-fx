@@ -65,6 +65,21 @@ def main():
             report_to_worker(res)
             sys.exit(1)
             
+        probes = {}
+        api = broker._get_api()
+        if mode != 'demo' or int(api.account_info().trade_mode) != 0:
+            raise RuntimeError('Demo account required; no real-account probe permitted')
+        if os.environ.get('PROBE_WRONG_PASSWORD', '').lower() == 'true':
+            import secrets
+            invalid = 'invalid-probe-' + secrets.token_hex(16)
+            wrong_ok = api.login(login=int(broker.demo_login), password=invalid, server=broker.demo_server, timeout=15000)
+            error = tuple(api.last_error())
+            restored = api.login(login=int(broker.demo_login), password=broker.password, server=broker.demo_server, timeout=60000)
+            if wrong_ok or not restored:
+                raise RuntimeError('Wrong-password rejection or correct-login restoration failed')
+            probes['wrong_password'] = {'ok': False, 'rejected': True, 'error': str(error)}
+            print('[PASS] Wrong password rejected by broker:', error)
+            print('[PASS] Correct stored credentials restored')
         # Connected successfully! Retrieve read-only account details
         acct = broker.account_info()
         login_masked = str(acct.get("login", ""))
@@ -80,7 +95,8 @@ def main():
             "currency": acct.get("currency", "USD"),
             "login": login_masked,
             "server": acct.get("server", broker.demo_server if mode == "demo" else broker.real_server),
-            "timestamp_utc": now_utc
+            "timestamp_utc": now_utc,
+            "probes": probes
         }
         print(f"[PASS] MT5 Login Successful: Type={res['account_type']}, Server={res['server']}, Balance={res['balance']} {res['currency']}")
         report_to_worker(res)
