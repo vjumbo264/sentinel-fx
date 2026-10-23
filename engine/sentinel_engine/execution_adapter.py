@@ -64,7 +64,7 @@ class ExecutionAdapter:
  def open(self,action,decision_id):
   if self.overrides.get('halt') or self.overrides.get('pause'):return self.reject('owner_override')
   if self.overrides.get('market_closed'):return self.reject('market_closed',{'detail':'trading session closed'})
-  if hasattr(self.broker,'is_market_open') and not self.broker.is_market_open(self.symbol):return self.reject('market_closed',{'detail':'broker session closed'})
+  if not self.overrides.get('trade_weekends') and hasattr(self.broker,'is_market_open') and not self.broker.is_market_open(self.symbol):return self.reject('market_closed',{'detail':'broker session closed'})
   specs=self.broker.get_symbol_info(self.symbol);tick=self.broker.get_tick(self.symbol)
   if not specs or not tick or tick['ask']<=0 or tick['bid']<=0:return self.reject('market_closed')
   side='BUY' if action['side']=='long' else 'SELL';sign=1 if side=='BUY' else -1;price=tick['ask'] if sign==1 else tick['bid'];opposite=tick['bid'] if sign==1 else tick['ask']

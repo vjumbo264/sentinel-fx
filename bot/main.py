@@ -78,6 +78,9 @@ def main_loop(mode='demo'):
    remaining=HARD_STOP-(time.time()-start)
    try:
     session=http_worker('GET','/api/bot/session');settings=session.get('settings',{})
+    if settings.get('power') is False:
+     log.info('Owner turned bot power OFF; exiting cleanly')
+     break
     if settings.get('mode',mode)!=mode:raise ValueError('Account mode changed; runner remains on authenticated '+mode+' account')
     enabled=http_worker('GET','/api/bot/models')['symbols']
     registry.refresh(enabled,broker)
@@ -89,16 +92,20 @@ def main_loop(mode='demo'):
       return
      time.sleep(5);continue
     if not was_leader:
-     try:http_worker('POST','/api/bot/settings',{'bot_recovery':{'status':'recovered','recovered_at_utc':datetime.now(timezone.utc).isoformat(),'runner':OWNER}})
-     except Exception:pass
+     prev_rec=settings.get('bot_recovery') or {}
+     if prev_rec.get('status') in ('recovering','code_failure_halted') or prev_rec.get('consecutive_code_failures') or prev_rec.get('consecutive_platform_failures'):
+      try:http_worker('POST','/api/bot/settings',{'bot_recovery':{'status':'recovered','recovered_at_utc':datetime.now(timezone.utc).isoformat(),'consecutive_code_failures':0,'consecutive_platform_failures':0,'runner':OWNER}})
+      except Exception:pass
     was_leader=True
-    positions=broker.get_open_positions();deals=broker.get_history_deals(since);acct=broker.account_info()
+    positions=broker.get_open_positions()
+    raw_deals=broker.get_history_deals(since)
+    deals=[d for d in raw_deals if int(d.get('position_id',0))>0 and int(d.get('type',-1)) in (0,1)]
+    acct=broker.account_info()
     http_worker('POST','/api/bot/heartbeat',{'mode':mode,'balance':acct['balance'],'equity':acct['equity'],'free_margin':acct['margin_free'],'loginid':str(acct['login'])[:2]+'***','currency':acct['currency'],'note':'active runner '+OWNER})
     ownership=[];ledgers={l['symbol']:l for l in session.get('ledger',[])}
     for symbol,bundle in registry.bundles.items():
      model_id=symbol+'@'+str(bundle.version);magic=model_magic(model_id)
      ownership += [{'position_id':p['ticket'],'model_symbol':symbol,'reason':p.get('comment','')} for p in positions if p['magic']==magic]
-     # Also adopt closed deals after restart from deterministic model magic.
      ownership += [{'position_id':d['position_id'],'model_symbol':symbol,'reason':d.get('comment','')} for d in deals if d['magic']==magic]
     http_worker('POST','/api/bot/cfd-sync',{'positions':positions,'deals':deals,'ownership':ownership,'mode':'demo','balance':acct['balance']})
     
@@ -192,7 +199,8 @@ def main_loop(mode='demo'):
       'fixed_tp_value':fixed_tp.get('value'),
       'fixed_sl_enabled':bool(fixed_sl.get('enabled')),
       'fixed_sl_unit':fixed_sl.get('unit','money'),
-      'fixed_sl_value':fixed_sl.get('value')
+      'fixed_sl_value':fixed_sl.get('value'),
+      'trade_weekends':trade_weekends
      }
      used=sum(broker.check_margin(broker_symbol,p['type'],p['volume'],p['price_current'])['required_margin'] for p in owned)
      adapter=ExecutionAdapter(broker,broker_symbol,model_id,equity,min(acct['margin_free'],max(0,float(led['allocated'])-used)),atr,overrides)
@@ -202,6 +210,14 @@ def main_loop(mode='demo'):
       if not http_worker('POST','/api/bot/lock',{'owner':OWNER}).get('acquired'):break
       result=adapter.execute(action,str(candles[-1]['epoch']));results.append(result);lastresults[symbol]=result
      decision_log(symbol,obs,out,results)
+     if any(r.get('status') in ('filled','partial') and float(r.get('size') or 0)>0 for r in results):
+      pos2=broker.get_open_positions();deals2=[d for d in broker.get_history_deals(since) if int(d.get('position_id',0))>0 and int(d.get('type',-1)) in (0,1)];acct2=broker.account_info()
+      own2=[]
+      for s2,b2 in registry.bundles.items():
+       m2=model_magic(s2+'@'+str(b2.version))
+       own2 += [{'position_id':p['ticket'],'model_symbol':s2,'reason':p.get('comment','')} for p in pos2 if p['magic']==m2]
+       own2 += [{'position_id':d['position_id'],'model_symbol':s2,'reason':d.get('comment','')} for d in deals2 if d['magic']==m2]
+      http_worker('POST','/api/bot/cfd-sync',{'positions':pos2,'deals':deals2,'ownership':own2,'mode':'demo','balance':acct2['balance']})
     if time.time()-start>=WALL and not dispatched and os.environ.get('BOT_CHAIN','true')=='true':dispatch_next_runner();dispatched=True
     if remaining<STOP and dispatched:
      ready=http_worker('GET','/api/bot/ready').get('runners',[]);successor=next((r for r in ready if r['owner']!=OWNER),None)

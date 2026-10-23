@@ -497,7 +497,16 @@ class MT5Broker(BrokerBase):
         if symbol in self._symbols_cache:
             return self._symbols_cache[symbol]
         mt5 = self._get_api()
-        s = mt5.symbol_info(symbol)
+        try:
+            mt5.symbol_select(symbol, True)
+        except Exception:
+            pass
+        s = None
+        for _ in range(4):
+            s = mt5.symbol_info(symbol)
+            if s and float(getattr(s, "trade_tick_value", 0.0) or 0.0) > 0:
+                break
+            time.sleep(0.5)
         if not s:
             return None
         info = {
@@ -528,39 +537,73 @@ class MT5Broker(BrokerBase):
         if hasattr(self, '_test_market_closed') and symbol in self._test_market_closed:
             return not self._test_market_closed[symbol]
 
-        info = self.get_symbol_info(symbol)
-        if not info:
+        mt5 = self._get_api()
+        try:
+            mt5.symbol_select(symbol, True)
+        except Exception:
+            pass
+        s_live = mt5.symbol_info(symbol)
+        if not s_live:
             return False
-        # MT5 SYMBOL_TRADE_MODE_DISABLED is 0
-        if info.get('trade_mode') == 0:
+        # MT5 SYMBOL_TRADE_MODE_DISABLED (0) or CLOSEONLY (3) -> closed for new trades
+        tmode = int(getattr(s_live, 'trade_mode', 4))
+        if tmode in (0, 3):
             return False
 
         # Deriv synthetics trade 24/7
-        is_synthetic = any(symbol.startswith(p) for p in ['Volatility', '1HZ', 'R_']) or 'Index' in symbol
+        is_synthetic = any(symbol.startswith(p) for p in ('Volatility', '1HZ', 'R_', 'Crash', 'Boom', 'Jump', 'Step', 'Range')) or 'Index' in symbol
         if is_synthetic:
             return True
 
-        # Check broker trading sessions if available
+        # Infer broker server clock offset from a live 24/7 synthetic tick if available (fallback UTC)
+        now_utc_ts = time.time()
+        offset_sec = 0
         try:
-            mt5 = self._get_api()
-            now_dt = datetime.now(timezone.utc)
-            dow = now_dt.weekday()
-            if hasattr(mt5, 'symbol_info_session_trade'):
-                has_sessions = False
-                in_session = False
-                sec_of_day = (now_dt.hour * 3600 + now_dt.minute * 60 + now_dt.second)
-                for s_idx in range(5):
-                    sess = mt5.symbol_info_session_trade(symbol, dow, s_idx)
-                    if sess is not None and getattr(sess, 'open', None) is not None:
-                        has_sessions = True
-                        if int(sess.open) <= sec_of_day <= int(sess.close):
-                            in_session = True
-                            break
-                if has_sessions and not in_session:
-                    return False
+            mt5.symbol_select('Volatility 10 Index', True)
+            syn_tick = mt5.symbol_info_tick('Volatility 10 Index')
+            if syn_tick and int(getattr(syn_tick, 'time', 0)) > 0:
+                diff = int(syn_tick.time) - now_utc_ts
+                if abs(diff) <= 14 * 3600:
+                    offset_sec = int(round(diff / 1800.0) * 1800)
         except Exception:
             pass
 
+        server_dt = datetime.fromtimestamp(now_utc_ts + offset_sec, timezone.utc)
+        # MT5 ENUM_DAY_OF_WEEK: SUNDAY=0, MONDAY=1, ..., FRIDAY=5, SATURDAY=6
+        mt5_dow = (server_dt.weekday() + 1) % 7
+        sec_of_day = server_dt.hour * 3600 + server_dt.minute * 60 + server_dt.second
+
+        try:
+            if hasattr(mt5, 'symbol_info_session_trade'):
+                any_day_has_sessions = False
+                in_session = False
+                for d in range(7):
+                    for s_idx in range(5):
+                        if self._conn:
+                            sess = self._conn.eval(f"MetaTrader5.symbol_info_session_trade({symbol!r}, {d}, {s_idx})")
+                        else:
+                            sess = mt5.symbol_info_session_trade(symbol, d, s_idx)
+                        if sess is None:
+                            continue
+                        if isinstance(sess, (tuple, list)) and len(sess) >= 2:
+                            s_open, s_close = int(sess[0]), int(sess[1])
+                        else:
+                            s_open = getattr(sess, 'open', getattr(sess, 'from', None))
+                            s_close = getattr(sess, 'close', getattr(sess, 'to', None))
+                        if s_open is not None and s_close is not None and not (int(s_open) == 0 and int(s_close) == 0):
+                            any_day_has_sessions = True
+                            if d == mt5_dow and int(s_open) <= sec_of_day <= int(s_close):
+                                in_session = True
+                if any_day_has_sessions:
+                    return in_session
+        except Exception:
+            pass
+
+        # Fallback standard FX weekend guard (Fri 21:00 UTC to Sun 21:00 UTC)
+        utc_dt = datetime.fromtimestamp(now_utc_ts, timezone.utc)
+        wd = utc_dt.weekday()
+        if wd == 5 or (wd == 4 and utc_dt.hour >= 21) or (wd == 6 and utc_dt.hour < 21):
+            return False
         return True
 
     def get_tick(self, symbol: str) -> Optional[Dict[str, Any]]:
@@ -591,7 +634,12 @@ class MT5Broker(BrokerBase):
             "D1": getattr(mt5, "TIMEFRAME_D1", 1440),
         }
         tf_code = tf_map.get(timeframe.upper(), getattr(mt5, "TIMEFRAME_M1", 1))
-        rates = mt5.copy_rates_from_pos(symbol, tf_code, 1, count)
+        rates = None
+        for _ in range(5):
+            rates = mt5.copy_rates_from_pos(symbol, tf_code, 1, count)
+            if rates is not None and len(rates) >= min(count, 120):
+                break
+            time.sleep(1.0)
         if rates is None or len(rates) == 0:
             return []
 
@@ -761,12 +809,18 @@ class MT5Broker(BrokerBase):
         is_buy = side.upper() == "BUY"
         exec_price = float(price or (tick["ask"] if is_buy else tick["bid"]))
 
-        # Check stops level distance
-        min_dist = sinfo["stops_level"] * sinfo["point"]
-        if is_buy and (exec_price - sl) < min_dist:
-            sl = round(exec_price - max(min_dist, 50 * sinfo["point"]), sinfo["digits"])
-        elif (not is_buy) and (sl - exec_price) < min_dist:
-            sl = round(exec_price + max(min_dist, 50 * sinfo["point"]), sinfo["digits"])
+        # Check stops level distance against live bid/ask
+        min_dist = max(sinfo["stops_level"], sinfo.get("freeze_level", 0)) * sinfo["point"]
+        ref_bid, ref_ask = float(tick["bid"]), float(tick["ask"])
+        if is_buy and (ref_bid - sl) < min_dist:
+            sl = round(ref_bid - max(min_dist, 50 * sinfo["point"]), sinfo["digits"])
+        elif (not is_buy) and (sl - ref_ask) < min_dist:
+            sl = round(ref_ask + max(min_dist, 50 * sinfo["point"]), sinfo["digits"])
+        if tp and tp > 0:
+            if is_buy and (tp - ref_ask) < min_dist:
+                tp = round(ref_ask + max(min_dist, 50 * sinfo["point"]), sinfo["digits"])
+            elif (not is_buy) and (ref_bid - tp) < min_dist:
+                tp = round(ref_bid - max(min_dist, 50 * sinfo["point"]), sinfo["digits"])
 
         # Check margin
         margin_check = self.check_margin(symbol, side, vol, exec_price)

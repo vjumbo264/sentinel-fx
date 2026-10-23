@@ -237,13 +237,14 @@ export default {
             await env.DB.prepare("INSERT OR IGNORE INTO cfd_ownership VALUES (?,?,?)").bind(own.position_id,own.model_symbol,own.reason||null).run();
           }
           const stmts = [];
-          for (const d of body.deals || []) {
-            if (!(d.ticket > 0 && d.position_id > 0)) return err("invalid real deal ticket", 400);
+          const tradeDeals = (body.deals || []).filter(d => Number(d.position_id || 0) > 0);
+          for (const d of tradeDeals) {
+            if (!(d.ticket > 0)) return err("invalid real deal ticket", 400);
             const net = Number(d.profit || 0) + Number(d.swap || 0) + Number(d.commission || 0) + Number(d.fee || 0);
             stmts.push(env.DB.prepare("INSERT OR IGNORE INTO cfd_deals VALUES (?,?,?,?,?)").bind(d.ticket, d.position_id, d.symbol, net, JSON.stringify(d)));
           }
           if (stmts.length) await env.DB.batch(stmts);
-          for (const d of body.deals||[]) {
+          for (const d of tradeDeals) {
             const own=await env.DB.prepare("SELECT * FROM cfd_ownership WHERE position_id=?").bind(d.position_id).first();
             if(!own) continue;
             // The conditional credit and dedupe marker are one atomic transaction.
@@ -713,7 +714,7 @@ export default {
       if (path === "/api/session/allocate" && method === "POST") {
         // Equal-split allocation of the demo balance across active models.
         if (!(await verifySiteAuth(request))) return err("unauthorized", 401);
-        const bal = Number(body.balance ?? 0);
+        const bal = Number(body.balance ?? body.pool_amount ?? 0);
         if (!(bal > 0)) return err("balance required", 400);
         const active = await env.DB.prepare(
           "SELECT symbol FROM model_ledger WHERE active=1"
@@ -741,7 +742,7 @@ export default {
       if (path === "/api/session/override" && method === "POST") {
         // Owner override: pause/resume a model or force stop-all. Bot must honor.
         if (!(await verifySiteAuth(request))) return err("unauthorized", 401);
-        const symbol = body.symbol || "*";
+        const symbol = body.symbol || body.pair || "*";
         const action = body.action; // pause | resume | stop_all
         if (!["pause", "resume", "stop_all"].includes(action)) return err("bad action", 400);
         const ts = nowUTC();

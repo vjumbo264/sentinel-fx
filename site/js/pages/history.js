@@ -22,7 +22,7 @@ export async function historyPage() {
     const res = await api.getTrades().catch(() => ({ trades: [] }));
     const raw = Array.isArray(res) ? res : (res.trades || []);
     // Filter closed trades only
-    allTrades = raw.filter(t => t.close_utc || t.closed_at || t.net_pnl !== undefined || t.close_time);
+    allTrades = raw.filter(t => t.close_utc || t.closed_at || t.close_time);
     allTrades.sort((a, b) => {
       const ta = new Date(a.close_utc || a.closed_at || a.time || 0).getTime();
       const tb = new Date(b.close_utc || b.closed_at || b.time || 0).getTime();
@@ -33,12 +33,16 @@ export async function historyPage() {
     toast(err.message || 'Error loading trades', 'error');
   }
 
+  function tradePnl(t) {
+    return Number(t.pnl ?? t.net_pnl ?? t.profit ?? 0);
+  }
+
   function applyFilters() {
     filteredTrades = allTrades.filter(t => {
       const pair = (t.symbol || t.pair || '').toUpperCase();
       if (selectedPair !== 'ALL' && pair !== selectedPair) return false;
 
-      const pnl = Number(t.net_pnl || t.profit || 0);
+      const pnl = tradePnl(t);
       if (selectedOutcome === 'WIN' && pnl <= 0) return false;
       if (selectedOutcome === 'LOSS' && pnl >= 0) return false;
 
@@ -58,13 +62,13 @@ export async function historyPage() {
 
     // Calculate Summary Metrics
     const totalTrades = filteredTrades.length;
-    const wins = filteredTrades.filter(t => Number(t.net_pnl || t.profit || 0) > 0);
-    const losses = filteredTrades.filter(t => Number(t.net_pnl || t.profit || 0) < 0);
+    const wins = filteredTrades.filter(t => tradePnl(t) > 0);
+    const losses = filteredTrades.filter(t => tradePnl(t) < 0);
     const winRate = totalTrades > 0 ? ((wins.length / totalTrades) * 100).toFixed(1) : '0.0';
 
-    const netPnl = filteredTrades.reduce((acc, t) => acc + Number(t.net_pnl || t.profit || 0), 0);
-    const grossProfit = wins.reduce((acc, t) => acc + Number(t.net_pnl || t.profit || 0), 0);
-    const grossLoss = Math.abs(losses.reduce((acc, t) => acc + Number(t.net_pnl || t.profit || 0), 0));
+    const netPnl = filteredTrades.reduce((acc, t) => acc + tradePnl(t), 0);
+    const grossProfit = wins.reduce((acc, t) => acc + tradePnl(t), 0);
+    const grossLoss = Math.abs(losses.reduce((acc, t) => acc + tradePnl(t), 0));
     const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? '∞' : '0.00');
 
     // Pagination
@@ -173,7 +177,7 @@ export async function historyPage() {
                     </tr>
                   `
                   : pageTrades.map(t => {
-                    const pnl = Number(t.net_pnl || t.profit || 0);
+                    const pnl = tradePnl(t);
                     const isWin = pnl > 0;
                     const dateStr = t.close_utc || t.closed_at || t.open_utc || t.time || '-';
                     return `
@@ -185,7 +189,7 @@ export async function historyPage() {
                             ${(t.side || 'BUY').toUpperCase()}
                           </span>
                         </td>
-                        <td class="tabular">${t.volume || t.lots || 0.01}</td>
+                        <td class="tabular">${t.stake ?? t.volume ?? t.lots ?? 0.01}</td>
                         <td class="tabular font-bold ${isWin ? 'badge-profit' : 'badge-loss'}" style="font-size:13px;">
                           ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}
                         </td>
@@ -195,7 +199,7 @@ export async function historyPage() {
                           </span>
                         </td>
                         <td style="font-size:12px; color:var(--text-3);">
-                          ${t.exit_reason || t.comment || 'Agent Closed'}
+                          ${t.reason || t.exit_reason || t.comment || 'Agent Closed'}
                         </td>
                       </tr>
                     `;
@@ -281,11 +285,11 @@ export async function historyPage() {
       t.close_utc || t.closed_at || '',
       t.symbol || t.pair || '',
       t.side || '',
-      t.volume || t.lots || '',
+      t.stake ?? t.volume ?? t.lots ?? '',
       t.open_price || '',
       t.close_price || '',
-      t.net_pnl || t.profit || 0,
-      t.exit_reason || t.comment || ''
+      tradePnl(t),
+      t.reason || t.exit_reason || t.comment || ''
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' +

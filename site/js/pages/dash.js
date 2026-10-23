@@ -37,14 +37,18 @@ export async function dashPage() {
     const mode = (settings.mode || heartbeat.mode || 'demo').toLowerCase();
     const isReal = mode === 'real';
 
+    const riskStatus = settings[`risk_status_${mode}`] || state.risk_status || {};
+    const isTargetHit = riskStatus.status === 'daily_target_reached';
+    const isLimitHit = riskStatus.status === 'daily_limit_reached';
+
     // Account financials
     const balance = typeof heartbeat.balance === 'number' ? heartbeat.balance : 10000.00;
     const equity = typeof heartbeat.equity === 'number' ? heartbeat.equity : balance;
     const freeMargin = typeof heartbeat.free_margin === 'number' ? heartbeat.free_margin : (equity * 0.95);
-    const todayPnl = equity - balance;
+    const todayPnl = typeof riskStatus.today_pnl === 'number' ? riskStatus.today_pnl : (equity - balance);
 
     // Heartbeat recency check (2 minutes)
-    const hbEpoch = heartbeat.timestamp || 0;
+    const hbEpoch = heartbeat.ts ? Math.floor(Date.parse(heartbeat.ts) / 1000) : (heartbeat.timestamp || 0);
     const nowSec = Math.floor(Date.now() / 1000);
     const isRecent = hbEpoch > 0 && (nowSec - hbEpoch) < 120;
     const botPower = settings.power !== false;
@@ -82,11 +86,9 @@ export async function dashPage() {
     const openPositions = trades.filter(t => !t.close_utc && !t.closed_at);
 
     // Models list from session
-    const modelAllocations = session.models || session.allocations || [];
-
-    const riskStatus = settings[`risk_status_${mode}`] || state.risk_status || {};
-    const isTargetHit = riskStatus.status === 'daily_target_reached';
-    const isLimitHit = riskStatus.status === 'daily_limit_reached';
+    const overridesMap = Object.fromEntries((session.overrides || []).map(o => [o.symbol, o.action]));
+    const modelAllocations = session.models || session.allocations || (session.ledger || []).filter(l => l.active);
+    const activePool = session.session?.starting_balance || session.pool_amount || balance;
 
     root.innerHTML = `
       ${(isTargetHit || isLimitHit) ? `
@@ -177,7 +179,6 @@ export async function dashPage() {
             <button
               id="bot-toggle-btn"
               class="btn ${botPower ? 'btn-ghost' : 'btn-primary'}"
-              ${trainingLocked ? 'disabled title="Training in progress — bot execution locked"' : ''}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               <span>${botPower ? 'BOT ACTIVE (TURN OFF)' : 'START BOT (TURN ON)'}</span>
@@ -194,7 +195,7 @@ export async function dashPage() {
           </div>
 
           <div style="font-size:11px; color:var(--text-3);">
-            ${trainingLocked ? '⚠ Bot trade execution locked during model training' : 'Windows MT5 Bot running via GitHub Actions self-chain'}
+            Linux MT5 Bot running via GitHub Actions self-chain${trainingLocked ? ' · Training active in parallel' : ''}
           </div>
         </div>
       </div>
@@ -209,7 +210,7 @@ export async function dashPage() {
             </div>
           </div>
           <div class="tabular" style="font-size:13px; color:var(--text-2);">
-            Active Pool: <strong style="color:var(--text); font-size:15px;">$${(session.pool_amount || balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>
+            Active Pool: <strong style="color:var(--text); font-size:15px;">$${Number(activePool).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>
           </div>
         </div>
 
@@ -223,7 +224,7 @@ export async function dashPage() {
               type="number"
               step="50"
               min="100"
-              value="${session.pool_amount || balance}"
+              value="${activePool}"
               style="width:100%; font-family:var(--font-mono);"
             />
           </div>
@@ -296,8 +297,8 @@ export async function dashPage() {
                   `
                   : modelAllocations.map(m => {
                     const pair = m.pair || m.symbol;
-                    const capital = m.capital || (balance / Math.max(1, modelAllocations.length));
-                    const enabled = m.enabled !== false;
+                    const capital = m.balance ?? m.allocated ?? m.capital ?? (balance / Math.max(1, modelAllocations.length));
+                    const enabled = m.enabled !== undefined ? m.enabled !== false : overridesMap[pair] !== 'pause';
                     return `
                       <tr>
                         <td>
@@ -362,20 +363,21 @@ export async function dashPage() {
                     </tr>
                   `
                   : openPositions.map(p => {
-                    const pnl = Number(p.net_pnl || p.profit || 0);
+                    const pnl = Number(p.pnl ?? p.net_pnl ?? p.profit ?? 0);
+                    const slLabel = `${p.sl || p.stop_loss || '-'}${p.tp ? ` / TP ${p.tp}` : ''}`;
                     return `
                       <tr>
-                        <td class="tabular" style="color:var(--text-3);">#${p.ticket || p.id}</td>
+                        <td class="tabular" style="color:var(--text-3);">#${p.contract_id || p.ticket || p.id}</td>
                         <td><strong>${p.symbol || p.pair}</strong></td>
                         <td>
                           <span class="badge ${p.side === 'buy' || p.side === 'BUY' ? 'badge-profit' : 'badge-loss'}">
                             ${(p.side || 'BUY').toUpperCase()}
                           </span>
                         </td>
-                        <td class="tabular">${p.volume || p.lots || 0.01}</td>
+                        <td class="tabular">${p.stake ?? p.volume ?? p.lots ?? 0.01}</td>
                         <td class="tabular">${p.open_price || p.price || '-'}</td>
                         <td class="tabular font-bold">${p.current_price || p.price || '-'}</td>
-                        <td class="tabular" style="color:var(--loss);">${p.sl || p.stop_loss || '-'}</td>
+                        <td class="tabular" style="color:var(--loss);">${slLabel}</td>
                         <td class="tabular font-bold ${pnl >= 0 ? 'badge-profit' : 'badge-loss'}" style="font-size:14px;">
                           ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}
                         </td>
@@ -392,11 +394,17 @@ export async function dashPage() {
     bindEvents();
 
     // Start polling if bot is active and heartbeat is recent
-    if (isRecent && botPower && !trainingLocked) {
+    if (isRecent && botPower) {
       startPoll(async () => {
         try {
-          const st = await api.getState();
+          const [st, sess, tr] = await Promise.all([
+            api.getState().catch(() => state),
+            api.getSession().catch(() => session),
+            api.getTrades().catch(() => ({ trades })),
+          ]);
           state = st || {};
+          session = sess || {};
+          trades = Array.isArray(tr) ? tr : (tr.trades || []);
           render();
         } catch(_) {}
       }, 15000);
@@ -487,7 +495,7 @@ export async function dashPage() {
 
         try {
           await Promise.all([
-            api.allocateSession({ pool_amount: bal }),
+            api.allocateSession({ balance: bal, mode }),
             api.saveSettings({ global_sl_pct: sl, global_tp_pct: tp }),
           ]);
           toast('Session pool & risk limits saved!', 'success');
@@ -505,7 +513,7 @@ export async function dashPage() {
         const currentEnabled = btn.dataset.enabled === 'true';
         try {
           await api.overrideSession({
-            pair,
+            symbol: pair,
             action: currentEnabled ? 'pause' : 'resume'
           });
           toast(`${pair} ${currentEnabled ? 'paused' : 'resumed'}`, 'info');

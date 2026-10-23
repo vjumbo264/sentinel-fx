@@ -45,9 +45,9 @@ export async function settingsPage() {
     const heartbeat = state.heartbeat || {};
     const settings = state.settings || {};
 
-    const hbDate = heartbeat.timestamp
-      ? new Date(heartbeat.timestamp * 1000).toUTCString()
-      : 'No recent heartbeat';
+    const hbDate = heartbeat.ts
+      ? new Date(heartbeat.ts).toUTCString()
+      : (heartbeat.timestamp ? new Date(heartbeat.timestamp * 1000).toUTCString() : 'No recent heartbeat');
 
     root.innerHTML = `
       <!-- GITHUB PAT AUTH SECTION -->
