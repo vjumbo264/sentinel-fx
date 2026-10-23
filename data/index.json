@@ -737,5 +737,10 @@
     "shard_releases": [
       "data-usdcad-01"
     ]
+  },
+  "frxUSDCHF": {
+    "shard_releases": [
+      "data-usdchf-01"
+    ]
   }
 }
