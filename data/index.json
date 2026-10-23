@@ -921,11 +921,19 @@
         "first_epoch": 1073001600,
         "last_epoch": 1104528540,
         "sha256": "f0f293b4035e650a39997df5feeedd141d5d761dca56c1f012f9556e7f2c8a15"
+      },
+      "2000": {
+        "asset": "USDJPY_2000.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 131241,
+        "first_epoch": 959727480,
+        "last_epoch": 978107220,
+        "sha256": "cd4d61ae93fa27e637c52dc2f7918f79bee57f370bf9698c0be41562c9e4bbcb"
       }
     },
     "last_epoch": 1104528540,
-    "first_epoch": 978426600,
-    "rows": 1135276,
+    "first_epoch": 959727480,
+    "rows": 1266517,
     "columns": [
       "epoch",
       "bid_open",
