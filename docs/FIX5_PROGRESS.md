@@ -229,3 +229,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Document operational contract and verification gaps honestly
 - Added docs/FIX5_OPERATIONS.md for overrides/precedence, full-step/best-validation release, measured ETA and units error, encrypted Actions credential flow, broker-session rule and shared62 schema. Explicitly separates required behavior from inherited unverified live claims and records stopped EURUSD checkpoint.
 - Next: H7: include compatibility metadata in future exports; verify deployed registry and site, finish H7.
+
+### H7: Declare current compatibility in exported model manifests
+- Exporter refuses non-62 environments and records policy_schema plus observation_dim in the manifest as well as policy.json.
+- Next: H7: record matching registry metadata and finalize schema acceptance evidence.

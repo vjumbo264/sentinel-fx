@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H7: include compatibility metadata in future exports; verify deployed registry and site, finish H7.",
+    "next_step": "H7: record matching registry metadata and finalize schema acceptance evidence.",
     "items": [
       {
         "id": "H1",
@@ -285,6 +285,10 @@
           {
             "what": "Document operational contract and verification gaps honestly",
             "result": "Added docs/FIX5_OPERATIONS.md for overrides/precedence, full-step/best-validation release, measured ETA and units error, encrypted Actions credential flow, broker-session rule and shared62 schema. Explicitly separates required behavior from inherited unverified live claims and records stopped EURUSD checkpoint."
+          },
+          {
+            "what": "Declare current compatibility in exported model manifests",
+            "result": "Exporter refuses non-62 environments and records policy_schema plus observation_dim in the manifest as well as policy.json."
           }
         ],
         "evidence": [],

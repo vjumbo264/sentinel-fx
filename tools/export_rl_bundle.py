@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 import numpy as np
 import torch
-from sentinel_engine.policy_schema import VERSION
+from sentinel_engine.policy_schema import VERSION, OBSERVATION_DIM
 from sentinel_engine.observation import vectorize
 from sentinel_engine.execution_adapter import ExecutionAdapter
 from sentinel_engine.sim import SimulationBroker
@@ -30,6 +30,8 @@ def export_bundle(model, env, pair, version, output, training_report):
     output.mkdir(parents=True, exist_ok=True)
     policy = LogitsPolicy(model.policy).cpu().eval()
     obs_dim = env.observation_space.shape[0]
+    if obs_dim != OBSERVATION_DIM:
+        raise ValueError(f'observation size mismatch: expected {OBSERVATION_DIM}, got {obs_dim}')
     onnx_path = output / f'{pair}_policy.onnx'
     torch.onnx.export(policy, torch.zeros(1, obs_dim, dtype=torch.float32), str(onnx_path),
                       input_names=['obs'], output_names=['action_logits'], opset_version=17,
@@ -90,7 +92,8 @@ def export_bundle(model, env, pair, version, output, training_report):
     raw = {name: json.dumps(data, sort_keys=True, allow_nan=False).encode() for name,data in payload.items()}
     raw['models/policy.onnx'] = onnx_path.read_bytes()
     manifest = {'schema_version': 2, 'symbol': 'frx'+pair, 'mt5_symbol': pair, 'version': version,
-                'entry_seconds': 60, 'trained_through': training_report.get('trained_through'),
+                'entry_seconds': 60, 'policy_schema': VERSION, 'observation_dim': OBSERVATION_DIM,
+                'trained_through': training_report.get('trained_through'),
                 'files': {name: {'path': name, 'sha256': hashlib.sha256(data).hexdigest(), 'size': len(data)}
                           for name,data in raw.items()}}
     bundle = output / f'frx{pair}_v{version}.sfxmodel.zip'
