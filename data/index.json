@@ -1397,11 +1397,19 @@
         "first_epoch": 1230854340,
         "last_epoch": 1262296740,
         "sha256": "e2e6a0304913c39d181a882be0edcd0931188f166b31b396b5953a0d0a3edb90"
+      },
+      "2010": {
+        "asset": "EURJPY_2010.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 365107,
+        "first_epoch": 1262556060,
+        "last_epoch": 1293825480,
+        "sha256": "f441a23148fd0b0d4ca8d799cda10b3f23f93022614be5b141c4858959d0e7bc"
       }
     },
-    "last_epoch": 1262296740,
+    "last_epoch": 1293825480,
     "first_epoch": 1015200180,
-    "rows": 2676129,
+    "rows": 3041236,
     "columns": [
       "epoch",
       "bid_open",
