@@ -3,36 +3,46 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "demo or real (read-only)"
-        required: false
-        default: "demo"
-
+        description: demo only in the lean mission
+        default: demo
+      probe_wrong_password:
+        description: also verify a deliberately incorrect password is rejected
+        type: boolean
+        default: false
 concurrency:
   group: test-login
-  cancel-in-progress: true
-
+  cancel-in-progress: false
 permissions:
   contents: read
-
 jobs:
   test_login:
-    runs-on: windows-latest
-    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
-      LOGIN_MODE: ${{ github.event.inputs.mode || 'demo' }}
-      WORKER_URL: ${{ secrets.WORKER_URL || 'https://sentinel-fx-worker.vjumbo264.workers.dev' }}
+      LOGIN_MODE: demo
+      PROBE_WRONG_PASSWORD: ${{ inputs.probe_wrong_password || 'false' }}
+      WORKER_URL: ${{ secrets.WORKER_URL }}
       BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
       GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT }}
       MT5_PASSWORD: ${{ secrets.MT5_PASSWORD }}
-      MT5_DEMO_LOGIN: ${{ secrets.MT5_DEMO_LOGIN || '41286446' }}
-      MT5_DEMO_SERVER: ${{ secrets.MT5_DEMO_SERVER || 'Deriv-Demo' }}
-      MT5_REAL_LOGIN: ${{ secrets.MT5_REAL_LOGIN || '10357278' }}
-      MT5_REAL_SERVER: ${{ secrets.MT5_REAL_SERVER || 'DerivSVG-Server' }}
+      MT5_DEMO_LOGIN: ${{ secrets.MT5_DEMO_LOGIN }}
+      MT5_DEMO_SERVER: ${{ secrets.MT5_DEMO_SERVER }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-      - name: Set up native MT5
-        uses: ./.github/actions/mt5-windows
-      - name: Test MT5 Login
+        with: {python-version: '3.11'}
+      - run: pip install --quiet 'rpyc>=6,<7'
+      - name: Start verified Linux MT5 stack
+        uses: ./.github/actions/mt5-stack
+        with:
+          action: start
+          login: ${{ secrets.MT5_DEMO_LOGIN }}
+          password: ${{ secrets.MT5_PASSWORD }}
+          server: ${{ secrets.MT5_DEMO_SERVER }}
+      - name: Read-only login probe; correct credentials restored
         run: python tools/test_mt5_login.py
+      - name: Stop stack
+        if: always()
+        uses: ./.github/actions/mt5-stack
+        with:
+          action: stop
