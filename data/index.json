@@ -1602,11 +1602,19 @@
         "first_epoch": 1609711200,
         "last_epoch": 1640987880,
         "sha256": "0dff42a8d1085bf678c4a2396719182589fb80fb3471ff5539399474da0a6304"
+      },
+      "2022": {
+        "asset": "USDCHF_2022.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 369348,
+        "first_epoch": 1641161400,
+        "last_epoch": 1672437480,
+        "sha256": "1c814a91349cb69429c5a2217a2e23b279d05f257ee37f35ed170e6e0ec371e0"
       }
     },
-    "last_epoch": 1640987880,
+    "last_epoch": 1672437480,
     "first_epoch": 959725380,
-    "rows": 6667771,
+    "rows": 7037119,
     "columns": [
       "epoch",
       "bid_open",
