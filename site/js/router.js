@@ -5,6 +5,7 @@
  */
 
 import { store } from "./store.js";
+import { trainingView } from "./pages/training.js";
 import { loginView } from "./pages/login.js";
 
 class Router {
@@ -33,6 +34,8 @@ class Router {
   async handleRoute() {
     const appView = document.getElementById("app-view");
     if (!appView) return;
+    if (this.activePage && typeof this.activePage.destroy === "function") this.activePage.destroy();
+    this.activePage = null;
 
     // Gate unauthenticated sessions
     if (!store.state.isAuth) {
@@ -55,6 +58,7 @@ class Router {
 
     const page = this.routes[routeName] || this.routes["dash"];
     this.currentRoute = routeName;
+    this.activePage = page;
 
     this.updateNavLinks(routeName);
 
@@ -120,3 +124,5 @@ class Router {
 }
 
 export const router = new Router();
+
+router.register("training", trainingView);

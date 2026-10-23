@@ -153,6 +153,21 @@ export default {
         return json({ ok: true, service: "sentinel-fx-worker", utc: nowUTC() });
       }
 
+      // Public read-only training state, sourced from the actual repository.
+      if (path === "/api/training/state" && method === "GET") {
+        try {
+          const upstream = await fetch(`${RAW_BASE}/training_state.json`, {
+            cf: { cacheTtl: 60 }, headers: { "User-Agent": "sentinel-fx-worker" }
+          });
+          if (!upstream.ok) return json({ error: "training state unavailable" }, 503);
+          const state = await upstream.json();
+          if (!Array.isArray(state.queue)) return json({ error: "invalid training state" }, 503);
+          return json(state);
+        } catch (_) {
+          return json({ error: "training state unavailable" }, 503);
+        }
+      }
+
       // -------- site auth probe
       if (path === "/api/auth/check" && method === "GET") {
         const a = await verifySiteAuth(request);
