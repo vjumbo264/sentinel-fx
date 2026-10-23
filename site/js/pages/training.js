@@ -117,7 +117,7 @@ export async function trainingPage() {
           </div>
           <div>
             <span class="badge ${isTraining ? 'badge-warning' : isLocked ? 'badge-warning' : 'badge-muted'}">
-              ${isTraining ? 'Training Active' : isLocked ? 'Training Interlock Engaged' : 'Engine Idle'}
+              ${isTraining ? 'Training Active' : isLocked ? 'Training Queue Busy' : 'Engine Idle'}
             </span>
           </div>
         </div>
@@ -146,7 +146,7 @@ export async function trainingPage() {
             : isLocked
             ? `
               <div style="background:var(--warning-dim); border:1px solid var(--warning); padding:14px; border-radius:var(--radius); color:var(--warning); font-size:13px; font-weight:600;">
-                ⚠ Training lock active (${settings.training_lock_reason || 'training queued'}). Bot is idle and not opening new positions.
+                Training busy flag active (${settings.training_lock_reason || 'training queued'}). This flag does not pause or stop live trading.
               </div>
             `
             : `
@@ -167,7 +167,7 @@ export async function trainingPage() {
             </button>
           </div>
           <div style="font-size:11px; color:var(--text-3);">
-            Weekend automated retrain schedule: Every Saturday 02:00 UTC
+            Manual starts only · Existing owner-started cycles may resume automatically
           </div>
         </div>
       </div>
@@ -366,7 +366,7 @@ export async function trainingPage() {
             queue: selectedPairs.join(',')
           });
 
-          toast('Training scheduled! Bot will pause once current trade closes.', 'success');
+          toast('Training dispatched. Live trading is not paused by training.', 'success');
           loadData();
         } catch(err) {
           toast(err.message || 'Failed to dispatch training workflow', 'error');

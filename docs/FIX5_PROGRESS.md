@@ -344,3 +344,7 @@ Next: H9: add owner-authenticated request queue and warm-start new-version handl
 ## H9 — Stage durable owner request and warm-start cycle helpers
 Added training_requests.py: explicit queued owner starts/updates only, paused/idle guards, native checkpoint warm starts with62-input validation, isolated new5M-step version counters, and durable claim identity. This helper is staged until trainer/Worker/UI wiring and tests are complete; no new requests or models have been created. Current EURUSD writer remains untouched.
 Next: H9: wire request consumption into trainer and preserve live active_version on candidate publication; then authenticated Worker/UI integration and live verification.
+
+## H9 — Correct false training lock and weekend schedule text
+Verified source: Worker training-lock endpoint only writes training_locked/training_lock_reason settings; current bot/main.py contains no training interlock check, so it does not block trading. Corrected stale site claims that training pauses trades and that Saturday retraining is scheduled; no layout/theme changes. JavaScript and staged helper compile checks pass. Owner Update-training behavior is NOT yet wired or accepted; existing buttons still need request-queue integration.
+Next: H9 INCOMPLETE: wire staged training_requests.py into trainer plus authenticated Worker/UI request queue; fix existing extra workflow inputs; add update-all, model native-checkpoint provenance and candidate-version isolation. Preserve active39997388327. Then verify H9 before H10, H8, H1-H5 and full V suite.
