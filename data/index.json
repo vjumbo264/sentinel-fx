@@ -735,11 +735,19 @@
         "first_epoch": 1735768860,
         "last_epoch": 1767218220,
         "sha256": "113aaa3d6a5c374eae1da97ac497eacc30ab2a7098c8a0d7e1b2998d44bab85d"
+      },
+      "2026": {
+        "asset": "GBPUSD_2026_through_09.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 276426,
+        "first_epoch": 1767304800,
+        "last_epoch": 1790830680,
+        "sha256": "0e5ee7d1c8f7b2be10e964051366e7e4704cfb80a5c5791dd5b18b5b4b2af4fc"
       }
     },
-    "last_epoch": 1767218220,
+    "last_epoch": 1790830680,
     "first_epoch": 959727540,
-    "rows": 8605520,
+    "rows": 8881946,
     "columns": [
       "epoch",
       "bid_open",
