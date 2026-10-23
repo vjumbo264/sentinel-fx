@@ -9,7 +9,7 @@ permissions:
   contents: write
   actions: write
 concurrency:
-  group: histdata-bulk
+  group: histdata-bulk-${{ inputs.pairs || 'all' }}
   cancel-in-progress: false
 jobs:
   fetch:
