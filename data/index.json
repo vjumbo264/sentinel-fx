@@ -950,11 +950,19 @@
         "first_epoch": 1104734880,
         "last_epoch": 1135893420,
         "sha256": "3d0fd4d242276e930c3ded7015bf7be6ad54265ad876b8bdbe9278fd9e40e779"
+      },
+      "2006": {
+        "asset": "USDJPY_2006.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 315950,
+        "first_epoch": 1136246400,
+        "last_epoch": 1167427740,
+        "sha256": "cca83455a511252592f6cc60c0b0413b643c6502c131a3a2bf46575ccf0f18bf"
       }
     },
-    "last_epoch": 1135893420,
+    "last_epoch": 1167427740,
     "first_epoch": 959727480,
-    "rows": 1579479,
+    "rows": 1895429,
     "columns": [
       "epoch",
       "bid_open",
