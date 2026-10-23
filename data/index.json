@@ -79,11 +79,11 @@
   "frxEURUSD": {
     "symbol": "frxEURUSD",
     "granularity": 60,
-    "rows": 8766515,
+    "rows": 8767620,
     "first_epoch": 959725620,
-    "last_epoch": 1792713540,
-    "first_utc": "2021-01-03T22:00:00+00:00",
-    "last_utc": "2026-10-22T23:59:00+00:00",
+    "last_epoch": 1792779840,
+    "first_utc": "2000-05-30T22:27:00+00:00",
+    "last_utc": "2026-10-23T18:24:00+00:00",
     "sha256": "3b7b72c03b18ac057a8da021b355f554de32f0dc3974b71382806a832ab66750",
     "source": "histdata-bid-only-synthetic-ask",
     "columns": [
@@ -148,7 +148,7 @@
     "requested_from": "2026-10-21T00:00:00+00:00",
     "requested_to_exclusive": "2026-10-23T00:00:00+00:00",
     "file": "frxEURUSD_60s.csv.gz",
-    "last_checked_utc": "2026-10-23T05:58:37.100466+00:00",
+    "last_checked_utc": "2026-10-23T18:25:52.923243+00:00",
     "asset": "frxEURUSD_60s.3b7b72c03b18ac05.csv.gz",
     "release_tag": "data-01",
     "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxEURUSD_60s.3b7b72c03b18ac05.csv.gz",
@@ -375,7 +375,23 @@
         "status": "unavailable_not_complete"
       }
     },
-    "bulk_complete": false
+    "bulk_complete": false,
+    "appends": [
+      {
+        "asset": "frxEURUSD_1792713600_1792779840.8aa81942ba089638.csv.gz",
+        "release_tag": "data-deriv-appends-01",
+        "sha256": "8aa81942ba089638821bb1688534e5bac0589f89f6aae8a39d007d6174f1487d",
+        "rows": 1105,
+        "first_epoch": 1792713600,
+        "last_epoch": 1792779840,
+        "source": "Deriv UTC",
+        "last_update_utc": "2026-10-23T18:25:52.699014+00:00"
+      }
+    ],
+    "last_update_utc": "2026-10-23T18:25:52.923241+00:00",
+    "join_median_difference": 1.999999999990898e-05,
+    "join_overlap_rows": 5749,
+    "timezone": "UTC"
   },
   "R_25": {
     "symbol": "R_25",
