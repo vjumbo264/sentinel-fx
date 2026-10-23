@@ -1323,11 +1323,19 @@
         "first_epoch": 1325487600,
         "last_epoch": 1356991080,
         "sha256": "17e32f4f8ccffab67676b0f8274ae7d7b98df0c9eb6331bf930703a49ce18243"
+      },
+      "2013": {
+        "asset": "USDCHF_2013.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 370700,
+        "first_epoch": 1357077600,
+        "last_epoch": 1388523480,
+        "sha256": "deece2b160bdd1dc732a03b37aa3528376d9f559991c1941406dc8bd6e1e4b78"
       }
     },
-    "last_epoch": 1356991080,
+    "last_epoch": 1388523480,
     "first_epoch": 959725380,
-    "rows": 3341099,
+    "rows": 3711799,
     "columns": [
       "epoch",
       "bid_open",
