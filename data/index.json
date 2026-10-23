@@ -522,5 +522,10 @@
     "release_tag": "data-01",
     "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz",
     "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz.report.json"
+  },
+  "frxGBPUSD": {
+    "shard_releases": [
+      "data-gbpusd-01"
+    ]
   }
 }
