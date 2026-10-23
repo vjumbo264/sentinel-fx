@@ -1,0 +1,57 @@
+name: Publish Synthetic Indices Release
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish-synthetics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure release and upload synthetics
+        env:
+          GH_TOKEN: ${{ secrets.GH_CHAIN_PAT || github.token }}
+        run: |
+          gh release create data-synthetics-01 \
+            --title "data-synthetics-01: Deriv Synthetic Volatility Indices (M1 Datasets)" \
+            --notes "Verified immutable M1 candle datasets for Deriv synthetic volatility indices (R_10, R_25, R_50, R_75, R_100, 1HZ10V, 1HZ25V, 1HZ50V, 1HZ75V, 1HZ100V, 1HZ150V, 1HZ250V)." \
+            2>/dev/null || echo "Release already exists"
+
+          mkdir -p synth_assets
+          # Download all synthetic assets and report jsons from data-01
+          for s in R_10 R_25 R_50 R_75 R_100 1HZ10V 1HZ25V 1HZ50V 1HZ75V 1HZ100V 1HZ150V 1HZ250V; do
+            echo "Migrating $s..."
+            gh release download data-01 -p "${s}_60s.*" -D synth_assets --clobber || true
+          done
+
+          ls -lh synth_assets/
+
+          # Upload all to data-synthetics-01
+          gh release upload data-synthetics-01 synth_assets/* --clobber
+
+          # Update data/index.json
+          python3 - <<'PY'
+          import json
+
+          with open('data/index.json', 'r') as f:
+              index = json.load(f)
+
+          synth_keys = ["R_10", "R_25", "R_50", "R_75", "R_100", "1HZ10V", "1HZ25V", "1HZ50V", "1HZ75V", "1HZ100V", "1HZ150V", "1HZ250V"]
+          for s in synth_keys:
+              if s in index:
+                  index[s]["release_tag"] = "data-synthetics-01"
+                  if "url" in index[s]:
+                      index[s]["url"] = index[s]["url"].replace("/download/data-01/", "/download/data-synthetics-01/")
+                  if "report_url" in index[s]:
+                      index[s]["report_url"] = index[s]["report_url"].replace("/download/data-01/", "/download/data-synthetics-01/")
+
+          with open('data/index.json', 'w') as f:
+              json.dump(index, f, indent=2)
+              f.write('\n')
+          PY
+
+          git config user.name "sentinel-bot"
+          git config user.email "bot@sentinel-fx.local"
+          git add data/index.json
+          git commit -m "data: migrate synthetic volatility indices to dedicated data-synthetics-01 release [skip ci]" || true
+          git push origin main

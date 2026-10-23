@@ -36,11 +36,11 @@ def main():
  assert new,'empty input forbidden';rows.update({int(row['epoch']):row for row in new});columns=list(new[0])
  assert all(set(row)==set(columns) for row in rows.values()),'incompatible columns: do not silently fabricate bid/ask'
  text=io.StringIO();w=csv.DictWriter(text,columns);w.writeheader();w.writerows(rows[e] for e in sorted(rows));raw=gzip.compress(text.getvalue().encode(),mtime=0)
- sha=hashlib.sha256(raw).hexdigest();name=f'{sym}_60s.{sha[:16]}.csv.gz';asset=upload('data-01',name,raw)
+ sha=hashlib.sha256(raw).hexdigest();name=f'{sym}_60s.{sha[:16]}.csv.gz';target_tag='data-synthetics-01' if (sym.startswith('R_') or sym.startswith('1HZ')) else 'data-01';asset=upload(target_tag,name,raw)
  epochs=sorted(rows)
  from datetime import datetime,timezone
- report.update(rows=len(rows),first_epoch=epochs[0],last_epoch=epochs[-1],first_utc=datetime.fromtimestamp(epochs[0],timezone.utc).isoformat(),last_utc=datetime.fromtimestamp(epochs[-1],timezone.utc).isoformat(),sha256=sha,asset=name,release_tag='data-01',url=asset['browser_download_url'])
- report_asset=upload('data-01',name+'.report.json',json.dumps(report,indent=2).encode());report['report_url']=report_asset['browser_download_url']
+ report.update(rows=len(rows),first_epoch=epochs[0],last_epoch=epochs[-1],first_utc=datetime.fromtimestamp(epochs[0],timezone.utc).isoformat(),last_utc=datetime.fromtimestamp(epochs[-1],timezone.utc).isoformat(),sha256=sha,asset=name,release_tag=target_tag,url=asset['browser_download_url'])
+ report_asset=upload(target_tag,name+'.report.json',json.dumps(report,indent=2).encode());report['report_url']=report_asset['browser_download_url']
  for attempt in range(6):
   current=api('/contents/data/index.json').json();index=json.loads(base64.b64decode(current['content']));index[sym]={**index.get(sym,{}),**report}
   r=s.put(BASE+'/contents/data/index.json',json={'message':'data: verified '+sym+' immutable release [skip ci]','content':base64.b64encode((json.dumps(index,indent=2)+'\n').encode()).decode(),'sha':current['sha']},timeout=30)

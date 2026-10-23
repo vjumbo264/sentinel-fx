@@ -80,7 +80,8 @@ def parse_zip(path, specs):
 
 def completed_pair(index, pair):
     entry = index.get(pair_key(index, pair), {})
-    return bool(entry.get('bulk_complete'))
+    years = entry.get('bulk_years', {})
+    return bool(entry.get('bulk_complete') and len(years) >= 20)
 
 
 def run(pairs, dry_run=False):

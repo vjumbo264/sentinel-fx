@@ -129,8 +129,6 @@
     "release_tag": "data-01",
     "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxEURUSD_60s.3b7b72c03b18ac05.csv.gz",
     "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxEURUSD_60s.3b7b72c03b18ac05.csv.gz.report.json",
-    "bulk_complete": true,
-    "bulk_completion_basis": "Existing verified multi-year import retained per overhaul instruction; not a claim of complete 2000-present coverage.",
     "shard_releases": [
       "data-01"
     ]

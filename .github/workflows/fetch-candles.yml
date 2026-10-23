@@ -95,6 +95,9 @@ jobs:
         run: |
           mkdir -p out prev
           ASSET="${SYMBOL}_${GRANULARITY}s.csv.gz"
+          TAG="data-synthetics-01"
+          [[ "$SYMBOL" == frx* ]] && TAG="data-01"
+          gh release download "$TAG" -p "$ASSET" -R "$GITHUB_REPOSITORY" -D prev --clobber 2>/dev/null || \
           gh release download data-01 -p "$ASSET" -R "$GITHUB_REPOSITORY" -D prev --clobber 2>/dev/null || \
             echo "no existing asset; first run is a full pull"
       - name: Fetch incremental Deriv candles only

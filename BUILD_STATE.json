@@ -5,11 +5,36 @@
   "status": "in_progress",
   "current_item": "F2",
   "queue": [
-    { "id": "F1", "title": "Fetch missing 11 forex pair data", "status": "done", "notes": "All 11 forex pairs (GBPUSD, USDJPY, USDCHF, USDCAD, NZDUSD, EURGBP, EURJPY, GBPJPY, AUDJPY, EURAUD, GBPAUD) successfully fetched and indexed in data/index.json with rows > 0, SHA256 checksums, and release assets. Verified runs: 39920396628, 39921134518, 39921139091, 39921143724, 39921148510, 39921153517, 39921158472, 39921162907, 39921167489, 39921172313, 39921733418." },
-    { "id": "F2", "title": "Training engine overhaul — observation v2, actions, reward, walk-forward", "status": "done", "notes": "Completed v2 observation overhaul (62 dimensions, causally safe), 8-action catalog, scalper composite reward, and walk-forward validation (split 70/15/15). Policy schema version updated to sentinel.policy.v2. Smoke test and test_overhaul_training passed." },
-    { "id": "F3", "title": "Training interlock — bot pauses during training", "status": "done", "notes": "Added /api/settings/training-lock endpoint in worker/src/index.js; purged dead packs/staging endpoints; updated bot/main.py with training_locked check and dynamic mode from settings; added lock/unlock steps and Saturday 2am UTC cron to train.yml." },
-    { "id": "F4", "title": "Complete site rebuild — 4 pages, no polling, fast", "status": "in_progress", "notes": "" },
-    { "id": "F5", "title": "Start EURUSD training", "status": "pending", "notes": "" }
+    {
+      "id": "F1",
+      "title": "Fetch missing 11 forex pair data",
+      "status": "done",
+      "notes": "All 11 forex pairs (GBPUSD, USDJPY, USDCHF, USDCAD, NZDUSD, EURGBP, EURJPY, GBPJPY, AUDJPY, EURAUD, GBPAUD) successfully fetched and indexed in data/index.json with rows > 0, SHA256 checksums, and release assets. Verified runs: 39920396628, 39921134518, 39921139091, 39921143724, 39921148510, 39921153517, 39921158472, 39921162907, 39921167489, 39921172313, 39921733418."
+    },
+    {
+      "id": "F2",
+      "title": "Training engine overhaul \u2014 observation v2, actions, reward, walk-forward",
+      "status": "done",
+      "notes": "Completed v2 observation overhaul (62 dimensions, causally safe), 8-action catalog, scalper composite reward, and walk-forward validation (split 70/15/15). Policy schema version updated to sentinel.policy.v2. Smoke test and test_overhaul_training passed."
+    },
+    {
+      "id": "F3",
+      "title": "Training interlock \u2014 bot pauses during training",
+      "status": "done",
+      "notes": "Added /api/settings/training-lock endpoint in worker/src/index.js; purged dead packs/staging endpoints; updated bot/main.py with training_locked check and dynamic mode from settings; added lock/unlock steps and Saturday 2am UTC cron to train.yml."
+    },
+    {
+      "id": "F4",
+      "title": "Complete site rebuild \u2014 4 pages, no polling, fast",
+      "status": "in_progress",
+      "notes": ""
+    },
+    {
+      "id": "F5",
+      "title": "Start EURUSD training",
+      "status": "pending",
+      "notes": ""
+    }
   ],
   "decisions": [
     "Initialized overhaul state per prompt specification",
@@ -18,7 +43,11 @@
     "Added GBPAUD specifications to data/symbols.json and verified ingestion across all 11 pairs",
     "Updated observation schema to sentinel.policy.v2 locked with 62 dimensions across M1, M5, M15, H1",
     "Adopted 8-action catalog with discrete actions for hold, full/half long, full/half short, close, breakeven, and trailing stop",
-    "Added training_locked interlock in worker and bot main loop with dynamic mode control"
+    "Added training_locked interlock in worker and bot main loop with dynamic mode control",
+    "Created dedicated data-synthetics-01 release containing all Deriv synthetic volatility index datasets (R_10, R_25, R_50, R_75, R_100, 1HZ10V, 1HZ25V, 1HZ50V, 1HZ75V, 1HZ100V, 1HZ150V, 1HZ250V)",
+    "Unblocked deep HistData 26-year ingestion for initial forex pairs EURUSD and AUDUSD to refresh them with full 2000-2026 history matching all other pairs",
+    "Updated completed_pair logic in tools/fetch_histdata_bulk.py to verify >=20 annual shards before skipping",
+    "Updated tools/publish_data.py and .github/workflows/fetch-candles.yml to route synthetic indices to data-synthetics-01"
   ],
   "known_issues": [],
   "deployment": {
@@ -26,14 +55,22 @@
     "worker": "https://sentinel-fx-worker.vjumbo264.workers.dev",
     "d1_id": "5e272a6b-ad11-4bd6-bd61-70569c9f74f6",
     "secrets_expected": [
-      "GITHUB_PAT", "GH_CHAIN_PAT", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID",
-      "BOT_SHARED_SECRET", "DERIV_BEARER_TOKEN", "DERIV_APP_ID",
-      "MT5_PASSWORD", "MT5_DEMO_LOGIN", "MT5_DEMO_SERVER", "WORKER_URL"
+      "GITHUB_PAT",
+      "GH_CHAIN_PAT",
+      "CLOUDFLARE_API_TOKEN",
+      "CLOUDFLARE_ACCOUNT_ID",
+      "BOT_SHARED_SECRET",
+      "DERIV_BEARER_TOKEN",
+      "DERIV_APP_ID",
+      "MT5_PASSWORD",
+      "MT5_DEMO_LOGIN",
+      "MT5_DEMO_SERVER",
+      "WORKER_URL"
     ]
   },
   "observation_schema": "sentinel.policy.v2",
   "observation_dimension": 62,
-  "old_47dim_models": "incompatible — do not load",
-  "last_updated": "2026-10-23T08:26:00Z",
-  "last_session_note": "F2 completed: v2 observation, 8-action catalog, composite reward, walk-forward eval. Moving to F3."
+  "old_47dim_models": "incompatible \u2014 do not load",
+  "last_updated": "2026-10-23T08:47:11.568285+00:00",
+  "last_session_note": "Migrated synthetic indices to data-synthetics-01 release; dispatched EURUSD and AUDUSD deep 26-year HistData bulk refresh."
 }
