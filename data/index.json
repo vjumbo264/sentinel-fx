@@ -834,11 +834,19 @@
         "first_epoch": 1230854340,
         "last_epoch": 1262296680,
         "sha256": "b57ca073fc60a65c06dea15aa871039c92b1ded1ce455075487a9a70332f8756"
+      },
+      "2010": {
+        "asset": "EURGBP_2010.csv.gz",
+        "release_tag": "data-eurgbp-01",
+        "rows": 344193,
+        "first_epoch": 1262556060,
+        "last_epoch": 1293825480,
+        "sha256": "2dfa120d64573becaf6cbf61cc2e386445441674232a4d4a00cee4473cb1e903"
       }
     },
-    "last_epoch": 1262296680,
+    "last_epoch": 1293825480,
     "first_epoch": 1015200240,
-    "rows": 2189662,
+    "rows": 2533855,
     "columns": [
       "epoch",
       "bid_open",
