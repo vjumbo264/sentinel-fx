@@ -823,7 +823,33 @@
         "checked_utc": "2026-10-23T07:56:28.200836+00:00",
         "status": "unavailable_not_complete"
       }
-    }
+    },
+    "bulk_years": {
+      "2001": {
+        "asset": "USDJPY_2001.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 244200,
+        "first_epoch": 978426600,
+        "last_epoch": 1009823220,
+        "sha256": "c8210ecd074b52bedd85edbc564404541dbaa842813c80f92904d88951da1891"
+      }
+    },
+    "last_epoch": 1009823220,
+    "first_epoch": 978426600,
+    "rows": 244200,
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "source": "histdata-bid-only-synthetic-ask",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   },
   "frxUSDCAD": {
     "shard_releases": [
