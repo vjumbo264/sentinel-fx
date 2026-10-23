@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H7: audit 62-dimensional input enforcement in runtime/checker/simulator/adapter; retire incompatible model listings; document behavior.",
+    "next_step": "H7: wire shared constant into vectorizer/training env, enforce bundle policy input shape, and test the real sfx checker.",
     "items": [
       {
         "id": "H1",
@@ -249,7 +249,12 @@
         "id": "H7",
         "title": "Consistency and cleanup: 62-dim observation enforcement, docs",
         "status": "doing",
-        "attempts": [],
+        "attempts": [
+          {
+            "what": "Centralize current observation dimension",
+            "result": "Added OBSERVATION_DIM=62 to policy_schema. A parallel edit to train_env initially did not apply because the import text differed; no partial edit was written and it will be corrected from the actual source."
+          }
+        ],
         "evidence": [],
         "files": []
       },

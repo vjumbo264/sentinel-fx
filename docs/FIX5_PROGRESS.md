@@ -193,3 +193,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 - Worker snapshots committed in docs/evidence/h6_heartbeat.json. No cancellation.
 - One final Actions poll timed out transiently; subsequent authenticated API retrieval succeeded.
 - Next: H7. Visual styling unchanged.
+
+### H7: Centralize current observation dimension
+- Added OBSERVATION_DIM=62 to policy_schema. A parallel edit to train_env initially did not apply because the import text differed; no partial edit was written and it will be corrected from the actual source.
+- Next: H7: wire shared constant into vectorizer/training env, enforce bundle policy input shape, and test the real sfx checker.

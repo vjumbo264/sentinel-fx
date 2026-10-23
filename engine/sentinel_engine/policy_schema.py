@@ -5,6 +5,7 @@ from dataclasses import dataclass,field,asdict
 from typing import Any
 import math
 VERSION='sentinel.policy.v2'
+OBSERVATION_DIM=62
 ACTION_TYPES={'hold','open','add','reduce','reverse','move_stop','close'}
 REJECTION_TYPES={'margin','broker_limit','market_closed','owner_override','invalid'}
 @dataclass
