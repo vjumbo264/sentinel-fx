@@ -543,11 +543,19 @@
         "first_epoch": 978427020,
         "last_epoch": 1009823220,
         "sha256": "14ed976bb15222c24e8097528a565b4303f65cab692d07ff2dfb3922c205560a"
+      },
+      "2002": {
+        "asset": "GBPUSD_2002.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 194701,
+        "first_epoch": 1009952820,
+        "last_epoch": 1041357480,
+        "sha256": "01801bca022d0900f4038079527c18b32985ee3f6ea51138d984cf908e74f590"
       }
     },
-    "last_epoch": 1009823220,
+    "last_epoch": 1041357480,
     "first_epoch": 959727540,
-    "rows": 335305,
+    "rows": 530006,
     "columns": [
       "epoch",
       "bid_open",
