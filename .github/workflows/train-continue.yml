@@ -1,0 +1,25 @@
+name: Continue owner-started training
+on:
+  workflow_run:
+    workflows: [RL Training]
+    types: [completed]
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: training-continuation
+  cancel-in-progress: false
+jobs:
+  continue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Resume durable cycle only when no writer exists
+        env:
+          GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/continue_training.py
