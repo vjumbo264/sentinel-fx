@@ -3,17 +3,19 @@
   "repo": "vjumbo264/sentinel-fx",
   "goal": "Rebuild training engine with professional scalper observation (v2 schema), implement training interlock, fetch missing forex data, completely rebuild site, and start EURUSD training.",
   "status": "in_progress",
-  "current_item": "F1",
+  "current_item": "F2",
   "queue": [
-    { "id": "F1", "title": "Fetch missing 11 forex pair data", "status": "in_progress", "notes": "Workflow dispatched: https://github.com/vjumbo264/sentinel-fx/actions/runs/39920396628. Active shard downloads and uploads in progress." },
-    { "id": "F2", "title": "Training engine overhaul — observation v2, actions, reward, walk-forward", "status": "pending", "notes": "" },
+    { "id": "F1", "title": "Fetch missing 11 forex pair data", "status": "done", "notes": "All 11 forex pairs (GBPUSD, USDJPY, USDCHF, USDCAD, NZDUSD, EURGBP, EURJPY, GBPJPY, AUDJPY, EURAUD, GBPAUD) successfully fetched and indexed in data/index.json with rows > 0, SHA256 checksums, and release assets. Verified runs: 39920396628, 39921134518, 39921139091, 39921143724, 39921148510, 39921153517, 39921158472, 39921162907, 39921167489, 39921172313, 39921733418." },
+    { "id": "F2", "title": "Training engine overhaul — observation v2, actions, reward, walk-forward", "status": "in_progress", "notes": "" },
     { "id": "F3", "title": "Training interlock — bot pauses during training", "status": "pending", "notes": "" },
     { "id": "F4", "title": "Complete site rebuild — 4 pages, no polling, fast", "status": "pending", "notes": "" },
     { "id": "F5", "title": "Start EURUSD training", "status": "pending", "notes": "" }
   ],
   "decisions": [
     "Initialized overhaul state per prompt specification",
-    "Saved full prompt to docs/BUILD_PROMPT.md"
+    "Saved full prompt to docs/BUILD_PROMPT.md",
+    "Configured scoped workflow dispatch to ingest all 11 forex pairs concurrently",
+    "Added GBPAUD specifications to data/symbols.json and verified ingestion across all 11 pairs"
   ],
   "known_issues": [],
   "deployment": {
