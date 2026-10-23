@@ -862,8 +862,8 @@
       {
         "id": "Q3",
         "title": "HistData bulk fetch + release overflow + Deriv incremental",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Verified four offline tests: existing EURUSD skip, fixed-EST conversion/synthetic ask, incoming-size shard overflow, strict incremental bid/ask writer. HistData annual/current-month handling, paced HTTP/Retry-After, immutable SHA-verified uploads, per-year CAS commits and 17100s self-dispatch implemented. Unavailable years remain explicitly incomplete, never fabricated. Existing EURUSD import retained as instructed."
       },
       {
         "id": "Q4",
@@ -893,7 +893,7 @@
       "EURAUD",
       "GBPAUD"
     ],
-    "last_updated": "2026-10-23T06:14:06.182263+00:00",
+    "last_updated": "2026-10-23T06:19:47.755303+00:00",
     "notes": "",
     "decisions": [
       "Credentials in original request are redacted in docs/BUILD_PROMPT.md. Secret names only are recorded. Preserve all earlier build sections; only overhaul queue governs this build.",
