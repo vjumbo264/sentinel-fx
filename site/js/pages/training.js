@@ -241,6 +241,14 @@ export async function trainingPage() {
       trainText = 'Queued';
     }
 
+    // H3 metrics for pair
+    const isThisActive = (trainingState.active_pair === pair);
+    const stepsDone = isThisActive ? (trainingState.total_steps_done || 0) : (model.steps || (verdict === 'pass' ? 5000000 : 0));
+    const bestCp = (isThisActive && trainingState.best_checkpoint) ? trainingState.best_checkpoint : null;
+    const holdoutLooks = (isThisActive && trainingState.holdout_looks !== undefined) ? trainingState.holdout_looks : (model.holdout_looks || 0);
+    const releaseDecision = (isThisActive && trainingState.release_decision) ? trainingState.release_decision : (model.release_decision || (verdict === 'pass' ? 'Released' : verdict === 'no_edge' ? 'No proven edge, not released' : 'Pending 5M steps'));
+    const lastDataDate = pairData.last_date || pairData.end_date || 'latest';
+
     return `
       <div style="background:var(--bg-card-sub); border:1px solid var(--border); border-radius:var(--radius); padding:14px; display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
@@ -270,22 +278,49 @@ export async function trainingPage() {
           </div>
         </div>
 
-        ${
-          model.sharpe_annualized !== undefined || model.win_rate_pct !== undefined
-            ? `
-              <div style="font-size:11px; color:var(--text-2); background:var(--bg-input); padding:8px; border-radius:var(--radius-sm); border:1px solid var(--border-sub);">
+        <!-- H3 Training & Evaluation Stats -->
+        <div style="font-size:11px; color:var(--text-2); background:var(--bg-input); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-sub); display:flex; flex-direction:column; gap:4px;">
+          <div style="display:flex; justify-content:space-between;">
+            <span>Training Progress:</span>
+            <strong class="tabular" style="color:var(--text);">${stepsDone.toLocaleString()} / 5,000,000 steps</strong>
+          </div>
+          ${
+            bestCp
+              ? `
                 <div style="display:flex; justify-content:space-between;">
-                  <span>Walk-Forward Sharpe:</span>
-                  <strong class="tabular" style="color:var(--text);">${model.sharpe_annualized || '-'}</strong>
+                  <span>Best Val Score:</span>
+                  <strong class="tabular" style="color:var(--profit);">${bestCp.score} (step ${bestCp.step.toLocaleString()})</strong>
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-top:2px;">
-                  <span>Win Rate:</span>
-                  <strong class="tabular" style="color:var(--profit);">${model.win_rate_pct ? model.win_rate_pct + '%' : '-'}</strong>
+              `
+              : (model.sharpe_annualized !== undefined)
+              ? `
+                <div style="display:flex; justify-content:space-between;">
+                  <span>Val Sharpe / Return:</span>
+                  <strong class="tabular" style="color:var(--text);">${model.sharpe_annualized} (+${model.total_return_pct || 0}%)</strong>
                 </div>
-              </div>
-            `
-            : ''
-        }
+              `
+              : `
+                <div style="display:flex; justify-content:space-between;">
+                  <span>Val Score:</span>
+                  <span style="color:var(--text-3); font-style:italic;">evaluating at checkpoints</span>
+                </div>
+              `
+          }
+          <div style="display:flex; justify-content:space-between;">
+            <span>Hold-out Looks:</span>
+            <strong class="tabular" style="color:var(--text);">${holdoutLooks}</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; gap:6px;">
+            <span>Release Decision:</span>
+            <span style="color:${verdict === 'pass' ? 'var(--profit)' : verdict === 'no_edge' ? 'var(--warning)' : 'var(--text-3)'}; font-weight:600; text-align:right;">
+              ${releaseDecision}
+            </span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:2px; font-size:10px; color:var(--text-3);">
+            <span>Data Pool:</span>
+            <span>Up to ${lastDataDate}</span>
+          </div>
+        </div>
 
         <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--text-3); pt-1;">
           <span>${isSynthetic ? 'Synthetic CFD' : 'Forex Major/Cross'}</span>
@@ -294,7 +329,7 @@ export async function trainingPage() {
             data-pair="${pair}"
             style="padding:2px 8px; font-size:11px; height:26px;"
           >
-            Train ${pair}
+            Update Training (${pair})
           </button>
         </div>
       </div>

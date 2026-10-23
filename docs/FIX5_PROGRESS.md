@@ -16,8 +16,11 @@
 ## Done
 - **H2. Honest training ETA (V3 passed)**: Replaced erroneous static 4.75h multiplier with dynamic throughput measured from last 5 checkpoint timestamps (~3,959 steps/min -> 18.1 hours ETA for EURUSD v1, 0.01% diff from hand calculation). Shows rate, elapsed, finish time in local/WAT timezone, and queue total.
 
+## Done
+- **H3. Full 5,000,000-step training & best-checkpoint release (V4 passed)**: Removed plateau early-stopping so pairs train full 5M steps. Per-checkpoint validation logged in training_state.json and shown on Training page. Best-checkpoint selector releases peak validation checkpoint upon 5M completion provided it passes 1.5x cost stress holdout gates, otherwise marks 'no proven edge, not released'. Resumption preserved on active EURUSD v1 chain.
+
 ## In Progress
-- **H3. Full 5,000,000-step training & best-checkpoint release**: Implementing four independent optional overrides (Take Profit, Stop Loss, Daily Profit Target, Daily Loss Limit) in Worker D1, Site/UI, and Bot with UTC day boundaries and persistence per mode.
+- **H4. Update MT5 credentials from Settings**: Implementing four independent optional overrides (Take Profit, Stop Loss, Daily Profit Target, Daily Loss Limit) in Worker D1, Site/UI, and Bot with UTC day boundaries and persistence per mode.
 
 ## Next
 - **H2. Honest training ETA**: Fix throughput formula on Training page based on measured step delta and timestamps from last 5 checkpoints.

@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H3: Full 5,000,000-step training, per-checkpoint validation eval, best-checkpoint release on locked hold-out",
+    "next_step": "H4: Update MT5 credentials from Settings with libsodium-sealed repository secrets and test login",
     "items": [
       {
         "id": "H1",
@@ -116,10 +116,22 @@
       {
         "id": "H3",
         "title": "Full 5,000,000-step training, release best-tested checkpoint",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "Verified EURUSD v1 chain resumes without restart at step 750,000 (EURUSD_v1_s750000.zip)",
+          "Removed plateau early-stopping in TrainingWall so all pairs train full 5,000,000 steps",
+          "Implemented per-checkpoint validation fold evaluation logging (walk_forward_eval) and best_checkpoint tracking",
+          "Implemented locked hold-out evaluation with 1.5x cost stress, beating do-nothing baseline, <30% DD, and activity gate",
+          "Implemented rejection path ('no proven edge, not released') in train_agent.py and pair card in site/js/pages/training.js",
+          "Passed tests/test_fix5_h3.py: all 4 tests passed"
+        ],
+        "files": [
+          "tools/train_agent.py",
+          "site/js/pages/training.js",
+          "training_state.json",
+          "tests/test_fix5_h3.py"
+        ]
       },
       {
         "id": "H4",
@@ -225,10 +237,16 @@
       {
         "id": "V4",
         "title": "Training: EURUSD v1 chain resumes without restart; validation logged; best released; no edge path",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "tests/test_fix5_h3.py passed: EURUSD v1 chain verified at step 750,000, best checkpoint selection logic verified, hold-out rejection path verified"
+        ],
+        "files": [
+          "tools/train_agent.py",
+          "training_state.json",
+          "tests/test_fix5_h3.py"
+        ]
       },
       {
         "id": "V5",

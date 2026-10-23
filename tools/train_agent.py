@@ -143,6 +143,11 @@ def checkpoint(gh, model, state, stats):
         'score': stats.get('val_score'),
         'metrics': stats.get('val_metrics', {})
     })
+    val_score = stats.get('val_score')
+    if val_score is not None:
+        best = state.get('best_checkpoint')
+        if best is None or val_score > best.get('score', -999999):
+            state['best_checkpoint'] = {'step': steps, 'score': val_score, 'asset': name, 'val_metrics': stats.get('val_metrics', {})}
     state.update(total_steps_done=steps, last_checkpoint_steps=steps, last_checkpoint_utc=meta['saved_utc'],
                  checkpoint={'asset': name,'release_tag':'training-checkpoints','sha256':hashlib.sha256(raw).hexdigest()},
                  plateau_intervals=stats.get('plateau_intervals',0), previous_mean_reward=stats.get('previous_mean_reward'),
@@ -178,9 +183,10 @@ def restore(gh, env, state):
 
 
 class TrainingWall(BaseCallback):
-    def __init__(self, gh, state, deadline):
+    def __init__(self, gh, state, deadline, full_data=None, specs=None, pair=None):
         super().__init__()
         self.gh,self.state,self.deadline = gh,state,deadline
+        self.full_data,self.specs,self.pair = full_data,specs,pair
         self.last_saved = state.get('last_checkpoint_steps',0)
         self.wall = False
         self.converged = False
@@ -198,10 +204,27 @@ class TrainingWall(BaseCallback):
             if interval and mean is not None and len(rewards) >= 10:
                 self.plateau = self.plateau+1 if self.previous is not None and mean-self.previous < .001 else 0
                 self.previous = mean
-            self.stats = {'plateau_intervals':self.plateau,'previous_mean_reward':self.previous}
+            val_score = None
+            val_metrics = {}
+            if self.full_data is not None and self.specs is not None:
+                try:
+                    val_metrics = walk_forward_eval(self.model, self.full_data, self.specs, self.pair)
+                    sharpe = val_metrics.get('sharpe_annualized', 0.0)
+                    ret = val_metrics.get('total_return_pct', 0.0)
+                    dd = val_metrics.get('max_drawdown_pct', 0.0)
+                    val_score = round(sharpe * (1.0 - dd / 100.0) if ret > 0 else -dd, 4)
+                except Exception as e:
+                    val_metrics = {'error': str(e)}
+            self.stats = {
+                'plateau_intervals': self.plateau,
+                'previous_mean_reward': self.previous,
+                'val_score': val_score,
+                'val_metrics': val_metrics
+            }
             checkpoint(self.gh,self.model,self.state,self.stats)
             self.last_saved = self.num_timesteps
-            self.converged = target or self.plateau >= 10
+            # H3: Must complete full 5,000,000 steps. No early-stopping on plateau.
+            self.converged = target
         return not (self.wall or self.converged)
 
 
@@ -258,6 +281,58 @@ def walk_forward_eval(model, full_data, specs, pair):
         'cost_paid': val_env.broker.cost_paid,
     }
 
+def holdout_eval(model, full_data, specs, pair, cost_stress=1.5):
+    """
+    Evaluates the model on the locked 15% holdout fold with 1.5x cost stress.
+    Gates:
+    - beats do-nothing baseline (total_return > 0)
+    - max drawdown < 0.30 (30%)
+    - trading-days activity gate (trade_count >= 10)
+    """
+    n = len(full_data)
+    holdout_start = int(n * 0.85)
+    holdout_data = full_data.iloc[holdout_start:].reset_index(drop=True)
+    if len(holdout_data) < 70:
+        return {'verdict': 'no_edge', 'reason': 'insufficient holdout rows', 'passed_gates': False}
+    stressed_specs = dict(specs)
+    if 'commission_per_lot' in stressed_specs:
+        stressed_specs['commission_per_lot'] = float(stressed_specs['commission_per_lot']) * cost_stress
+    if 'slippage_points' in stressed_specs:
+        stressed_specs['slippage_points'] = int(float(stressed_specs['slippage_points']) * cost_stress)
+    env = SentinelScalpEnv(holdout_data, stressed_specs, pair)
+    obs, _ = env.reset(options={'start_bar': 60})
+    equity_curve = [env.initial_balance]
+    done = False
+    while not done:
+        action, _ = model.predict(obs, deterministic=True)
+        obs, reward, terminated, truncated, info = env.step(int(action))
+        equity_curve.append(info['equity'])
+        done = terminated or truncated
+    equity_curve = np.array(equity_curve)
+    final_equity = float(equity_curve[-1])
+    total_return = float((final_equity - env.initial_balance) / env.initial_balance)
+    max_dd = float(np.max(np.maximum.accumulate(equity_curve) - equity_curve) / np.maximum.accumulate(equity_curve).max())
+    trade_count = len(env.broker.closed)
+    returns = np.diff(np.log(np.maximum(equity_curve, 1e-9)))
+    sharpe = float(np.mean(returns) / (np.std(returns) + 1e-9) * np.sqrt(252 * 1440))
+    beats_baseline = total_return > 0.0
+    within_dd_limit = max_dd < 0.30
+    meets_activity = trade_count >= 10
+    passed = beats_baseline and within_dd_limit and meets_activity
+    return {
+        'verdict': 'pass' if passed else 'no_edge',
+        'passed_gates': passed,
+        'holdout_rows': len(holdout_data),
+        'final_equity': final_equity,
+        'total_return_pct': round(total_return * 100, 2),
+        'max_drawdown_pct': round(max_dd * 100, 2),
+        'sharpe_annualized': round(sharpe, 3),
+        'trade_count': trade_count,
+        'cost_stress': cost_stress,
+        'beats_baseline': beats_baseline,
+        'within_dd_limit': within_dd_limit,
+        'meets_activity': meets_activity
+    }
 
 def publish(gh, model, env, full_data, state):
     pair,version = state['active_pair'],state['active_version']
@@ -370,13 +445,37 @@ def main():
         model = restore(gh,monitored,state)
         state.update(status='training',next_retrain_after_utc=None)
         save_state(gh,state,'Q4: start/resume '+pair)
-        callback = TrainingWall(gh,state,deadline)
+        callback = TrainingWall(gh,state,deadline,full_data,specs,pair)
         model.learn(total_timesteps=max(1,state['total_steps_target']-model.num_timesteps),
                     reset_num_timesteps=False,callback=callback)
         if callback.wall:
             state['status']='checkpointed';save_state(gh,state,'Q4: wall checkpoint '+pair)
             gh.dispatch('train.yml',{'mode':'resume'});return
-        publish(gh,model,env,full_data,state)
+
+        # Target 5,000,000 steps reached: evaluate and release BEST checkpoint on hold-out
+        best_meta = state.get('best_checkpoint')
+        best_step = best_meta['step'] if best_meta else model.num_timesteps
+        best_asset = best_meta.get('asset') if best_meta else f'{pair}_v{state["active_version"]}_s{best_step}.zip'
+        best_path = ROOT / 'cache/training' / best_asset
+        if not best_path.exists():
+            rel = gh.ensure_release('training-checkpoints')
+            asset_obj = next((a for a in gh.assets(rel) if a['name'] == best_asset), None)
+            if asset_obj:
+                raw = gh.download(asset_obj)
+                best_path.parent.mkdir(parents=True, exist_ok=True)
+                best_path.write_bytes(raw)
+        best_model = PPO.load(str(best_path), env=monitored, device='cpu') if best_path.exists() else model
+        state['holdout_looks'] = state.get('holdout_looks', 0) + 1
+        holdout_res = holdout_eval(best_model, full_data, specs, pair)
+        if holdout_res.get('passed_gates'):
+            publish(gh, best_model, env, full_data, state)
+            state['release_decision'] = f"Released best checkpoint s{best_step} (Sharpe: {holdout_res['sharpe_annualized']}, Return: +{holdout_res['total_return_pct']}%, DD: {holdout_res['max_drawdown_pct']}%)"
+        else:
+            state['verdict'] = 'no_edge'
+            reason = f"no proven edge, not released (Return: {holdout_res.get('total_return_pct', 0)}%, MaxDD: {holdout_res.get('max_drawdown_pct', 0)}%, Trades: {holdout_res.get('trade_count', 0)})"
+            state['release_decision'] = reason
+            print(f"[RELEASE REFUSED] {pair}: {reason}")
+
         advance(state);save_state(gh,state,'Q4: completed '+pair+'; advance queue')
         if not state['next_retrain_after_utc']:
             gh.dispatch('train.yml',{'mode':'resume'})
