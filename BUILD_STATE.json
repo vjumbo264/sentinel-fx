@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H6: await green 660-second demo run 39986703235, verify final heartbeat span and no errors, then start H7.",
+    "next_step": "H7: audit 62-dimensional input enforcement in runtime/checker/simulator/adapter; retire incompatible model listings; document behavior.",
     "items": [
       {
         "id": "H1",
@@ -184,7 +184,7 @@
       {
         "id": "H6",
         "title": "The failed or cancelled live action root cause and fix",
-        "status": "doing",
+        "status": "passing",
         "attempts": [
           {
             "what": "Actions API audit of last 40 workflow runs",
@@ -231,7 +231,11 @@
             "result": "Native bot run 39985787304 failed with the same IPC timeout; no more speculative native retries. Separate real transport probe: default Python urllib UA gives HTTP 403 / error code 1010; sentinel-mt5-login/1.0 gives HTTP 200 for the same read-only authenticated endpoint. Added explicit User-Agent to login result reporting. Restored Linux demo run 39986703235 is starting."
           }
         ],
-        "evidence": [],
+        "evidence": [
+          "https://github.com/vjumbo264/sentinel-fx/actions/runs/39986703235",
+          "docs/evidence/h6_heartbeat.json",
+          "Actual MT5 demo heartbeat count=59, first elapsed=2s, last=657s; no FAIL CLOSED or assertions; conclusion success."
+        ],
         "files": [
           "bot/main.py",
           "tools/bot_safety_dispatch.py",
@@ -244,7 +248,7 @@
       {
         "id": "H7",
         "title": "Consistency and cleanup: 62-dim observation enforcement, docs",
-        "status": "todo",
+        "status": "doing",
         "attempts": [],
         "evidence": [],
         "files": []
@@ -365,9 +369,13 @@
       {
         "id": "V7",
         "title": "Failed/cancelled action: root cause documented with log lines, fix applied, green 10m run",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
+        "evidence": [
+          "https://github.com/vjumbo264/sentinel-fx/actions/runs/39986703235",
+          "docs/evidence/h6_heartbeat.json",
+          "Actual MT5 demo heartbeat count=59, first elapsed=2s, last=657s; no FAIL CLOSED or assertions; conclusion success."
+        ],
         "files": []
       },
       {

@@ -183,3 +183,13 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 - H6 runtime sample 4: run in_progress/None; actual broker heartbeat 2026-10-23T16:35:45Z; active runner 39986703235. Still waiting for final green result.
 
 - H6 runtime sample 5: run in_progress/None; actual broker heartbeat 2026-10-23T16:37:49Z; active runner 39986703235. Still waiting for final green result.
+
+## H6 / V7 PASS: independently verified
+- Green demo run: https://github.com/vjumbo264/sentinel-fx/actions/runs/39986703235 . Actual 59 heartbeats, elapsed 2–657s. No assertions or FAIL CLOSED messages. No model enabled; this proves connectivity and supervision, **not** trading acceptance V2/V8.
+```text
+2026-10-23T16:27:06.9512353Z 2026-10-23 16:27:06,950 [INFO] sentinel.bot: HEARTBEAT owner=39986703235 elapsed=2s balance=10005.68 models=0
+2026-10-23T16:38:01.7599998Z 2026-10-23 16:38:01,759 [INFO] sentinel.bot: HEARTBEAT owner=39986703235 elapsed=657s balance=10005.68 models=0
+```
+- Worker snapshots committed in docs/evidence/h6_heartbeat.json. No cancellation.
+- One final Actions poll timed out transiently; subsequent authenticated API retrieval succeeded.
+- Next: H7. Visual styling unchanged.
