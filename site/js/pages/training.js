@@ -168,6 +168,7 @@ export async function trainingPage() {
               <span>Schedule Training for Selected</span>
             </button>
             <button id="update-all-training-btn" class="btn btn-ghost btn-sm">Update all trained models</button>
+            <button id="update-data-btn" class="btn btn-ghost btn-sm">Update data</button>
             <button id="toggle-lock-btn" class="btn btn-ghost btn-sm">
               ${isLocked ? 'Clear Training Lock' : 'Engage Training Lock'}
             </button>
@@ -273,7 +274,9 @@ export async function trainingPage() {
               <span style="font-weight:700; font-size:15px; color:var(--text);">${pair}</span>
             </div>
             <div class="tabular" style="font-size:11px; color:var(--text-3); margin-top:4px;">
-              ${rows > 0 ? `${rows.toLocaleString()} bars ready` : 'No local M1 bars'}
+              ${rows > 0 ? `${rows.toLocaleString()} bars ready` : 'No local M1 bars'}<br>
+              First: ${(pairData.first_utc || '—').slice(0, 10)} · Last: ${(pairData.last_utc || '—').slice(0, 16)}<br>
+              Updated: ${(pairData.last_update_utc || pairData.last_checked_utc || '—').slice(0, 16)} UTC
             </div>
           </div>
 
@@ -390,12 +393,23 @@ export async function trainingPage() {
       });
     });
     document.getElementById('update-all-training-btn')?.addEventListener('click', async (event) => {
-      event.currentTarget.disabled = true;
+      const button = event.currentTarget;
+      button.disabled = true;
       try {
         await api.post('/api/training/dispatch', { mode: 'update', pair: 'all' });
         toast('Update all dispatched; released models keep trading until you enable a passing candidate.', 'success');
       } catch (err) { toast(err.message, 'error'); }
-      event.currentTarget.disabled = false;
+      button.disabled = false;
+    });
+
+    document.getElementById('update-data-btn')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        await api.post('/api/data/update', { symbols: 'all' });
+        toast('Weekly-style Deriv append started for all tracked pairs. Existing history stays immutable.', 'success');
+      } catch (err) { toast(err.message, 'error'); }
+      button.disabled = false;
     });
 
     // Toggle training lock button
