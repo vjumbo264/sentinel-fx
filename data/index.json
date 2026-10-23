@@ -2280,11 +2280,19 @@
         "first_epoch": 1325487780,
         "last_epoch": 1356991080,
         "sha256": "8deac840da7fb85ab98fb6791411b9b0b8bd935c4f817e314dbb58481e40fe30"
+      },
+      "2013": {
+        "asset": "GBPAUD_2013.csv.gz",
+        "release_tag": "data-gbpaud-01",
+        "rows": 370815,
+        "first_epoch": 1357077600,
+        "last_epoch": 1388523540,
+        "sha256": "1315d2158087f88ba0e5e30a9969143480b093843447f34f0662333d1e64151b"
       }
     },
-    "last_epoch": 1356991080,
+    "last_epoch": 1388523540,
     "first_epoch": 1191189600,
-    "rows": 1912583,
+    "rows": 2283398,
     "columns": [
       "epoch",
       "bid_open",
