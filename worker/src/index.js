@@ -416,6 +416,16 @@ export default {
       const site = await verifySiteAuth(request);
       if (!site) return err("unauthorized", 401);
 
+      if (path === "/api/data/update" && method === "POST") {
+        const symbols = String(body.symbols || "all");
+        if (!/^(all|(?:frx[A-Z]{6}|R_\d+|1HZ\d+V)(?:,(?:frx[A-Z]{6}|R_\d+|1HZ\d+V))*)$/.test(symbols)) return err("Invalid data symbols");
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/fetch-candles.yml/dispatches`, {
+          method: "POST", headers: { Authorization: `Bearer ${site.token}`, Accept: "application/vnd.github+json", "User-Agent": "sentinel-fx-worker", "Content-Type": "application/json" },
+          body: JSON.stringify({ ref: "main", inputs: { symbols } })
+        });
+        return response.status === 204 ? json({ ok: true, symbols }) : err(`Data update dispatch failed: HTTP ${response.status}`, 502);
+      }
+
       if (path === "/api/training/dispatch" && method === "POST") {
         const mode = String(body.mode || "update");
         const pair = String(body.pair || "").replaceAll("frx", "");
