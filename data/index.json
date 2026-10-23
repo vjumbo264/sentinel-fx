@@ -1855,6 +1855,9 @@
         "checked_utc": "2026-10-23T07:58:47.830368+00:00",
         "status": "unavailable_not_complete"
       }
-    }
+    },
+    "shard_releases": [
+      "data-gbpaud-01"
+    ]
   }
 }
