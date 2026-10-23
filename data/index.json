@@ -519,7 +519,10 @@
     "asset": "frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz",
     "release_tag": "data-01",
     "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz.report.json"
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxAUDUSD_60s.3ed33b3ace1d27ec.csv.gz.report.json",
+    "shard_releases": [
+      "data-audusd-01"
+    ]
   },
   "frxGBPUSD": {
     "shard_releases": [
