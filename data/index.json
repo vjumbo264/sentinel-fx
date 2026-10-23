@@ -961,11 +961,19 @@
         "first_epoch": 1015200180,
         "last_epoch": 1041357480,
         "sha256": "82a0b381cc6700fe6d442813633ad3f7d664f1f19376bebf7fd99a5bb615800a"
+      },
+      "2003": {
+        "asset": "EURJPY_2003.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 341757,
+        "first_epoch": 1041465600,
+        "last_epoch": 1072900740,
+        "sha256": "470f42983aa86090d8c8570ad1a4b316a0c13607c2ea1d4dab203c7015afba44"
       }
     },
-    "last_epoch": 1041357480,
+    "last_epoch": 1072900740,
     "first_epoch": 1015200180,
-    "rows": 224329,
+    "rows": 566086,
     "columns": [
       "epoch",
       "bid_open",
