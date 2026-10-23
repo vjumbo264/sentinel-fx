@@ -1978,11 +1978,19 @@
         "first_epoch": 1767305040,
         "last_epoch": 1790830680,
         "sha256": "b58f500b8eaf651df404fcf059e572196febc931bf25875825a16680f4629ad1"
+      },
+      "2006": {
+        "asset": "GBPJPY_2006.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 357368,
+        "first_epoch": 1136246400,
+        "last_epoch": 1167427740,
+        "sha256": "141b284f86f5e580978a2d065b74f6de4757728823f0d778ce2ddcf196641a1c"
       }
     },
     "last_epoch": 1790830680,
     "first_epoch": 1020265200,
-    "rows": 8474542,
+    "rows": 8831910,
     "columns": [
       "epoch",
       "bid_open",
