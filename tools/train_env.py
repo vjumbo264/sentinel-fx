@@ -3,6 +3,7 @@ import gymnasium as gym
 import numpy as np
 import pandas as pd
 from sentinel_engine.observation import build_observation, vectorize
+from sentinel_engine.policy_schema import OBSERVATION_DIM
 from sentinel_engine.execution_adapter import ExecutionAdapter
 from sentinel_engine.sim import SimulationBroker
 
@@ -19,7 +20,7 @@ ACTION_CATALOG = [
 
 class SentinelScalpEnv(gym.Env):
     metadata = {'render_modes': []}
-    observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(62,), dtype=np.float64)
+    observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(OBSERVATION_DIM,), dtype=np.float64)
     action_space = gym.spaces.Discrete(8)
 
     def __init__(self, candles, specs, symbol='EURUSD', initial_balance=10000, leverage=100):
@@ -52,7 +53,7 @@ class SentinelScalpEnv(gym.Env):
             specs=self.specs, tick=self.broker.tick, drawdown=max(0, 1-equity/self.peak),
             last_result=self.last_result)
         vector = vectorize(self.last_observation)
-        if vector.shape != (62,) or not np.isfinite(vector).all():
+        if vector.shape != (OBSERVATION_DIM,) or not np.isfinite(vector).all():
             raise ValueError('live observation contract violated')
         return vector
 

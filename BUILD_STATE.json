@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H7: wire training env and reject mismatched model inputs at static bundle verification.",
+    "next_step": "H7: verify static and runtime policy input gates with actual ONNX archives.",
     "items": [
       {
         "id": "H1",
@@ -257,6 +257,10 @@
           {
             "what": "Fail closed on unexpected observation vectors",
             "result": "Shared live/simulation vectorizer now requires shape (62,) using the schema constant; nonfinite values remain rejected."
+          },
+          {
+            "what": "Use shared observation dimension in trainer environment",
+            "result": "Gym observation space and runtime vector check now use the same OBSERVATION_DIM constant as live inference and simulation."
           }
         ],
         "evidence": [],

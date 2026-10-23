@@ -201,3 +201,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Fail closed on unexpected observation vectors
 - Shared live/simulation vectorizer now requires shape (62,) using the schema constant; nonfinite values remain rejected.
 - Next: H7: wire training env and reject mismatched model inputs at static bundle verification.
+
+### H7: Use shared observation dimension in trainer environment
+- Gym observation space and runtime vector check now use the same OBSERVATION_DIM constant as live inference and simulation.
+- Next: H7: verify static and runtime policy input gates with actual ONNX archives.
