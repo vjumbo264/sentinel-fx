@@ -1774,11 +1774,19 @@
         "first_epoch": 1577916240,
         "last_epoch": 1609451880,
         "sha256": "2e600a3c4b49f68101c12bb51cc516aa8a87d9c17d3403a52015cd727bcbf311"
+      },
+      "2021": {
+        "asset": "GBPJPY_2021.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 371509,
+        "first_epoch": 1609711200,
+        "last_epoch": 1640987880,
+        "sha256": "31b83c6be7fece19942e211e2f712bae30d8255453446bc91c449aa47ffe12a0"
       }
     },
-    "last_epoch": 1609451880,
+    "last_epoch": 1640987880,
     "first_epoch": 1020265200,
-    "rows": 6387950,
+    "rows": 6759459,
     "columns": [
       "epoch",
       "bid_open",
