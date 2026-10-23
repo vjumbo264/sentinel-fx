@@ -74,8 +74,20 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H1: independently verify live optional overrides and real demo synthetic behavior (V1/V2), repair failures; then H2-H5 re-verification. H6/H7 verified. H8 recovery is staged/inactive; H9/H10 and full suite remain unfinished.",
+    "next_step": "H0: retrieve failing evaluation stack, reproduce on durable 900000 checkpoint and indexed data, fix invalid volatility, resume and verify checkpoint >900000 before H9.",
     "items": [
+      {
+        "id": "H0",
+        "status": "doing",
+        "attempts": [
+          {
+            "what": "Resume mission in required order",
+            "result": "Verified original training is completed/failure, EURUSD v1 durable checkpoint remains 900000. Existing H6/H7 evidence retained, H1-H5 acceptance remains reopened. Work order H0, H9, H10, H8, H1-H5, V1-V12. No visual redesign and demo only."
+          }
+        ],
+        "evidence": [],
+        "files": []
+      },
       {
         "id": "H1",
         "title": "Optional overrides: take profit, stop loss, daily profit target, daily loss limit",

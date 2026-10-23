@@ -276,3 +276,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 - Next: H1 fresh live/demo acceptance; reopen inherited H1-H5 statuses because their required integration evidence is incomplete or contradicted. Then complete H8-H10 and full fresh suite.
 - Problems: original EURUSD chain stopped on invalid volatility at900000 steps; checkpoint unchanged. Correct-password native login still failed IPC. H9/H10 not completed. No owner-side blocker established.
 - Full per-test results: docs/fix5-report.md. No claim that all acceptance tests pass.
+
+## H0 — Resume mission in required order
+Verified original training is completed/failure, EURUSD v1 durable checkpoint remains 900000. Existing H6/H7 evidence retained, H1-H5 acceptance remains reopened. Work order H0, H9, H10, H8, H1-H5, V1-V12. No visual redesign and demo only.
+Next: H0: retrieve failing evaluation stack, reproduce on durable 900000 checkpoint and indexed data, fix invalid volatility, resume and verify checkpoint >900000 before H9.
