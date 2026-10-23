@@ -1,0 +1,36 @@
+{
+  "tracked_files_scanned": 205,
+  "retrieved_log_files_scanned": 96,
+  "plaintext_credential_matches": [],
+  "api_responses": {
+    "/api/state": {
+      "http_status": 200,
+      "mode": "demo",
+      "last_heartbeat": {
+        "id": 1,
+        "ts": "2026-10-23T16:38:01Z",
+        "mode": "demo",
+        "balance": 10005.68,
+        "note": "active runner 39986703235",
+        "loginid": "41***",
+        "currency": "USD",
+        "equity": 10005.68,
+        "free_margin": 10005.68
+      }
+    },
+    "/api/settings/mt5": {
+      "http_status": 200,
+      "password_absent": true
+    },
+    "/api/models/index": {
+      "http_status": 200
+    },
+    "/api/settings/test-login-result": {
+      "http_status": 200
+    }
+  },
+  "training_checkpoint_unchanged": true,
+  "training_steps_preserved": 900000,
+  "training_status": "blocked",
+  "full_acceptance_suite_completed": false
+}

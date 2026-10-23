@@ -261,3 +261,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H8: Verify staged recovery decisions without activating incomplete integration
 - Six pure unit regressions PASS: real login/code error classification, runner/network errors, cancellation classification, third code failure halt, platform cooldown progression through repeated6h, idempotent source-run processing and post-recovery reset. This is NOT V8/V11 live evidence. Watcher is intentionally NOT wired to any workflow; atomic Worker record/claim routes and cancellation tests still required.
 - Next: Resume H8: implement atomic Worker recovery record/claim endpoints, wire independent watcher, then run real demo and training cancellation/recovery acceptance. H9/H10 not completed.
+
+### H8: Record final source, log, API and checkpoint integrity checks
+- Scanned tracked worktree, retrieved Actions logs and live state/account/model/login APIs for exact supplied PAT/password/Cloudflare token: no plaintext matches. Write-only password absent from account API. Training_state.json unchanged from starting commit; 900000 EURUSD v1 steps preserved. Mode remains demo. Twelve local startup/schema/staged-recovery regressions pass. This is a partial check, not the full V12 acceptance rerun.
+- Next: First re-audit unproven inherited H1-H5 acceptance; H8 remains staged/incomplete; H9/H10 and full live suite remain unfinished.
