@@ -1000,7 +1000,14 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "bulk_unavailable": {
+      "2007": {
+        "error": "JSON CAS retries exhausted: data/index.json",
+        "checked_utc": "2026-10-23T07:56:29.969918+00:00",
+        "status": "unavailable_not_complete"
+      }
+    }
   },
   "frxUSDCHF": {
     "shard_releases": [
