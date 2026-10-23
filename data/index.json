@@ -54,7 +54,7 @@
   "frxEURUSD": {
     "symbol": "frxEURUSD",
     "granularity": 60,
-    "rows": 2626772,
+    "rows": 2979092,
     "first_epoch": 959725620,
     "last_epoch": 1792713540,
     "first_utc": "2021-01-03T22:00:00+00:00",
@@ -204,6 +204,14 @@
         "first_epoch": 1230854340,
         "last_epoch": 1262296620,
         "sha256": "0fde5ee7afdf3ac3881c9e7494da25fff9fc6495d9d47837d69679eb44d1ff40"
+      },
+      "2010": {
+        "asset": "EURUSD_2010.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 352320,
+        "first_epoch": 1262556000,
+        "last_epoch": 1293825480,
+        "sha256": "fd0fbd47d759c8ddd4ecdba18a2b941581c143bae9ded5351c02e275d82ee131"
       }
     },
     "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
