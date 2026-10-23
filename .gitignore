@@ -10,3 +10,5 @@ dist/
 .sentinel_env
 bun.lock
 data/forex_cache/
+
+cache/

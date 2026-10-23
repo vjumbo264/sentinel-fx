@@ -1,0 +1,42 @@
+name: RL Training
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: start | resume (both preserve durable checkpoints)
+        default: resume
+  schedule:
+    - cron: '0 2 * * *'
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: rl-training-single-writer
+  cancel-in-progress: false
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT || github.token }}
+      TRAIN_WALL_SECONDS: '17100'
+      TRAIN_CPU_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install CPU training dependencies
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install stable-baselines3 gymnasium onnx onnxruntime numpy pandas requests
+          pip install ./engine
+      - name: Resume pair training
+        run: python tools/train_agent.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: training-state-${{ github.run_id }}
+          path: |
+            training_state.json
+            cache/training/*.zip
+          if-no-files-found: ignore

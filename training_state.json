@@ -1,0 +1,68 @@
+{
+  "queue": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "USDCHF",
+    "AUDUSD",
+    "USDCAD",
+    "NZDUSD",
+    "EURGBP",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "EURAUD",
+    "GBPAUD"
+  ],
+  "active_pair": "EURUSD",
+  "active_version": 1,
+  "total_steps_done": 0,
+  "total_steps_target": 5000000,
+  "last_checkpoint_utc": null,
+  "last_checkpoint_steps": 0,
+  "pairs_done": [],
+  "pairs_pending": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "USDCHF",
+    "AUDUSD",
+    "USDCAD",
+    "NZDUSD",
+    "EURGBP",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "EURAUD",
+    "GBPAUD"
+  ],
+  "retrain_cycle": 1,
+  "next_retrain_after_utc": null,
+  "updated_utc": "2026-10-23T06:23:53.144900+00:00",
+  "smoke_test": {
+    "status": "passing",
+    "steps": 1000,
+    "synthetic": true,
+    "network_uploads": false,
+    "observation_dim": 47,
+    "checkpoint_resume": "passing",
+    "onnx_bundle_check": {
+      "ok": true,
+      "bundle": "/home/user/sentinel-fx/cache/training/smoke/frxEURUSD_v1.sfxmodel.zip",
+      "problems": [],
+      "warnings": [],
+      "checks": {
+        "archive_integrity": true,
+        "safe_data_formats": true,
+        "analysis_plan_dag": true,
+        "embedded_vectors_execution": true,
+        "contract_conformance": true,
+        "output_parity": true,
+        "adapter_conversions": true
+      },
+      "latency_ms": 0.281
+    },
+    "updated_utc": "2026-10-23T06:23:53.144848+00:00",
+    "duration_seconds": 52.67
+  }
+}
