@@ -1570,11 +1570,19 @@
         "first_epoch": 1357077600,
         "last_epoch": 1388523540,
         "sha256": "29f14aa7153a41089c91056e34bf85b6715f41b2a2a26da26a6f32f42b2c7851"
+      },
+      "2014": {
+        "asset": "EURJPY_2014.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 370892,
+        "first_epoch": 1388613660,
+        "last_epoch": 1420063080,
+        "sha256": "cd1e83d02e90dfd2e261df958f3a10b87c5f509af1480c7485fa646f2a7225f7"
       }
     },
-    "last_epoch": 1388523540,
+    "last_epoch": 1420063080,
     "first_epoch": 1015200180,
-    "rows": 4149884,
+    "rows": 4520776,
     "columns": [
       "epoch",
       "bid_open",
