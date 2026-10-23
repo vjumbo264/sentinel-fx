@@ -1535,11 +1535,19 @@
         "first_epoch": 1388613600,
         "last_epoch": 1420063020,
         "sha256": "e1f5572b2da64e52c427f2a2f27859506886beabb892880823ce84f2b0d5acf6"
+      },
+      "2015": {
+        "asset": "NZDUSD_2015.csv.gz",
+        "release_tag": "data-nzdusd-01",
+        "rows": 370151,
+        "first_epoch": 1420135200,
+        "last_epoch": 1451599080,
+        "sha256": "fdb67f4c442cbc91f2cf7c8d7bd800a9895507d4158ed4caa3f170fdb7caffb2"
       }
     },
-    "last_epoch": 1420063020,
+    "last_epoch": 1451599080,
     "first_epoch": 1123884060,
-    "rows": 2954677,
+    "rows": 3324828,
     "columns": [
       "epoch",
       "bid_open",
