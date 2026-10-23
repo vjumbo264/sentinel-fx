@@ -1844,11 +1844,19 @@
         "first_epoch": 1514844060,
         "last_epoch": 1546293480,
         "sha256": "f5bc4a581117cc62b2af79a322cb09ee841bce1397701a082df52d09604a8b88"
+      },
+      "2019": {
+        "asset": "EURJPY_2019.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 372550,
+        "first_epoch": 1546380360,
+        "last_epoch": 1577829480,
+        "sha256": "f16220e248c205186cedc975f6c30964b8cabbb0b6a7456abe64fb7624558f9f"
       }
     },
-    "last_epoch": 1546293480,
+    "last_epoch": 1577829480,
     "first_epoch": 1015200180,
-    "rows": 6012073,
+    "rows": 6384623,
     "columns": [
       "epoch",
       "bid_open",
