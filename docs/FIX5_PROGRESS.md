@@ -225,3 +225,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Verify real ONNX mismatch rejection through sfx and loader
 - Four tests PASS using actual generated ONNX archives and real sfx CLI: 47-dimensional policy rejected with expected 62, forged 62 metadata around 47 weights rejected, current 62 graph accepted, shared observation vector length 62. No broker or profitability claims.
 - Next: H7: document operational rules and verify deployed registry endpoint, then H8/H9.
+
+### H7: Document operational contract and verification gaps honestly
+- Added docs/FIX5_OPERATIONS.md for overrides/precedence, full-step/best-validation release, measured ETA and units error, encrypted Actions credential flow, broker-session rule and shared62 schema. Explicitly separates required behavior from inherited unverified live claims and records stopped EURUSD checkpoint.
+- Next: H7: include compatibility metadata in future exports; verify deployed registry and site, finish H7.
