@@ -1919,11 +1919,19 @@
         "first_epoch": 1388613600,
         "last_epoch": 1420063080,
         "sha256": "198de23a1a9600af1f965ea4647c0e8810bca8b078583aedad8cfa4c4c47de07"
+      },
+      "2015": {
+        "asset": "AUDJPY_2015.csv.gz",
+        "release_tag": "data-audjpy-01",
+        "rows": 372641,
+        "first_epoch": 1420136280,
+        "last_epoch": 1451599020,
+        "sha256": "0d03ef8f064f3b0220b8b2c91d6caa7c89adbe5db648d6d37883faa4f69c5045"
       }
     },
-    "last_epoch": 1420063080,
+    "last_epoch": 1451599020,
     "first_epoch": 1029796320,
-    "rows": 4019988,
+    "rows": 4392629,
     "columns": [
       "epoch",
       "bid_open",
