@@ -38,7 +38,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-23T12:55:36.325408+00:00",
+  "updated_utc": "2026-10-23T12:59:34.165848+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -76,12 +76,13 @@
     "updated_utc": "2026-10-23T08:25:40.987197+00:00",
     "duration_seconds": 71.68
   },
-  "status": "training",
+  "status": "blocked",
   "checkpoint": {
     "asset": "EURUSD_v1_s900000.zip",
     "release_tag": "training-checkpoints",
     "sha256": "cdca99879eec964e52058dfee6e50416456ea2e82ba38f39336ac49095a728b3"
   },
   "plateau_intervals": 10,
-  "previous_mean_reward": -1751.638998090909
+  "previous_mean_reward": -1751.638998090909,
+  "last_error": "invalid volatility"
 }
