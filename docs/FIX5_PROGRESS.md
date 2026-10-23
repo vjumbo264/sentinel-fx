@@ -253,3 +253,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H8: Add bounded retry helper for flaky HTTP transports
 - New tools/net_retry.py retries only network resets/timeouts and transient HTTP408/429/5xx, with bounded backoff. Authentication and other code failures propagate immediately. Broker orders are not retried by this helper.
 - Next: H8/H9: add durable classified recovery state, an independent completion/scheduled watcher, and training owner intent.
+
+### H8: Add independent durable recovery and authorized-training watchdog
+- New watcher classifies original logs (scheduled login failures remain code failures), persists per-source-run cooldowns (30m/2h/6h/6h), stops code retries after3, checks active GitHub runs and Worker lease/READY claim before dispatch. Training watchdog only resumes owner_started active cycles with >30m stale heartbeat, never paused/new cycles. Not yet activated until Worker claim routes and workflow are deployed.
+- Next: H8/H9: add atomic Worker recovery record/claim routes, preserve existing handover, then wire independent watcher.

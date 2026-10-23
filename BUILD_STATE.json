@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H8/H9: add durable classified recovery state, an independent completion/scheduled watcher, and training owner intent.",
+    "next_step": "H8/H9: add atomic Worker recovery record/claim routes, preserve existing handover, then wire independent watcher.",
     "items": [
       {
         "id": "H1",
@@ -319,6 +319,10 @@
           {
             "what": "Add bounded retry helper for flaky HTTP transports",
             "result": "New tools/net_retry.py retries only network resets/timeouts and transient HTTP408/429/5xx, with bounded backoff. Authentication and other code failures propagate immediately. Broker orders are not retried by this helper."
+          },
+          {
+            "what": "Add independent durable recovery and authorized-training watchdog",
+            "result": "New watcher classifies original logs (scheduled login failures remain code failures), persists per-source-run cooldowns (30m/2h/6h/6h), stops code retries after3, checks active GitHub runs and Worker lease/READY claim before dispatch. Training watchdog only resumes owner_started active cycles with >30m stale heartbeat, never paused/new cycles. Not yet activated until Worker claim routes and workflow are deployed."
           }
         ],
         "evidence": [],
