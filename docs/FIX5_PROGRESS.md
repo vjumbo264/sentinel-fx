@@ -221,3 +221,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Show retired incompatible models without changing design
 - Training card now labels incompatible entries retired using the existing muted badge, and no longer labels a stopped active pair Training simply because its name is active.
 - Next: H7: execute real ONNX/CLI compatibility tests and deploy model registry route.
+
+### H7: Verify real ONNX mismatch rejection through sfx and loader
+- Four tests PASS using actual generated ONNX archives and real sfx CLI: 47-dimensional policy rejected with expected 62, forged 62 metadata around 47 weights rejected, current 62 graph accepted, shared observation vector length 62. No broker or profitability claims.
+- Next: H7: document operational rules and verify deployed registry endpoint, then H8/H9.
