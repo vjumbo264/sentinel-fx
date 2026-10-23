@@ -2236,11 +2236,19 @@
         "first_epoch": 1388613600,
         "last_epoch": 1420063080,
         "sha256": "c261cbfa0dcc977834bca476dc23d4cca9cddf2648c0769c9dda64468426e8ea"
+      },
+      "2015": {
+        "asset": "EURAUD_2015.csv.gz",
+        "release_tag": "data-euraud-01",
+        "rows": 372621,
+        "first_epoch": 1420136040,
+        "last_epoch": 1451599080,
+        "sha256": "5053b68b55fe0ac5ce260170a0d4f07488314a39a31434748bfb1071fb9659c7"
       }
     },
-    "last_epoch": 1420063080,
+    "last_epoch": 1451599080,
     "first_epoch": 1029796680,
-    "rows": 4424228,
+    "rows": 4796849,
     "columns": [
       "epoch",
       "bid_open",
