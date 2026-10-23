@@ -2099,11 +2099,19 @@
         "first_epoch": 1704146640,
         "last_epoch": 1735682280,
         "sha256": "f7449d5860f861d48ef6c4cb6d3d2bdd9efd1d2d3c64802eaa1ea85c556292d2"
+      },
+      "2026": {
+        "asset": "NZDUSD_2026_through_09.csv.gz",
+        "release_tag": "data-nzdusd-01",
+        "rows": 276755,
+        "first_epoch": 1767304800,
+        "last_epoch": 1790830680,
+        "sha256": "a06b57afe862357bc880dabb1d1a00ca32d4c94e0ab27ddb6cfa5464a9ae2147"
       }
     },
-    "last_epoch": 1735682280,
+    "last_epoch": 1790830680,
     "first_epoch": 1123884060,
-    "rows": 6606816,
+    "rows": 6883571,
     "columns": [
       "epoch",
       "bid_open",
