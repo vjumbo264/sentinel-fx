@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H9: remove both training crons; implement owner-only start/update with warm-start version isolation and remove training-lock trading side effect. Preserve running39997388327.",
+    "next_step": "H9: add owner-authenticated request queue and warm-start new-version handling; verify safe training lock and live controls without replacing active models.",
     "items": [
       {
         "id": "H0",
@@ -488,6 +488,10 @@
           {
             "what": "Start next queue item after H0 verified",
             "result": "H0 is passing with real Actions evidence. Begin manual-only training and safe lock semantics; no visual redesign. Running EURUSD v1 remains active, untouched."
+          },
+          {
+            "what": "Remove both autonomous training schedules",
+            "result": "Removed daily02:00 and Saturday02:00 cron entries from train.yml. It remains workflow_dispatch-only with the same rl-training-single-writer concurrency and cancel-in-progress=false. Existing activeEURUSD run39997388327 is not cancelled or reset. Inspection confirms bot/main.py no longer reads training_locked; Worker lock currently only writes two D1 settings, while stale UI text incorrectly says it pauses trading. Next implement durable owner request/update queue and correct that text."
           }
         ],
         "evidence": [],

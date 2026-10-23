@@ -4,11 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: start | resume (both preserve durable checkpoints)
+        description: resume an owner-started cycle; new starts/updates use the Training page request queue
         default: resume
-  schedule:
-    - cron: '0 2 * * *'
-    - cron: '0 2 * * 6'
 
 permissions:
   contents: write
