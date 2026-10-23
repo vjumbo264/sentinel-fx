@@ -111,14 +111,17 @@ def main_loop(mode='demo'):
     floating_today=sum(float(p.get('profit',0))+float(p.get('swap',0)) for p in positions)
     today_pnl=realized_today+floating_today
 
-    daily_halt=False
-    daily_status='normal'
-    daily_reason=''
+    previous_risk=settings.get('risk_status_'+mode,{})
+    same_day=previous_risk.get('today_date')==today_key
+    day_start_balance=float(previous_risk.get('day_start_balance',acct['balance']-realized_today)) if same_day else float(acct['balance']-realized_today)
+    daily_halt=same_day and previous_risk.get('status') in ('daily_target_reached','daily_limit_reached')
+    daily_status=previous_risk['status'] if daily_halt else 'normal'
+    daily_reason=previous_risk.get('reason','') if daily_halt else ''
 
     dpt=risk_ov.get('daily_profit_target',{})
     if dpt.get('enabled') and dpt.get('value') not in (None,''):
      val=float(dpt['value'])
-     target_thresh=val if dpt.get('unit','money')=='money' else (val/100.0)*float(acct['balance'])
+     target_thresh=val if dpt.get('unit','money')=='money' else (val/100.0)*day_start_balance
      if today_pnl>=target_thresh:
       daily_halt=True;daily_status='daily_target_reached'
       daily_reason=f'Daily profit target reached: +{today_pnl:.2f} >= +{target_thresh:.2f}'
@@ -129,7 +132,7 @@ def main_loop(mode='demo'):
     dll=risk_ov.get('daily_loss_limit',{})
     if dll.get('enabled') and dll.get('value') not in (None,''):
      val=float(dll['value'])
-     limit_thresh=val if dll.get('unit','money')=='money' else (val/100.0)*float(acct['balance'])
+     limit_thresh=val if dll.get('unit','money')=='money' else (val/100.0)*day_start_balance
      if today_pnl<=-limit_thresh:
       daily_halt=True;daily_status='daily_limit_reached'
       daily_reason=f'Daily loss limit reached: {today_pnl:.2f} <= -{limit_thresh:.2f}'
@@ -137,7 +140,7 @@ def main_loop(mode='demo'):
        for p in positions:
         if p['magic'] in [model_magic(s+'@'+str(b.version)) for s,b in registry.bundles.items()]:broker.close_position(p['ticket'],p['symbol'],comment='sfx:daily_limit')
 
-    http_worker('POST','/api/bot/risk-status',{'mode':mode,'today_date':today_key,'realized_pnl':realized_today,'floating_pnl':floating_today,'today_pnl':today_pnl,'status':daily_status,'reason':daily_reason})
+    http_worker('POST','/api/bot/risk-status',{'mode':mode,'today_date':today_key,'realized_pnl':realized_today,'floating_pnl':floating_today,'today_pnl':today_pnl,'day_start_balance':day_start_balance,'status':daily_status,'reason':daily_reason})
 
     owner_halt=settings.get('halt') or settings.get('stop_all');ov=http_worker('GET','/api/bot/overrides').get('overrides',[])
     owner_halt=owner_halt or any(o.get('symbol')=='*' and o.get('action')=='stop_all' for o in ov)
