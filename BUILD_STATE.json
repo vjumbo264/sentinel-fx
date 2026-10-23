@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H7: generate real ONNX mismatch fixtures and run sfx check.",
+    "next_step": "H7: add retired label with existing styling and verify deployed endpoint.",
     "items": [
       {
         "id": "H1",
@@ -269,6 +269,10 @@
           {
             "what": "Enforce policy input size at inference",
             "result": "Plan evaluator requires exactly 62 policy inputs and checks runtime ONNX shape before inference; extended analyst inputs cannot silently change the policy contract."
+          },
+          {
+            "what": "Expose model compatibility on actual model index endpoint",
+            "result": "Training page previously fetched an absent /api/models/index route. Added authenticated registry proxy that marks missing/47-dimensional schema entries retired and incompatible, never tradable. Current repository model index is empty; no old bundle was deleted."
           }
         ],
         "evidence": [],

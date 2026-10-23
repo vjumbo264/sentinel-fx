@@ -213,3 +213,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Enforce policy input size at inference
 - Plan evaluator requires exactly 62 policy inputs and checks runtime ONNX shape before inference; extended analyst inputs cannot silently change the policy contract.
 - Next: H7: generate real ONNX mismatch fixtures and run sfx check.
+
+### H7: Expose model compatibility on actual model index endpoint
+- Training page previously fetched an absent /api/models/index route. Added authenticated registry proxy that marks missing/47-dimensional schema entries retired and incompatible, never tradable. Current repository model index is empty; no old bundle was deleted.
+- Next: H7: add retired label with existing styling and verify deployed endpoint.

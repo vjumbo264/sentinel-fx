@@ -416,6 +416,27 @@ export default {
       const site = await verifySiteAuth(request);
       if (!site) return err("unauthorized", 401);
 
+      // Schema-compatible model registry, consumed by the Training page.
+      // Unknown/old schemas stay visible but can never be advertised tradable.
+      if (path === "/api/models/index" && method === "GET") {
+        const upstream = await fetch(`${RAW_BASE}/models/index.json`, {
+          cf: { cacheTtl: 30 }, headers: { "User-Agent": "sentinel-fx-worker" }
+        });
+        if (!upstream.ok) return err("model registry unavailable", 503);
+        const index = await upstream.json();
+        const result = {};
+        for (const [symbol, entry] of Object.entries(index)) {
+          const version = (entry.versions || []).find(v => v.N === entry.active_version) || entry;
+          const dimension = version.observation_dim ?? entry.observation_dim;
+          const schema = version.policy_schema ?? entry.policy_schema;
+          const compatible = dimension === 62 && schema === "sentinel.policy.v2";
+          result[symbol] = { ...entry, ...version, compatible, observation_dim: dimension ?? null,
+            verdict: compatible ? (version.verdict || entry.verdict || "untested") : "retired",
+            release_decision: compatible ? (version.release_decision || entry.release_decision) : "Retired, incompatible: expected 62-dimensional sentinel.policy.v2" };
+        }
+        return json(result);
+      }
+
       // FIX-D: candle proxy so the site chart always renders through the Worker.
       if (path === "/api/candles" && method === "GET") {
         const symbol = url.searchParams.get("symbol") || "R_100";
