@@ -4,7 +4,7 @@ The adapter owns price/volume conversion; learned policies receive normalized da
 from dataclasses import dataclass,field,asdict
 from typing import Any
 import math
-VERSION='sentinel.policy.v1'
+VERSION='sentinel.policy.v2'
 ACTION_TYPES={'hold','open','add','reduce','reverse','move_stop','close'}
 REJECTION_TYPES={'margin','broker_limit','market_closed','owner_override','invalid'}
 @dataclass
@@ -29,6 +29,9 @@ class Observation:
  positions:list=field(default_factory=list)
  recent_results:list=field(default_factory=list)
  last_action_result:dict|None=None
+ session_dist_high:float=0.0
+ session_dist_low:float=0.0
+ spread_spike:float=0.0
  def to_dict(self):return asdict(self)
 @dataclass
 class Action:

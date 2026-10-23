@@ -10,27 +10,27 @@ def env():
     specs = json.loads((ROOT/'data/symbols.json').read_text())['symbols']['EURUSD']
     return SentinelScalpEnv(synthetic_bars(300),specs)
 
-def test_engine_vector_and_five_actions(env):
+def test_engine_vector_and_eight_actions(env):
     vector,_ = env.reset(seed=1,options={'start_bar':60})
-    assert vector.dtype == np.float64 and vector.shape == (47,) and np.isfinite(vector).all()
-    assert env._action_to_dict(3)['type']=='hold'
-    for action in range(5):
+    assert vector.dtype == np.float64 and vector.shape == (62,) and np.isfinite(vector).all()
+    assert env._action_to_dict(5)['type']=='hold'
+    for action in range(8):
         vector,reward,terminated,truncated,info = env.step(action)
         assert np.isfinite(vector).all() and np.isfinite(reward)
 
 def test_invalid_penalty_uses_position_before_action(env):
     env.reset(options={'start_bar':60})
-    _,reward,*_ = env.step(3)
-    assert reward == pytest.approx(-.001)
+    _,reward,*_ = env.step(5)
+    assert reward == pytest.approx(-.002)
     env.reset(options={'start_bar':60})
     env.step(1)
     assert env.last_result['status']=='filled'
     assert env.broker.positions
-    _,reward,*_ = env.step(3)
+    _,reward,*_ = env.step(5)
     assert env.last_result['status']=='filled'
     assert not env.broker.positions
     # Closing a valid position must not incur the missing-position penalty.
-    assert reward > -.001
+    assert reward > -.002
 
 def test_execution_uses_observed_tick_not_next_bar(env):
     env.reset(options={'start_bar':60})

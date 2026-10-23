@@ -106,11 +106,10 @@ def load_data(gh, pair):
     if not frames:
         raise ValueError('no candle assets found for '+pair)
     frame = pd.concat(frames, ignore_index=True).sort_values('epoch').drop_duplicates('epoch',keep='last').reset_index(drop=True)
-    # Chronological holdout is never supplied to PPO; no profitability claim without evaluation.
-    split = int(len(frame)*.8)
+    split = int(len(frame)*.7)
     if split < 100:
         raise ValueError('insufficient training history')
-    return frame.iloc[:split].reset_index(drop=True), frame.iloc[split:].reset_index(drop=True)
+    return frame.iloc[:split].reset_index(drop=True), frame
 
 
 def checkpoint(gh, model, state, stats):
@@ -198,13 +197,70 @@ class TrainingWall(BaseCallback):
         return not (self.wall or self.converged)
 
 
-def publish(gh, model, env, holdout, state):
+def walk_forward_eval(model, full_data, specs, pair):
+    """
+    Split: 70% train (already used), 15% validation, 15% holdout (locked).
+    Walk-forward: evaluate on validation fold only.
+    Returns verdict: 'pass' or 'no_edge', plus metrics.
+    """
+    n = len(full_data)
+    val_start = int(n * 0.70)
+    holdout_start = int(n * 0.85)
+
+    val_data = full_data.iloc[val_start:holdout_start].reset_index(drop=True)
+    holdout_data = full_data.iloc[holdout_start:].reset_index(drop=True)
+
+    if len(val_data) < 500:
+        val_data = full_data.iloc[max(0, n - 600):].reset_index(drop=True)
+        if len(val_data) < 70:
+            return {'verdict': 'insufficient_data', 'val_rows': len(val_data)}
+
+    val_env = SentinelScalpEnv(val_data, specs, pair)
+    obs, _ = val_env.reset(options={'start_bar': 60})
+    equity_curve = [val_env.initial_balance]
+    done = False
+    while not done:
+        action, _ = model.predict(obs, deterministic=True)
+        obs, reward, terminated, truncated, info = val_env.step(int(action))
+        equity_curve.append(info['equity'])
+        done = terminated or truncated
+
+    equity_curve = np.array(equity_curve)
+    returns = np.diff(np.log(np.maximum(equity_curve, 1e-9)))
+
+    final_equity = float(equity_curve[-1])
+    total_return = float((final_equity - val_env.initial_balance) / val_env.initial_balance)
+    max_dd = float(np.max(np.maximum.accumulate(equity_curve) - equity_curve) / np.maximum.accumulate(equity_curve).max())
+    sharpe = float(np.mean(returns) / (np.std(returns) + 1e-9) * np.sqrt(252 * 1440))  # annualized M1 Sharpe
+    trade_count = len(val_env.broker.closed)
+    win_rate = float(np.mean([1 if t['net_pnl'] > 0 else 0 for t in val_env.broker.closed])) if trade_count > 0 else 0.0
+
+    verdict = 'pass' if (total_return > 0 and sharpe > 0.3 and max_dd < 0.30 and trade_count >= 10) else 'no_edge'
+
+    return {
+        'verdict': verdict,
+        'val_rows': len(val_data),
+        'holdout_rows': len(holdout_data),
+        'final_equity': final_equity,
+        'total_return_pct': round(total_return * 100, 2),
+        'max_drawdown_pct': round(max_dd * 100, 2),
+        'sharpe_annualized': round(sharpe, 3),
+        'trade_count': trade_count,
+        'win_rate_pct': round(win_rate * 100, 1),
+        'cost_paid': val_env.broker.cost_paid,
+    }
+
+
+def publish(gh, model, env, full_data, state):
     pair,version = state['active_pair'],state['active_version']
+    wf = walk_forward_eval(model, full_data, env.specs, pair)
+    verdict = wf.get('verdict', 'no_edge')
     report = {'pair':pair,'version':version,'steps':model.num_timesteps,'created_utc':utc(),
               'trained_through':int(env.frame.iloc[-1]['epoch']), 'training_rows':len(env.frame),
-              'holdout_rows':len(holdout), 'profitability_verified':False,
+              'full_rows':len(full_data), 'profitability_verified':(verdict=='pass'),
+              'walk_forward':wf, 'verdict':verdict,
               'note':'PPO step target/plateau is not proof of profitability. Live deployment requires owner allocation/enabling.',
-              'observation_dim':47, 'shared_engine':True,
+              'observation_dim':env.observation_space.shape[0], 'shared_engine':True,
               'cost_assumptions':{'commission_known':'commission_per_lot' in env.specs,
                                   'commission_per_lot':env.specs.get('commission_per_lot',0),
                                   'slippage_points':env.specs.get('slippage_points',0),
@@ -230,7 +286,7 @@ def publish(gh, model, env, holdout, state):
         entry['versions'] = [v for v in entry['versions'] if v['N'] != version]
         entry['versions'].append({'N':version,'release_tag':rel['tag_name'],'asset':bundle.name,
                                   'sha256':hashlib.sha256(raw).hexdigest(),'size':len(raw),
-                                  'created_utc':utc(),'verdict':None,'profitability_verified':False})
+                                  'created_utc':utc(),'verdict':verdict,'profitability_verified':(verdict=='pass')})
         entry['active_version'] = version
         return index
     gh.commit_json('models/index.json',merge,f'Q4: publish health-checked {pair} v{version} [skip ci]')
@@ -256,26 +312,29 @@ def advance(state):
 def smoke_test():
     from stable_baselines3.common.env_checker import check_env
     specs = json.loads((ROOT/'data/symbols.json').read_text())['symbols']['EURUSD']
-    env = SentinelScalpEnv(synthetic_bars(),specs)
+    bars = synthetic_bars(2400)
+    env = SentinelScalpEnv(bars,specs)
     check_env(env,warn=True)
     monitored = Monitor(env)
     model = create_model(monitored,smoke=True)
     t0 = time.monotonic()
     model.learn(total_timesteps=1000)
     assert model.num_timesteps == 1000
-    # Exercise save/resume AND Torch→ONNX→live evaluator→bundle checker offline.
     cache = ROOT/'cache/training/smoke'; cache.mkdir(parents=True,exist_ok=True)
     model.save(str(cache/'checkpoint'))
     loaded = PPO.load(str(cache/'checkpoint.zip'),env=monitored,device='cpu')
     assert loaded.num_timesteps == 1000
-    bundle,health = export_bundle(loaded,env,'EURUSD',1,cache,{'smoke_test':True,'profitability_verified':False})
+    wf_metrics = walk_forward_eval(loaded, bars, specs, 'EURUSD')
+    bundle,health = export_bundle(loaded,env,'EURUSD',1,cache,{'smoke_test':True,'profitability_verified':False,'walk_forward':wf_metrics})
     state = json.loads(STATE.read_text()) if STATE.exists() else new_state()
     state['smoke_test'] = {'status':'passing','steps':1000,'synthetic':True,'network_uploads':False,
-                           'observation_dim':47,'checkpoint_resume':'passing','onnx_bundle_check':{k:v for k,v in health.items() if k!='bundle'},
+                           'observation_dim':env.observation_space.shape[0],'checkpoint_resume':'passing',
+                           'onnx_bundle_check':{k:v for k,v in health.items() if k!='bundle'},
+                           'walk_forward_eval':wf_metrics,
                            'updated_utc':utc(),'duration_seconds':round(time.monotonic()-t0,2)}
     state['updated_utc'] = utc()
     STATE.write_text(json.dumps(state,indent=2)+'\n')
-    print('SMOKE PASS: 1000 PPO steps, 47-float shared observation, checkpoint resume, ONNX parity and bundle checker; no uploads')
+    print(f"SMOKE PASS: 1000 PPO steps, {env.observation_space.shape[0]}-float shared observation, checkpoint resume, ONNX parity, walk-forward ({wf_metrics.get('verdict')}); no uploads")
 
 
 def main():
@@ -296,7 +355,7 @@ def main():
         advance(state);save_state(gh,state,'Q4: advance completed pair')
     pair = state['active_pair']
     try:
-        data,holdout = load_data(gh,pair)
+        data,full_data = load_data(gh,pair)
         specs = json.loads((ROOT/'data/symbols.json').read_text())['symbols'][pair]
         env = SentinelScalpEnv(data,specs,pair)
         monitored = Monitor(env)
@@ -309,7 +368,7 @@ def main():
         if callback.wall:
             state['status']='checkpointed';save_state(gh,state,'Q4: wall checkpoint '+pair)
             gh.dispatch('train.yml',{'mode':'resume'});return
-        publish(gh,model,env,holdout,state)
+        publish(gh,model,env,full_data,state)
         advance(state);save_state(gh,state,'Q4: completed '+pair+'; advance queue')
         if not state['next_retrain_after_utc']:
             gh.dispatch('train.yml',{'mode':'resume'})

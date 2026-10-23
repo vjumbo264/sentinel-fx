@@ -7,17 +7,20 @@ from sentinel_engine.execution_adapter import ExecutionAdapter
 from sentinel_engine.sim import SimulationBroker
 
 ACTION_CATALOG = [
-    [{'type': 'hold', 'reason': 'agent_hold'}],
-    [{'type': 'open', 'side': 'long', 'risk_fraction': .01, 'stop_distance': 1.5, 'reason': 'agent_long'}],
-    [{'type': 'open', 'side': 'short', 'risk_fraction': .01, 'stop_distance': 1.5, 'reason': 'agent_short'}],
-    [{'type': 'close', 'position_ref': 'oldest', 'reason': 'agent_close'}],
-    [{'type': 'move_stop', 'position_ref': 'oldest', 'to_breakeven': True, 'reason': 'agent_be'}],
+    [{'type': 'hold',      'reason': 'agent_hold'}],
+    [{'type': 'open', 'side': 'long',  'risk_fraction': 0.01, 'stop_distance': 1.5, 'reason': 'agent_long_full'}],
+    [{'type': 'open', 'side': 'long',  'risk_fraction': 0.005,'stop_distance': 1.5, 'reason': 'agent_long_half'}],
+    [{'type': 'open', 'side': 'short', 'risk_fraction': 0.01, 'stop_distance': 1.5, 'reason': 'agent_short_full'}],
+    [{'type': 'open', 'side': 'short', 'risk_fraction': 0.005,'stop_distance': 1.5, 'reason': 'agent_short_half'}],
+    [{'type': 'close',     'position_ref': 'oldest', 'reason': 'agent_close'}],
+    [{'type': 'move_stop', 'position_ref': 'oldest', 'to_breakeven': True,  'reason': 'agent_be'}],
+    [{'type': 'move_stop', 'position_ref': 'oldest', 'trail': 0.8,          'reason': 'agent_trail'}],
 ]
 
 class SentinelScalpEnv(gym.Env):
     metadata = {'render_modes': []}
-    observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(47,), dtype=np.float64)
-    action_space = gym.spaces.Discrete(5)
+    observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(62,), dtype=np.float64)
+    action_space = gym.spaces.Discrete(8)
 
     def __init__(self, candles, specs, symbol='EURUSD', initial_balance=10000, leverage=100):
         super().__init__()
@@ -34,6 +37,8 @@ class SentinelScalpEnv(gym.Env):
         self.broker = None
         self._position = None
         self._bars_held = 0
+        self._recent_pnl = []
+        self._last_spread_spike = 0.0
         self.last_observation = None
         self.last_result = None
         self.peak = self.initial_balance
@@ -47,7 +52,7 @@ class SentinelScalpEnv(gym.Env):
             specs=self.specs, tick=self.broker.tick, drawdown=max(0, 1-equity/self.peak),
             last_result=self.last_result)
         vector = vectorize(self.last_observation)
-        if vector.shape != (47,) or not np.isfinite(vector).all():
+        if vector.shape != (62,) or not np.isfinite(vector).all():
             raise ValueError('live observation contract violated')
         return vector
 
@@ -59,24 +64,68 @@ class SentinelScalpEnv(gym.Env):
     def _action_to_dict(self, action_idx):
         if action_idx == 0:
             return {'type': 'hold', 'reason': 'agent_hold'}
-        if action_idx in (1, 2):
-            return {'type': 'open', 'side': 'long' if action_idx == 1 else 'short',
-                    'risk_fraction': .01, 'stop_distance': 1.5,
-                    'reason': 'agent_long' if action_idx == 1 else 'agent_short'}
+        if action_idx == 1:
+            return {'type': 'open', 'side': 'long', 'risk_fraction': 0.01, 'stop_distance': 1.5, 'reason': 'agent_long_full'}
+        if action_idx == 2:
+            return {'type': 'open', 'side': 'long', 'risk_fraction': 0.005, 'stop_distance': 1.5, 'reason': 'agent_long_half'}
+        if action_idx == 3:
+            return {'type': 'open', 'side': 'short', 'risk_fraction': 0.01, 'stop_distance': 1.5, 'reason': 'agent_short_full'}
+        if action_idx == 4:
+            return {'type': 'open', 'side': 'short', 'risk_fraction': 0.005, 'stop_distance': 1.5, 'reason': 'agent_short_half'}
         if not self._position:
             return {'type': 'hold', 'reason': 'no_position'}
-        if action_idx == 3:
-            return {'type': 'close', 'position_ref': str(self._position['ticket']), 'reason': 'agent_close'}
-        if action_idx == 4:
-            return {'type': 'move_stop', 'position_ref': str(self._position['ticket']),
-                    'to_breakeven': True, 'reason': 'agent_be'}
+        ref = str(self._position['ticket'])
+        if action_idx == 5:
+            return {'type': 'close', 'position_ref': ref, 'reason': 'agent_close'}
+        if action_idx == 6:
+            return {'type': 'move_stop', 'position_ref': ref, 'to_breakeven': True, 'reason': 'agent_be'}
+        if action_idx == 7:
+            return {'type': 'move_stop', 'position_ref': ref, 'trail': 0.8, 'reason': 'agent_trail'}
         raise ValueError('invalid action index')
 
     def _reward(self, prev_equity, curr_equity, action_idx, had_position=None):
-        pnl = np.log(max(curr_equity, 1e-9)/max(prev_equity, 1e-9))
-        hold_cost = -.00005*self._bars_held if self._position else 0.
-        invalid = -.001 if action_idx in (3, 4) and not had_position else 0.
-        return float(pnl + hold_cost + invalid)
+        # 1. Core: log equity growth after costs
+        pnl = np.log(max(curr_equity, 1e-9) / max(prev_equity, 1e-9))
+
+        # 2. Drawdown penalty — exponential, not linear
+        dd = max(0.0, 1.0 - curr_equity / self.peak)
+        drawdown_penalty = -0.001 * (np.exp(5.0 * dd) - 1.0)
+
+        # 3. Hold cost — penalises sitting in a trade too long (scalper should be quick)
+        hold_cost = 0.0
+        if self._position:
+            bars = self._bars_held
+            hold_cost = -(0.00003 * bars + 0.00001 * max(0, bars - 15) ** 2)
+
+        # 4. Invalid action penalty
+        invalid = -0.002 if action_idx in (5, 6, 7) and not had_position else 0.0
+
+        # 5. Profitable exit bonus — reward taking a good exit
+        exit_bonus = 0.0
+        if action_idx == 5 and had_position:
+            closed = self.broker.closed
+            if closed:
+                last_trade = closed[-1]
+                if last_trade.get('net_pnl', 0) > 0:
+                    exit_bonus = 0.001
+
+        # 6. Spread spike penalty — penalises opening during high spread
+        spread_spike = getattr(self, '_last_spread_spike', 0.0)
+        if action_idx in (1, 2, 3, 4) and spread_spike:
+            spread_penalty = -0.001
+        else:
+            spread_penalty = 0.0
+
+        # 7. Consistency bonus — running Sharpe-like term
+        if len(self._recent_pnl) >= 10:
+            mean_pnl = np.mean(self._recent_pnl[-20:])
+            consistency = 0.0002 if pnl > mean_pnl else 0.0
+        else:
+            consistency = 0.0
+
+        self._recent_pnl.append(pnl)
+
+        return float(pnl + drawdown_penalty + hold_cost + invalid + exit_bonus + spread_penalty + consistency)
 
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
@@ -93,6 +142,8 @@ class SentinelScalpEnv(gym.Env):
                               'ask': float(row.get('ask_close', row['close']+spread))}, int(row['epoch'])+60)
         self._position = None
         self._bars_held = 0
+        self._recent_pnl = []
+        self._last_spread_spike = 0.0
         self.last_result = None
         self.peak = self.initial_balance
         self._ended = False
@@ -141,6 +192,7 @@ class SentinelScalpEnv(gym.Env):
                 self.broker.close_position(p['ticket'], self.symbol, comment='episode_end')
             self._sync_position()
         self._ended = bool(terminated or truncated)
+        self._last_spread_spike = float(getattr(self.last_observation, 'spread_spike', 0.0))
         reward = self._reward(previous, self.broker.equity(), action, had_position)
         return self._observe(), reward, bool(terminated), bool(truncated), {
             'equity': self.broker.equity(), 'result': self.last_result,

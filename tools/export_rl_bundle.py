@@ -29,8 +29,9 @@ def export_bundle(model, env, pair, version, output, training_report):
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     policy = LogitsPolicy(model.policy).cpu().eval()
+    obs_dim = env.observation_space.shape[0]
     onnx_path = output / f'{pair}_policy.onnx'
-    torch.onnx.export(policy, torch.zeros(1, 47, dtype=torch.float32), str(onnx_path),
+    torch.onnx.export(policy, torch.zeros(1, obs_dim, dtype=torch.float32), str(onnx_path),
                       input_names=['obs'], output_names=['action_logits'], opset_version=17,
                       dynamo=False, dynamic_axes={'obs': {0: 'batch'}, 'action_logits': {0: 'batch'}})
     import onnxruntime as ort
@@ -80,7 +81,7 @@ def export_bundle(model, env, pair, version, output, training_report):
     payload = {
         'analysis_plan.json': {'nodes': [{'id': 'policy', 'type': 'policy', 'schema_version': VERSION,
                                         'model': 'models/policy.onnx', 'inputs': [], 'action_catalog': ACTION_CATALOG}]},
-        'policy.json': {'schema_version': VERSION, 'observation_dim': 47, 'action_catalog': ACTION_CATALOG},
+        'policy.json': {'schema_version': VERSION, 'observation_dim': obs_dim, 'action_catalog': ACTION_CATALOG},
         'risk_brain.json': {'mandatory_server_stop': True, 'risk_fraction': .01, 'stop_distance_atr': 1.5},
         'training_report.json': training_report,
         'tests/vectors.json': {'vectors': vectors, 'tolerance': 1e-5, 'latency_ms': 600},
