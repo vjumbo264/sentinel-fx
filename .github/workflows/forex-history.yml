@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 300
     env:
       GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT || github.token }}
-      LEGACY_PAIRS: ${{ inputs.pairs || 'EURUSD' }}
+      LEGACY_PAIRS: EURUSD
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
