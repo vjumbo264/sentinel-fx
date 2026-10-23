@@ -1916,11 +1916,19 @@
         "first_epoch": 1577916360,
         "last_epoch": 1609451880,
         "sha256": "520180f1536b2d314bbd3ed02aa6a530366060f8b26c8e11b2b0f07bcf87840c"
+      },
+      "2021": {
+        "asset": "EURJPY_2021.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 371245,
+        "first_epoch": 1609711200,
+        "last_epoch": 1640987880,
+        "sha256": "aceac85972e7db2c481f4687b5a5f2907062a3bdc1243926a2d795e58a61525b"
       }
     },
-    "last_epoch": 1609451880,
+    "last_epoch": 1640987880,
     "first_epoch": 1015200180,
-    "rows": 6757270,
+    "rows": 7128515,
     "columns": [
       "epoch",
       "bid_open",
