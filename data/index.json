@@ -2672,11 +2672,19 @@
         "first_epoch": 1577916060,
         "last_epoch": 1609451880,
         "sha256": "c2b96807fe868490057b69038235aadb2a7d064abb511090eb9f40d48a6d6400"
+      },
+      "2021": {
+        "asset": "EURAUD_2021.csv.gz",
+        "release_tag": "data-euraud-01",
+        "rows": 371309,
+        "first_epoch": 1609711200,
+        "last_epoch": 1640987880,
+        "sha256": "b5101fc6dcd2bf7b7841a03a0416e88933993ab6292ce6592d0a315f0dc00046"
       }
     },
-    "last_epoch": 1609451880,
+    "last_epoch": 1640987880,
     "first_epoch": 1029796680,
-    "rows": 6660204,
+    "rows": 7031513,
     "columns": [
       "epoch",
       "bid_open",
