@@ -24,6 +24,7 @@ from tools.train_env import SentinelScalpEnv
 from tools.release_utils import ROOT, GitHub, pair_key
 from tools.export_rl_bundle import export_bundle
 from tools.validation import evaluate_validation
+from tools.training_cycle import prepare, freeze_data, warm_start
 
 PAIRS = 'EURUSD GBPUSD USDJPY USDCHF AUDUSD USDCAD NZDUSD EURGBP EURJPY GBPJPY AUDJPY EURAUD GBPAUD'.split()
 STATE = ROOT / 'training_state.json'
@@ -68,9 +69,9 @@ def save_state(gh, state, message):
     gh.commit_json('training_state.json', merge, message+' [skip ci]')
 
 
-def load_data(gh, pair):
+def load_data(gh, pair, snapshot=None):
     index = json.loads((ROOT / 'data/index.json').read_text())
-    entry = index.get(pair_key(index, pair), {})
+    entry = snapshot or index.get(pair_key(index, pair), {})
     if not entry:
         raise ValueError(pair+' history unavailable; run histdata-bulk first')
     releases = {}
@@ -79,7 +80,7 @@ def load_data(gh, pair):
             releases[tag] = gh.ensure_release(tag)
         return releases[tag]
     candidates = []
-    for meta in entry.get('bulk_years', {}).values():
+    for meta in list(entry.get('bulk_years', {}).values()) + entry.get('appends', []):
         rel = release(meta['release_tag'])
         asset = next(a for a in gh.assets(rel) if a['name'] == meta['asset'])
         candidates.append((asset, meta.get('sha256')))
@@ -173,7 +174,7 @@ def restore(gh, env, state):
     if not choices:
         if state.get('total_steps_done',0):
             raise RuntimeError('recorded training steps have no matching durable checkpoint; refusing silent restart')
-        return create_model(env)
+        return warm_start(gh, env, state) or create_model(env)
     steps, asset = max(choices,key=lambda item:item[0])
     raw = gh.download(asset)
     recorded = state.get('checkpoint',{})
@@ -330,7 +331,14 @@ def publish(gh, model, env, full_data, state):
     def merge(index):
         entry = index.setdefault('frx'+pair,{'active_version':None,'versions':[]})
         entry['versions'] = [v for v in entry['versions'] if v['N'] != version]
+        native_name = f'{pair}_v{version}_s{model.num_timesteps}.zip'
+        native = next(a for a in gh.assets(gh.ensure_release('training-checkpoints')) if a['name'] == native_name)
+        native_sha = hashlib.sha256(gh.download(native)).hexdigest()
         entry['versions'].append({'N':version,'release_tag':rel['tag_name'],'asset':bundle.name,
+                                  'checkpoint_asset':native_name, 'checkpoint_release_tag':'training-checkpoints',
+                                  'checkpoint_sha256':native_sha, 'steps':model.num_timesteps,
+                                  'data_end_utc':state.get('data_end_utc'),
+                                  'release_decision':'Passed hold-out gates; enable explicitly to trade',
                                   'sha256':hashlib.sha256(raw).hexdigest(),'size':len(raw),
                                   'created_utc':utc(),'verdict':verdict,'profitability_verified':(verdict=='pass'),
                                   'observation_dim':env.observation_space.shape[0], 'policy_schema':'sentinel.policy.v2'})
@@ -354,10 +362,11 @@ def advance(state):
         state.update(status='idle', active_pair=None)
         return  # Only another owner action may create a new cycle.
     state['active_pair'] = state['pairs_pending'][0]
+    state['active_version'] = state.get('cycle_versions', {}).get(state['active_pair'], 1)
     state.update(total_steps_done=0,last_checkpoint_steps=0,last_checkpoint_utc=None,
                  plateau_intervals=0,previous_mean_reward=None,status='queued')
     for key in ('checkpoint','best_checkpoint','checkpoint_history','holdout_looks','holdout_result',
-                'verdict','release_decision','last_error','data_snapshot','cycle_started_utc'):
+                'verdict','release_decision','last_error','data_snapshot','cycle_started_utc','warm_started_from','data_end_utc'):
         state.pop(key,None)
 
 
@@ -400,13 +409,16 @@ def main():
         token = os.environ.get("GITHUB_TOKEN") or ""
     gh = GitHub(token)
     deadline = time.monotonic()+int(os.environ.get('TRAIN_WALL_SECONDS','17100'))
-    if not state.get('pairs_pending') or state.get('status') == 'idle':
+    if not prepare(gh, state, os.environ.get('TRAIN_MODE', 'resume'), os.environ.get('TRAIN_PAIR', '')):
         print('Owner cycle complete; manual action required for another cycle.');return
     if state['active_pair'] in state['pairs_done']:
         advance(state);save_state(gh,state,'Q4: advance completed pair')
     pair = state['active_pair']
     try:
-        data,full_data = load_data(gh,pair)
+        snapshot = freeze_data(gh, state)
+        save_state(gh, state, 'Training: pin data snapshot '+pair)
+        data,full_data = load_data(gh,pair,snapshot)
+        state['data_end_utc'] = datetime.fromtimestamp(int(full_data.iloc[-1].epoch), timezone.utc).isoformat()
         specs = json.loads((ROOT/'data/symbols.json').read_text())['symbols'][pair]
         env = SentinelScalpEnv(data,specs,pair)
         monitored = Monitor(env)
