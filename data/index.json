@@ -911,11 +911,19 @@
         "first_epoch": 1073001660,
         "last_epoch": 1104528540,
         "sha256": "1fc32e52b461340ba585d8a21e67cb3bf30824542b20bf7ca8f3e70069c4bfd2"
+      },
+      "2005": {
+        "asset": "USDCAD_2005.csv.gz",
+        "release_tag": "data-usdcad-01",
+        "rows": 240039,
+        "first_epoch": 1104734880,
+        "last_epoch": 1135893420,
+        "sha256": "6d7dff7d5f57d535ea99df28f2a2d22a0ae40a88ce6fa8a52c6ed3ac36f709d8"
       }
     },
-    "last_epoch": 1104528540,
+    "last_epoch": 1135893420,
     "first_epoch": 960834300,
-    "rows": 719545,
+    "rows": 959584,
     "columns": [
       "epoch",
       "bid_open",
