@@ -1,6 +1,6 @@
 {
-  "name": "SENTINEL-FX CFD Autonomous Platform",
-  "description": "Autonomous MT5 CFD forex & synthetic index trading platform with PPO reinforcement learning scalper models, session risk interlock, and live supervisor dashboard.",
+  "name": "SENTINEL-FX CFD Autonomous Trading Platform",
+  "description": "Autonomous MT5 CFD trading platform with per-pair hybrid AI models, compounding balance growth, and mobile-first supervision.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

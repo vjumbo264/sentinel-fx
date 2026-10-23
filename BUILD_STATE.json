@@ -13,19 +13,19 @@
     },
     {
       "id": "F2",
-      "title": "Training engine overhaul — observation v2, actions, reward, walk-forward",
+      "title": "Training engine overhaul \u2014 observation v2, actions, reward, walk-forward",
       "status": "done",
       "notes": "Completed v2 observation overhaul (62 dimensions, causally safe), 8-action catalog, scalper composite reward, and walk-forward validation (split 70/15/15). Policy schema version updated to sentinel.policy.v2. Smoke test and test_overhaul_training passed."
     },
     {
       "id": "F3",
-      "title": "Training interlock — bot pauses during training",
+      "title": "Training interlock \u2014 bot pauses during training",
       "status": "done",
       "notes": "Added /api/settings/training-lock endpoint in worker/src/index.js; purged dead packs/staging endpoints; updated bot/main.py with training_locked check and dynamic mode from settings; added lock/unlock steps and Saturday 2am UTC cron to train.yml."
     },
     {
       "id": "F4",
-      "title": "Complete site rebuild — 4 pages, no polling, fast",
+      "title": "Complete site rebuild \u2014 4 pages, no polling, fast",
       "status": "done",
       "notes": "Rebuilt site completely from scratch with a fresh, clean, automatic dark and light UI. 4 core pages (Dashboard, Training, History, Settings). Desktop left rail with Lagos WAT clock + mobile bottom nav. Zero polling when idle, ~69KB uncompressed JS payload. Also mirrored in AI Studio React supervisor applet."
     },
@@ -70,7 +70,190 @@
   },
   "observation_schema": "sentinel.policy.v2",
   "observation_dimension": 62,
-  "old_47dim_models": "incompatible — do not load",
+  "old_47dim_models": "incompatible \u2014 do not load",
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
-  "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179."
+  "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
+  "fix5": {
+    "next_step": "H1: Implement optional overrides for take profit, stop loss, daily profit target, and daily loss limit across Worker, Site, and Bot",
+    "items": [
+      {
+        "id": "H1",
+        "title": "Optional overrides: take profit, stop loss, daily profit target, daily loss limit",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "H2",
+        "title": "Honest training ETA",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "H3",
+        "title": "Full 5,000,000-step training, release best-tested checkpoint",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "H4",
+        "title": "Update MT5 credentials from Settings",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "H5",
+        "title": "No trading on weekends unless owner turns it on",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "H6",
+        "title": "The failed or cancelled live action root cause and fix",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "H7",
+        "title": "Consistency and cleanup: 62-dim observation enforcement, docs",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "H8",
+        "title": "Self-healing after GitHub Actions failures",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "H9",
+        "title": "Manual training only; no automatic or weekend schedule",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "H10",
+        "title": "Weekly Deriv data append",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      }
+    ],
+    "tests": [
+      {
+        "id": "V1",
+        "title": "Risk page overrides empty/OFF saves fine and persists, toggles ON/OFF, 375px screenshots",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V2",
+        "title": "Bot proof on demo: OFF keeps model SL/TP, ON overrides, daily limit stops trades, next-day reset",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V3",
+        "title": "ETA: live EURUSD run, displayed ETA vs hand computation within 10%, rate shown",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V4",
+        "title": "Training: EURUSD v1 chain resumes without restart; validation logged; best released; no edge path",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V5",
+        "title": "Credentials: wrong password fails with clear message, correct passes, no secret leaks",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V6",
+        "title": "Weekend: forex idle on closed session with toggle OFF, synthetic trades, simulator honors session",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V7",
+        "title": "Failed/cancelled action: root cause documented with log lines, fix applied, green 10m run",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V8",
+        "title": "Self-healing: cancelling bot/training job recovers automatically, no double trading",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V9",
+        "title": "Manual training only: no cron in train.yml, update training retrains, lock does not stop bot",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V10",
+        "title": "Weekly Deriv append: real run EURUSD and synthetic, seam report, data index updated",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V11",
+        "title": "Circuit-breaker: code failures stop retries after 3, GitHub failures retry on cool-downs",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      },
+      {
+        "id": "V12",
+        "title": "Full-suite re-run from scratch, results in docs/fix5-report.md, observation-size check",
+        "status": "todo",
+        "attempts": [],
+        "evidence": [],
+        "files": []
+      }
+    ]
+  }
 }
