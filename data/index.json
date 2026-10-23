@@ -1501,11 +1501,19 @@
         "first_epoch": 1483340400,
         "last_epoch": 1514584680,
         "sha256": "722cfa042018343a9aec356c1c8a251094907497c5b7d53710c17b3e5a4377d5"
+      },
+      "2018": {
+        "asset": "USDCHF_2018.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 370264,
+        "first_epoch": 1514844000,
+        "last_epoch": 1546293480,
+        "sha256": "1dfbfbed79fac0ae79c8b6fdef28ca359dd01b99ffc551336e7a9d05219a21e7"
       }
     },
-    "last_epoch": 1514584680,
+    "last_epoch": 1546293480,
     "first_epoch": 959725380,
-    "rows": 5190589,
+    "rows": 5560853,
     "columns": [
       "epoch",
       "bid_open",
