@@ -19,6 +19,8 @@ OWNER=os.environ.get('GITHUB_RUN_ID') or ('local-'+str(os.getpid()))
 SECRET=os.environ.get('BOT_SHARED_SECRET','');TOKEN=os.environ.get('GH_CHAIN_PAT','');REPO='vjumbo264/sentinel-fx'
 WALL=int(os.environ.get('BOT_WALL_SECONDS','17100'))
 HARD_STOP=int(os.environ.get('BOT_HARD_STOP_SECONDS','18000'))
+# A bounded acceptance run must finish, not wait five hours or self-dispatch.
+if os.environ.get('BOT_CHAIN','true')=='false':HARD_STOP=WALL
 HANDOFF=int(os.environ.get('BOT_HANDOFF_LEAD_S','300'));STOP=int(os.environ.get('BOT_STOP_OPEN_LEAD_S','120'))
 
 def http_worker(method,path,body=None,timeout=20):
@@ -62,7 +64,9 @@ def main_loop(mode='demo'):
  if not SECRET or not TOKEN:raise ValueError('Worker shared secret and GitHub token required')
  session=http_worker('GET','/api/bot/session')
  settings=session.get('settings',{})
- mode=settings.get('mode',mode)
+ # The workflow-selected account is immutable for this runner. A Worker
+ # setting change must use a new authenticated handover, never relabel a login.
+ if settings.get('mode',mode)!=mode:raise ValueError('Account mode differs from workflow; restart with requested mode')
  broker=MT5Broker();assert broker.connect(mode),f'{mode} login failed'
  if mode=='demo':assert int(broker._get_api().account_info().trade_mode)==0,'non-demo account refused'
  assert broker.health_check()['ok'],'terminal not trading-ready'
@@ -74,7 +78,7 @@ def main_loop(mode='demo'):
    remaining=HARD_STOP-(time.time()-start)
    try:
     session=http_worker('GET','/api/bot/session');settings=session.get('settings',{})
-    mode=settings.get('mode',mode)
+    if settings.get('mode',mode)!=mode:raise ValueError('Account mode changed; runner remains on authenticated '+mode+' account')
     enabled=http_worker('GET','/api/bot/models')['symbols']
     registry.refresh(enabled,broker)
     http_worker('POST','/api/bot/ready',{'owner':OWNER,'models':list(registry.bundles),'mode':mode})

@@ -71,3 +71,7 @@
 ### H6: Pin native MT5 portable terminal path
 - Windows setup now launches a private writable portable terminal and exports the exact executable as MT5_TERMINAL_PATH. No password is written to the terminal configuration. Pending real Windows runner verification.
 - Next: H6: make bounded demo acceptance runs terminate normally without chaining.
+
+### H6: Bound acceptance runtime and pin authenticated account mode
+- BOT_CHAIN=false now ends after wall_seconds instead of running 5 hours. A demo runner cannot silently relabel itself real via Worker settings. Read-only login verification dispatched: https://github.com/vjumbo264/sentinel-fx/actions/runs/39985636231 .
+- Next: H6: inspect real login result, then run demo bot for 660 seconds.

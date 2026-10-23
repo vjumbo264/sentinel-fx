@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H6: make bounded demo acceptance runs terminate normally without chaining.",
+    "next_step": "H6: inspect real login result, then run demo bot for 660 seconds.",
     "items": [
       {
         "id": "H1",
@@ -201,6 +201,10 @@
           {
             "what": "Pin native MT5 portable terminal path",
             "result": "Windows setup now launches a private writable portable terminal and exports the exact executable as MT5_TERMINAL_PATH. No password is written to the terminal configuration. Pending real Windows runner verification."
+          },
+          {
+            "what": "Bound acceptance runtime and pin authenticated account mode",
+            "result": "BOT_CHAIN=false now ends after wall_seconds instead of running 5 hours. A demo runner cannot silently relabel itself real via Worker settings. Read-only login verification dispatched: https://github.com/vjumbo264/sentinel-fx/actions/runs/39985636231 ."
           }
         ],
         "evidence": [],
