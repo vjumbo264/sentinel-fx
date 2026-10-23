@@ -2420,11 +2420,19 @@
         "first_epoch": 1609711200,
         "last_epoch": 1640987880,
         "sha256": "760e605ec75482afa8141409945f059b4c6ef9eb16079fc3a9e4ad84fe389321"
+      },
+      "2022": {
+        "asset": "AUDJPY_2022.csv.gz",
+        "release_tag": "data-audjpy-01",
+        "rows": 372449,
+        "first_epoch": 1641161580,
+        "last_epoch": 1672437480,
+        "sha256": "e34c1dcc56c35d97c878343704813ca94662bb6ba3fbc92464c856a468886f50"
       }
     },
-    "last_epoch": 1640987880,
+    "last_epoch": 1672437480,
     "first_epoch": 1029796320,
-    "rows": 6628549,
+    "rows": 7000998,
     "columns": [
       "epoch",
       "bid_open",
