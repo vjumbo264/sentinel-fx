@@ -237,3 +237,11 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Preserve compatibility metadata in published registry versions
 - Future model registry entries carry current policy schema and actual environment observation dimension, so valid new exports are not mislabelled retired. Training state, checkpoint and target unchanged.
 - Next: H7: finalize real checker and deployment evidence; then H8/H9 together.
+
+## H7: passing
+- Four actual ONNX/CLI tests pass; forged metadata cannot admit retired 47-dimensional weights; shared vector is62. Live /api/models/index HTTP200 returns empty current registry (no legacy model listed). Worker and site deployments succeeded; operational documentation distinguishes inherited gaps from proven behavior.
+- Evidence: https://github.com/vjumbo264/sentinel-fx/actions/runs/39989150174
+- Evidence: https://github.com/vjumbo264/sentinel-fx/actions/runs/39989145885
+- Evidence: Printed: actual sfx check 47-d exit1, expected62; four tests pass; live model index HTTP200 {}
+- Evidence: docs/FIX5_OPERATIONS.md
+- Next: H8/H9: extend existing recovery and manual training together; independently verify each before H10.

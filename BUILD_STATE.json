@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H7: finalize real checker and deployment evidence; then H8/H9 together.",
+    "next_step": "H8/H9: extend existing recovery and manual training together; independently verify each before H10.",
     "items": [
       {
         "id": "H1",
@@ -248,7 +248,7 @@
       {
         "id": "H7",
         "title": "Consistency and cleanup: 62-dim observation enforcement, docs",
-        "status": "doing",
+        "status": "passing",
         "attempts": [
           {
             "what": "Centralize current observation dimension",
@@ -293,9 +293,18 @@
           {
             "what": "Preserve compatibility metadata in published registry versions",
             "result": "Future model registry entries carry current policy schema and actual environment observation dimension, so valid new exports are not mislabelled retired. Training state, checkpoint and target unchanged."
+          },
+          {
+            "what": "Verified status transition",
+            "result": "Four actual ONNX/CLI tests pass; forged metadata cannot admit retired 47-dimensional weights; shared vector is62. Live /api/models/index HTTP200 returns empty current registry (no legacy model listed). Worker and site deployments succeeded; operational documentation distinguishes inherited gaps from proven behavior."
           }
         ],
-        "evidence": [],
+        "evidence": [
+          "https://github.com/vjumbo264/sentinel-fx/actions/runs/39989150174",
+          "https://github.com/vjumbo264/sentinel-fx/actions/runs/39989145885",
+          "Printed: actual sfx check 47-d exit1, expected62; four tests pass; live model index HTTP200 {}",
+          "docs/FIX5_OPERATIONS.md"
+        ],
         "files": []
       },
       {
