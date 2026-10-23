@@ -175,3 +175,5 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 - Next: H6: verify restored Linux demo run for at least 600 seconds and green completion.
 
 - H6 runtime sample 1: run in_progress/None; actual broker heartbeat 2026-10-23T16:29:44Z; active runner 39986703235. Still waiting for final green result.
+
+- H6 runtime sample 2: run in_progress/None; actual broker heartbeat 2026-10-23T16:31:48Z; active runner 39986703235. Still waiting for final green result.
