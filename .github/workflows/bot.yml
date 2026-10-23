@@ -24,7 +24,9 @@ permissions:
   actions: write
 jobs:
   run:
-    runs-on: windows-latest
+    # Last verified healthy runtime: 39907951207, commit 559d4762.
+    # Native Windows migration failed before IPC; retain the proven stack.
+    runs-on: ubuntu-latest
     timeout-minutes: 300
     env:
       WORKER_URL: ${{ secrets.WORKER_URL }}
@@ -45,10 +47,25 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
-      - name: Set up native MT5
-        uses: ./.github/actions/mt5-windows
+      - name: Install bot dependencies
+        run: |
+          pip install numpy pandas websockets requests lightgbm 'rpyc>=6,<7'
+          pip install ./engine
+      - name: Start verified MT5 stack
+        uses: ./.github/actions/mt5-stack
+        with:
+          action: start
+          login: ${{ secrets.MT5_DEMO_LOGIN }}
+          password: ${{ secrets.MT5_PASSWORD }}
+          server: ${{ secrets.MT5_DEMO_SERVER }}
+          port: '18812'
       - name: Run bot
         run: python -m bot.main
+      - name: Stop MT5 stack
+        if: always()
+        uses: ./.github/actions/mt5-stack
+        with:
+          action: stop
       # FIX-A & FIX-4: crash-proof chaining with anti-spam exponential backoff.
       # Halts if 3 consecutive failures occur, preventing infinite dispatch spam.
       - name: Crash-proof chain (safety dispatch & self-healing)

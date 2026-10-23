@@ -165,3 +165,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H6: Restore owner-provided MT5 secret values with sealed encryption
 - GitHub repository secret writes all returned HTTP 204 (names only: MT5_PASSWORD, MT5_DEMO_LOGIN, MT5_DEMO_SERVER, MT5_REAL_LOGIN, MT5_REAL_SERVER). Values were encrypted outside the repository; no credentials committed or added to BUILD_STATE. Running Actions jobs retain their launch-time environment.
 - Next: H6: inspect launched native demo login/bot results; use actual runner evidence for next repair.
+
+### H6: Restore last verified MT5 runtime after native IPC repair failed
+- Run 39985636231 still failed with IPC timeout on all three authenticated 60s initialization attempts, even with exact portable terminal path; login reporting separately returned HTTP 403. Rather than guessing further, bot.yml now uses the unchanged Linux stack from green run 39907951207 at 559d4762, preserving current READY handover, lease, concurrency and 4h backup cron.
+- Next: H6: dispatch bounded demo run on restored known-green stack; verify actual Worker heartbeat and final logs.

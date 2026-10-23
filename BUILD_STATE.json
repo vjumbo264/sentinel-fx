@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H6: inspect launched native demo login/bot results; use actual runner evidence for next repair.",
+    "next_step": "H6: dispatch bounded demo run on restored known-green stack; verify actual Worker heartbeat and final logs.",
     "items": [
       {
         "id": "H1",
@@ -221,6 +221,10 @@
           {
             "what": "Restore owner-provided MT5 secret values with sealed encryption",
             "result": "GitHub repository secret writes all returned HTTP 204 (names only: MT5_PASSWORD, MT5_DEMO_LOGIN, MT5_DEMO_SERVER, MT5_REAL_LOGIN, MT5_REAL_SERVER). Values were encrypted outside the repository; no credentials committed or added to BUILD_STATE. Running Actions jobs retain their launch-time environment."
+          },
+          {
+            "what": "Restore last verified MT5 runtime after native IPC repair failed",
+            "result": "Run 39985636231 still failed with IPC timeout on all three authenticated 60s initialization attempts, even with exact portable terminal path; login reporting separately returned HTTP 403. Rather than guessing further, bot.yml now uses the unchanged Linux stack from green run 39907951207 at 559d4762, preserving current READY handover, lease, concurrency and 4h backup cron."
           }
         ],
         "evidence": [],
