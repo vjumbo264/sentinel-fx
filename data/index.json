@@ -1200,11 +1200,19 @@
         "first_epoch": 1041465540,
         "last_epoch": 1072900740,
         "sha256": "c999a6d1d05c571a24b3eb0e7100ff126663f59fd6c6ce425fa267f9c1a18c11"
+      },
+      "2004": {
+        "asset": "AUDJPY_2004.csv.gz",
+        "release_tag": "data-audjpy-01",
+        "rows": 344238,
+        "first_epoch": 1073001600,
+        "last_epoch": 1104530460,
+        "sha256": "bb92504b05f207353ae441af779e7dbaf0f6cdd8cc0520f437791311f0685079"
       }
     },
-    "last_epoch": 1072900740,
+    "last_epoch": 1104530460,
     "first_epoch": 1029796320,
-    "rows": 421062,
+    "rows": 765300,
     "columns": [
       "epoch",
       "bid_open",
