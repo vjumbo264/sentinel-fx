@@ -308,3 +308,7 @@ Next: H0: verify Actions checkpoint >900000 with recorded validation; then H9 ma
 ## H0 — Record original stack and completed regressions
 Six actual local regressions PASS after correcting shell PATH to expose the installed sfx CLI: real47-dimensional archive rejected; forged metadata rejected;62 shape accepted; nonfatal invalid-window tests pass. Original stack evidence is committed. These checks do not substitute for the pending actual post-resume checkpoint.
 Next: H0: confirm >900000 verified checkpoint on https://github.com/vjumbo264/sentinel-fx/actions/runs/39992955869 and validation metrics; only then begin H9.
+
+## H0 — Preserve checkpoint while real runner trains
+Actions39992955869 remains in Resume pair training with no cancellation or failure. In-progress GitHub job-log API returns404, so no speculative log claims or repeated log downloads. Last durable checkpoint remains900000 until the next50000-step save and evaluation complete. New evaluator is verified locally on real candles; no later queue item has started.
+Next: H0: await new verified checkpoint and validation metrics from39992955869; do not cancel, reset, or re-dispatch its active writer.

@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H0: confirm >900000 verified checkpoint on https://github.com/vjumbo264/sentinel-fx/actions/runs/39992955869 and validation metrics; only then begin H9.",
+    "next_step": "H0: await new verified checkpoint and validation metrics from39992955869; do not cancel, reset, or re-dispatch its active writer.",
     "items": [
       {
         "id": "H0",
@@ -111,6 +111,10 @@
           {
             "what": "Record original stack and completed regressions",
             "result": "Six actual local regressions PASS after correcting shell PATH to expose the installed sfx CLI: real47-dimensional archive rejected; forged metadata rejected;62 shape accepted; nonfatal invalid-window tests pass. Original stack evidence is committed. These checks do not substitute for the pending actual post-resume checkpoint."
+          },
+          {
+            "what": "Preserve checkpoint while real runner trains",
+            "result": "Actions39992955869 remains in Resume pair training with no cancellation or failure. In-progress GitHub job-log API returns404, so no speculative log claims or repeated log downloads. Last durable checkpoint remains900000 until the next50000-step save and evaluation complete. New evaluator is verified locally on real candles; no later queue item has started."
           }
         ],
         "evidence": [
