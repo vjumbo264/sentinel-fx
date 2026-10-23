@@ -1,0 +1,27 @@
+name: HistData bulk M1 history
+on:
+  workflow_dispatch:
+    inputs:
+      pairs:
+        description: Comma-separated target forex pairs
+        default: EURUSD,GBPUSD,USDJPY,USDCHF,AUDUSD,USDCAD,NZDUSD,EURGBP,EURJPY,GBPJPY,AUDJPY,EURAUD,GBPAUD
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: histdata-bulk
+  cancel-in-progress: false
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      GH_CHAIN_PAT: ${{ secrets.GH_CHAIN_PAT || github.token }}
+      FETCH_WALL_SECONDS: '17100'
+      HISTDATA_PAIRS: ${{ inputs.pairs || 'EURUSD,GBPUSD,USDJPY,USDCHF,AUDUSD,USDCAD,NZDUSD,EURGBP,EURJPY,GBPJPY,AUDJPY,EURAUD,GBPAUD' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: pip install histdata requests
+      - run: python tools/fetch_histdata_bulk.py --pairs "$HISTDATA_PAIRS"

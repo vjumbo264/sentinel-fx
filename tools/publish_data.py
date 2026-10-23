@@ -26,7 +26,7 @@ def main():
  path=Path(sys.argv[1]);report=json.loads(Path(str(path)+'.report.json').read_text());sym=report['symbol']
  content=api('/contents/data/index.json').json();index=json.loads(base64.b64decode(content['content']));old=index.get(sym)
  rows={}
- if old:
+ if old and old.get("asset"):
   release=api('/releases/tags/'+old['release_tag']).json();asset=next(x for x in release['assets'] if x['name']==old['asset']);raw=load_asset(asset)
   assert hashlib.sha256(raw).hexdigest()==old['sha256'],'previous data checksum mismatch'
   rows.update({int(row['epoch']):row for row in csv.DictReader(io.StringIO(gzip.decompress(raw).decode()))})
@@ -40,7 +40,7 @@ def main():
  report.update(rows=len(rows),first_epoch=epochs[0],last_epoch=epochs[-1],first_utc=datetime.fromtimestamp(epochs[0],timezone.utc).isoformat(),last_utc=datetime.fromtimestamp(epochs[-1],timezone.utc).isoformat(),sha256=sha,asset=name,release_tag='data-01',url=asset['browser_download_url'])
  report_asset=upload('data-01',name+'.report.json',json.dumps(report,indent=2).encode());report['report_url']=report_asset['browser_download_url']
  for attempt in range(6):
-  current=api('/contents/data/index.json').json();index=json.loads(base64.b64decode(current['content']));index[sym]=report
+  current=api('/contents/data/index.json').json();index=json.loads(base64.b64decode(current['content']));index[sym]={**index.get(sym,{}),**report}
   r=s.put(BASE+'/contents/data/index.json',json={'message':'data: verified '+sym+' immutable release [skip ci]','content':base64.b64encode((json.dumps(index,indent=2)+'\n').encode()).decode(),'sha':current['sha']},timeout=30)
   if r.ok:break
   if r.status_code not in (409,422):r.raise_for_status()

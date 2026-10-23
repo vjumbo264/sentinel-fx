@@ -96,7 +96,7 @@ jobs:
           ASSET="${SYMBOL}_${GRANULARITY}s.csv.gz"
           gh release download data-01 -p "$ASSET" -R "$GITHUB_REPOSITORY" -D prev --clobber 2>/dev/null || \
             echo "no existing asset; first run is a full pull"
-      - name: Fetch candles (Dukascopy for Forex, Deriv for Synthetics)
+      - name: Fetch incremental Deriv candles only
         run: |
           EXIST="prev/${SYMBOL}_${GRANULARITY}s.csv.gz"
           [ -f "$EXIST" ] || EXIST=""

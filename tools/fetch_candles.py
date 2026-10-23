@@ -16,6 +16,7 @@ Prints a final line "STATS {json}" for the workflow to parse.
 """
 from __future__ import annotations
 
+from pathlib import Path
 import argparse
 import subprocess
 import asyncio
@@ -139,7 +140,8 @@ async def pull(symbol, gran, start_after=None):
                 "style": "candles",
                 "granularity": gran,
                 "count": MAX_PER_REQ,
-                "end": end
+                "end": end,
+                **({"start": int(start_after) + 1} if start_after is not None else {})
             }))
             raw = await asyncio.wait_for(ws.recv(), 35)
             d = json.loads(raw)
@@ -216,38 +218,37 @@ def main():
         "bad symbol: expected frxXXXYYY, R_<n> or 1HZ<n>V"
     os.makedirs(a.out, exist_ok=True)
 
-    # Route Forex pairs directly to Dukascopy fetcher
-    if a.symbol.startswith("frx"):
-        print(f"[fetch] Routing Forex pair {a.symbol} to Dukascopy datafeed...", flush=True)
-        cmd = [
-            sys.executable, os.path.join(os.path.dirname(__file__), "fetch_dukascopy.py"),
-            "--symbol", a.symbol,
-            "--granularity", str(a.granularity),
-            "--mode", a.mode,
-            "--out", a.out
-        ]
-        if a.existing:
-            cmd.extend(["--existing", a.existing])
-        res = subprocess.run(cmd)
-        if res.returncode != 0:
-            print(f"[ERROR] Dukascopy fetch failed for {a.symbol} (exit code {res.returncode})", file=sys.stderr, flush=True)
-            sys.exit(res.returncode)
-        return
-
+    # Daily refresh is incremental for Forex AND synthetics; bulk is HistData only.
+    index = json.loads(Path("data/index.json").read_text()) if Path("data/index.json").exists() else {}
+    last_epoch = int(index.get(a.symbol, {}).get('last_epoch', 0) or 0)
     existing = {}
-    start_after = None
+    start_after = last_epoch or None
     if a.mode == "incremental" and a.existing and os.path.exists(a.existing):
         existing = read_csv_gz(a.existing)
         if existing:
-            start_after = max(existing) - 3600  # 1h overlap for safety
+            start_after = max(last_epoch, max(existing))  # strict incremental boundary
             print(f"[merge] existing {len(existing)} rows, refetch after {start_after}", flush=True)
 
     rows, source_used = asyncio.run(pull(a.symbol, a.granularity, start_after))
 
     for c in rows:
         ep = int(c["epoch"])
-        existing[ep] = {"epoch": ep, "open": c["open"], "high": c["high"],
-                        "low": c["low"], "close": c["close"]}
+        if ep <= last_epoch:
+            continue
+        if a.symbol.startswith('frx'):
+            registry = json.loads(Path('data/symbols.json').read_text())['symbols']
+            specs = registry[a.symbol[3:]]
+            spread = float(specs.get('spread', specs.get('typical_spread_pts', 1.5))) * specs['point']
+            item = {'epoch': ep}
+            for field in ('open','high','low','close'):
+                item['bid_'+field] = float(c[field])
+                item['ask_'+field] = float(c[field]) + spread
+            if 'tick_volume' in index.get(a.symbol, {}).get('columns', []):
+                item['tick_volume'] = 0  # Deriv candles do not supply tick volume.
+            existing[ep] = item
+        else:
+            existing[ep] = {"epoch": ep, "open": c["open"], "high": c["high"],
+                            "low": c["low"], "close": c["close"]}
 
     epochs = sorted(existing)
     if not epochs:
