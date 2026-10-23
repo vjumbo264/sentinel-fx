@@ -1287,11 +1287,19 @@
         "first_epoch": 1577916000,
         "last_epoch": 1609451880,
         "sha256": "a39538d88a30a00cf732a704fead85b9993eb826cc69dc7781bec3f3b80cf86b"
+      },
+      "2021": {
+        "asset": "USDCAD_2021.csv.gz",
+        "release_tag": "data-usdcad-01",
+        "rows": 369364,
+        "first_epoch": 1609711200,
+        "last_epoch": 1640987880,
+        "sha256": "6f341f4ba4e560cef6fa35f58db0e9814f5a12a421d8dc79111606f657175290"
       }
     },
-    "last_epoch": 1609451880,
+    "last_epoch": 1640987880,
     "first_epoch": 960834300,
-    "rows": 5740736,
+    "rows": 6110100,
     "columns": [
       "epoch",
       "bid_open",
