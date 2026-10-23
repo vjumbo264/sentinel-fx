@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H7: record matching registry metadata and finalize schema acceptance evidence.",
+    "next_step": "H7: finalize real checker and deployment evidence; then H8/H9 together.",
     "items": [
       {
         "id": "H1",
@@ -289,6 +289,10 @@
           {
             "what": "Declare current compatibility in exported model manifests",
             "result": "Exporter refuses non-62 environments and records policy_schema plus observation_dim in the manifest as well as policy.json."
+          },
+          {
+            "what": "Preserve compatibility metadata in published registry versions",
+            "result": "Future model registry entries carry current policy schema and actual environment observation dimension, so valid new exports are not mislabelled retired. Training state, checkpoint and target unchanged."
           }
         ],
         "evidence": [],

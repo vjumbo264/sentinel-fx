@@ -233,3 +233,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Declare current compatibility in exported model manifests
 - Exporter refuses non-62 environments and records policy_schema plus observation_dim in the manifest as well as policy.json.
 - Next: H7: record matching registry metadata and finalize schema acceptance evidence.
+
+### H7: Preserve compatibility metadata in published registry versions
+- Future model registry entries carry current policy schema and actual environment observation dimension, so valid new exports are not mislabelled retired. Training state, checkpoint and target unchanged.
+- Next: H7: finalize real checker and deployment evidence; then H8/H9 together.

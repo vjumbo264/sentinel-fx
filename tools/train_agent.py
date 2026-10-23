@@ -369,7 +369,8 @@ def publish(gh, model, env, full_data, state):
         entry['versions'] = [v for v in entry['versions'] if v['N'] != version]
         entry['versions'].append({'N':version,'release_tag':rel['tag_name'],'asset':bundle.name,
                                   'sha256':hashlib.sha256(raw).hexdigest(),'size':len(raw),
-                                  'created_utc':utc(),'verdict':verdict,'profitability_verified':(verdict=='pass')})
+                                  'created_utc':utc(),'verdict':verdict,'profitability_verified':(verdict=='pass'),
+                                  'observation_dim':env.observation_space.shape[0], 'policy_schema':'sentinel.policy.v2'})
         entry['active_version'] = version
         return index
     gh.commit_json('models/index.json',merge,f'Q4: publish health-checked {pair} v{version} [skip ci]')
