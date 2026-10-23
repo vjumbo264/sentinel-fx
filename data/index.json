@@ -1133,11 +1133,19 @@
         "first_epoch": 1167699600,
         "last_epoch": 1199138220,
         "sha256": "00053792965a1ddbc12d7997492d04f5d016527d383875890b7f21364c19235d"
+      },
+      "2008": {
+        "asset": "NZDUSD_2008.csv.gz",
+        "release_tag": "data-nzdusd-01",
+        "rows": 293747,
+        "first_epoch": 1199232000,
+        "last_epoch": 1230756840,
+        "sha256": "ec28e4a6070c350b56ae5a614d12370059217a1ed680d38295ee742bf5e0c0cd"
       }
     },
-    "last_epoch": 1199138220,
+    "last_epoch": 1230756840,
     "first_epoch": 1123884060,
-    "rows": 598499,
+    "rows": 892246,
     "columns": [
       "epoch",
       "bid_open",
