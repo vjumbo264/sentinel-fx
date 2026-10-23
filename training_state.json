@@ -38,7 +38,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-23T22:33:42.496072+00:00",
+  "updated_utc": "2026-10-23T22:34:34.863099+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -733,5 +733,323 @@
         "sampling": "three fixed 1024-bar purged validation windows; not full validation coverage"
       }
     }
-  ]
+  ],
+  "data_snapshot": {
+    "symbol": "frxEURUSD",
+    "granularity": 60,
+    "rows": 8767620,
+    "first_epoch": 959725620,
+    "last_epoch": 1792779840,
+    "first_utc": "2000-05-30T22:27:00+00:00",
+    "last_utc": "2026-10-23T18:24:00+00:00",
+    "sha256": "3b7b72c03b18ac057a8da021b355f554de32f0dc3974b71382806a832ab66750",
+    "source": "histdata-bid-only-synthetic-ask",
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "duplicates": 0,
+    "crossed_bid_ask": 0,
+    "gaps": [
+      {
+        "from": 1792621320,
+        "to": 1792621440,
+        "seconds": 120,
+        "weekend": false
+      },
+      {
+        "from": 1792625940,
+        "to": 1792626060,
+        "seconds": 120,
+        "weekend": false
+      },
+      {
+        "from": 1792702800,
+        "to": 1792703040,
+        "seconds": 240,
+        "weekend": false
+      }
+    ],
+    "spread_profile_by_utc_hour": {
+      "0": 2.625e-05,
+      "1": 2.642e-05,
+      "2": 2.708e-05,
+      "3": 2.883e-05,
+      "4": 2.633e-05,
+      "5": 2.783e-05,
+      "6": 2.7e-05,
+      "7": 2.458e-05,
+      "8": 2.533e-05,
+      "9": 2.433e-05,
+      "10": 2.617e-05,
+      "11": 2.45e-05,
+      "12": 2.458e-05,
+      "13": 2.567e-05,
+      "14": 2.533e-05,
+      "15": 2.4e-05,
+      "16": 2.158e-05,
+      "17": 2.467e-05,
+      "18": 2.433e-05,
+      "19": 2.5e-05,
+      "20": 3.317e-05,
+      "21": 0.00019573,
+      "22": 3.941e-05,
+      "23": 2.933e-05
+    },
+    "requested_from": "2026-10-21T00:00:00+00:00",
+    "requested_to_exclusive": "2026-10-23T00:00:00+00:00",
+    "file": "frxEURUSD_60s.csv.gz",
+    "last_checked_utc": "2026-10-23T18:25:52.923243+00:00",
+    "asset": "frxEURUSD_60s.3b7b72c03b18ac05.csv.gz",
+    "release_tag": "data-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxEURUSD_60s.3b7b72c03b18ac05.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/frxEURUSD_60s.3b7b72c03b18ac05.csv.gz.report.json",
+    "shard_releases": [
+      "data-01",
+      "data-eurusd-01"
+    ],
+    "bulk_years": {
+      "2000": {
+        "asset": "EURUSD_2000.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 143167,
+        "first_epoch": 959725620,
+        "last_epoch": 978107100,
+        "sha256": "774937eafceeb952a8581d42e31a335aef573aeae740595f7e8e3ebcb215ecba"
+      },
+      "2002": {
+        "asset": "EURUSD_2002.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 213000,
+        "first_epoch": 1009952760,
+        "last_epoch": 1041357480,
+        "sha256": "0244c08601de5b886bd7176317657c164976aa32db9f221bcf42d8c9fc3cc2a8"
+      },
+      "2003": {
+        "asset": "EURUSD_2003.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 316351,
+        "first_epoch": 1041465600,
+        "last_epoch": 1072900680,
+        "sha256": "dc1f9de4f28fbbf0bf3c31890965a8f7e5807259cfc4d8b0cf2b1c4b5690ded2"
+      },
+      "2004": {
+        "asset": "EURUSD_2004.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 328426,
+        "first_epoch": 1073001600,
+        "last_epoch": 1104528480,
+        "sha256": "a417b0a15ec1aeca87a9a6643056650e1f832052c3ee04ad04d7c7637da32226"
+      },
+      "2005": {
+        "asset": "EURUSD_2005.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 315635,
+        "first_epoch": 1104734880,
+        "last_epoch": 1135893480,
+        "sha256": "e28bca9af42f5ad94768538bbe3c57ec12771522a414834c5b80ac3d8f956331"
+      },
+      "2006": {
+        "asset": "EURUSD_2006.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 307176,
+        "first_epoch": 1136246400,
+        "last_epoch": 1167427680,
+        "sha256": "cdc5348af5e1f3950e670c6676175213e501dc65d2493c4a53171c87f54dd527"
+      },
+      "2007": {
+        "asset": "EURUSD_2007.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 299782,
+        "first_epoch": 1167699600,
+        "last_epoch": 1199138220,
+        "sha256": "fa3c267242dee2f76b292af15d29f696c1ebd98518d05f1165e360ff9ff6354c"
+      },
+      "2008": {
+        "asset": "EURUSD_2008.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 347355,
+        "first_epoch": 1199232000,
+        "last_epoch": 1230757080,
+        "sha256": "99a9f83bc3574730c25f57c4ca1d8d5f79e065c0b9eb8f99c49f77ab221a0005"
+      },
+      "2009": {
+        "asset": "EURUSD_2009.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 355880,
+        "first_epoch": 1230854340,
+        "last_epoch": 1262296620,
+        "sha256": "0fde5ee7afdf3ac3881c9e7494da25fff9fc6495d9d47837d69679eb44d1ff40"
+      },
+      "2010": {
+        "asset": "EURUSD_2010.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 352320,
+        "first_epoch": 1262556000,
+        "last_epoch": 1293825480,
+        "sha256": "fd0fbd47d759c8ddd4ecdba18a2b941581c143bae9ded5351c02e275d82ee131"
+      },
+      "2011": {
+        "asset": "EURUSD_2011.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 358369,
+        "first_epoch": 1294005600,
+        "last_epoch": 1325282280,
+        "sha256": "bd58617b9821de424217c4e2704de7fb74f972e341d3f49fcea47beca2514baf"
+      },
+      "2012": {
+        "asset": "EURUSD_2012.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 372161,
+        "first_epoch": 1325487600,
+        "last_epoch": 1356991080,
+        "sha256": "ca0515cdb7a78ecd0676ddcb942ca95a95b868436147abb5ea8000329f4c9a14"
+      },
+      "2013": {
+        "asset": "EURUSD_2013.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 370611,
+        "first_epoch": 1357077600,
+        "last_epoch": 1388523540,
+        "sha256": "18f405298f0702a9679a6173c517c27e1765bf5bb59cb4021c92c22ea693d499"
+      },
+      "2014": {
+        "asset": "EURUSD_2014.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 366477,
+        "first_epoch": 1388613600,
+        "last_epoch": 1420063140,
+        "sha256": "b58b1c26b8855e7bce4993656139a55aee6cd518ee6c39cf44dd7b2b691f6bf3"
+      },
+      "2015": {
+        "asset": "EURUSD_2015.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 372210,
+        "first_epoch": 1420135200,
+        "last_epoch": 1451599080,
+        "sha256": "b95e927eb123e2e2581f995a1d2a479cf942165a7a4785b327d563f5c12afcbd"
+      },
+      "2016": {
+        "asset": "EURUSD_2016.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 372679,
+        "first_epoch": 1451858400,
+        "last_epoch": 1483135080,
+        "sha256": "8781c213d33382e9e4322a52a8fa3b6b17dc350993ae4ba968deace6c8de333c"
+      },
+      "2017": {
+        "asset": "EURUSD_2017.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 371635,
+        "first_epoch": 1483340400,
+        "last_epoch": 1514584620,
+        "sha256": "efda75e8b08fba3e46f0397a1b26af1fbb220c7d199eb43b13dd77b3e7ac76d6"
+      },
+      "2018": {
+        "asset": "EURUSD_2018.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 372607,
+        "first_epoch": 1514844000,
+        "last_epoch": 1546293540,
+        "sha256": "f7a99270637dbf0e78dc4a04fddb1b55e27ae40ae127625176c538ffb86a397e"
+      },
+      "2019": {
+        "asset": "EURUSD_2019.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 372470,
+        "first_epoch": 1546380120,
+        "last_epoch": 1577829540,
+        "sha256": "3367a814964f6953d6aebb37a59836069887d8f28f4bc6952f331d6f7a30901b"
+      },
+      "2020": {
+        "asset": "EURUSD_2020.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 372275,
+        "first_epoch": 1577916000,
+        "last_epoch": 1609451880,
+        "sha256": "e25d787d53a7e6c9f50d871263e5b97315930eca08627ab475bc5f810230eb28"
+      },
+      "2021": {
+        "asset": "EURUSD_2021.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 369442,
+        "first_epoch": 1609711200,
+        "last_epoch": 1640987880,
+        "sha256": "76a04230c3ba86d25e8b561642b8f0b2d266e0f44d23531f7c9f6831f09ad197"
+      },
+      "2022": {
+        "asset": "EURUSD_2022.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 372805,
+        "first_epoch": 1641160980,
+        "last_epoch": 1672437480,
+        "sha256": "6c86490ce669c737cb7ec81e6c69f11364f19467fe8a39d3314052fc15474d74"
+      },
+      "2023": {
+        "asset": "EURUSD_2023.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 322578,
+        "first_epoch": 1672610640,
+        "last_epoch": 1703887080,
+        "sha256": "cc1cc02e9f5933783b3614b08fedeaf2addfa6d12cdfddb4fb8be6a288a901db"
+      },
+      "2024": {
+        "asset": "EURUSD_2024.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 372379,
+        "first_epoch": 1704146400,
+        "last_epoch": 1735682280,
+        "sha256": "51360208d6e81fddbd59973bce9cd60a1cb8da780f7692a0ab14cdfb55a78b25"
+      },
+      "2025": {
+        "asset": "EURUSD_2025.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 372024,
+        "first_epoch": 1735768800,
+        "last_epoch": 1767218220,
+        "sha256": "37350e5757aab93b65e9678bd6b835432dd97867dff3bdd217c989d18df25d2f"
+      },
+      "2026": {
+        "asset": "EURUSD_2026_through_09.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 276701,
+        "first_epoch": 1767305040,
+        "last_epoch": 1790830680,
+        "sha256": "364b33d135dd72373892e8da77adddc2c1b3577cd5c5fb3f0846cfa4b2eb722e"
+      }
+    },
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "bulk_unavailable": {
+      "2001": {
+        "error": "invalid HistData OHLC row",
+        "checked_utc": "2026-10-23T08:47:50.672804+00:00",
+        "status": "unavailable_not_complete"
+      }
+    },
+    "bulk_complete": false,
+    "appends": [
+      {
+        "asset": "frxEURUSD_1792713600_1792779840.8aa81942ba089638.csv.gz",
+        "release_tag": "data-deriv-appends-01",
+        "sha256": "8aa81942ba089638821bb1688534e5bac0589f89f6aae8a39d007d6174f1487d",
+        "rows": 1105,
+        "first_epoch": 1792713600,
+        "last_epoch": 1792779840,
+        "source": "Deriv UTC",
+        "last_update_utc": "2026-10-23T18:25:52.699014+00:00"
+      }
+    ],
+    "last_update_utc": "2026-10-23T18:25:52.923241+00:00",
+    "join_median_difference": 1.999999999990898e-05,
+    "join_overlap_rows": 5749,
+    "timezone": "UTC"
+  },
+  "cycle_started_utc": "2026-10-23T22:34:34.863046+00:00"
 }
