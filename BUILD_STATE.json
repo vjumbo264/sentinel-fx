@@ -850,8 +850,8 @@
       {
         "id": "Q1",
         "title": "5h wall + self-dispatch on all workflows",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "Verified bot timeout 300, dispatch at elapsed WALL=17100, loop hard exit 18000; long existing fetch/backfill workflows timeout 300. New resumable workflows inherit same wall. Existing READY lease transfer preserved."
       },
       {
         "id": "Q2",
@@ -893,10 +893,11 @@
       "EURAUD",
       "GBPAUD"
     ],
-    "last_updated": "2026-10-23T06:12:44.130153+00:00",
+    "last_updated": "2026-10-23T06:14:06.182263+00:00",
     "notes": "",
     "decisions": [
-      "Credentials in original request are redacted in docs/BUILD_PROMPT.md. Secret names only are recorded. Preserve all earlier build sections; only overhaul queue governs this build."
+      "Credentials in original request are redacted in docs/BUILD_PROMPT.md. Secret names only are recorded. Preserve all earlier build sections; only overhaul queue governs this build.",
+      "Q1 resolves contradictory timing examples: WALL is dispatch trigger, HARD_STOP is loop end; subtracting handoff lead from WALL would dispatch 5 minutes too early. Workflow timeout also bounds setup and shutdown."
     ],
     "secret_names_verified": [
       "BOT_SHARED_SECRET",

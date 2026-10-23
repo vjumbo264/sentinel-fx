@@ -62,7 +62,7 @@ jobs:
   month:
     needs: plan
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 300
     strategy:
       fail-fast: false
       max-parallel: 1

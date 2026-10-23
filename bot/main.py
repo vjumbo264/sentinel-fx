@@ -17,7 +17,9 @@ logging.basicConfig(level=logging.INFO);log=logging.getLogger('sentinel.bot')
 WORKER=os.environ.get('WORKER_URL') or 'https://sentinel-fx-worker.vjumbo264.workers.dev'
 OWNER=os.environ.get('GITHUB_RUN_ID') or ('local-'+str(os.getpid()))
 SECRET=os.environ.get('BOT_SHARED_SECRET','');TOKEN=os.environ.get('GH_CHAIN_PAT','');REPO='vjumbo264/sentinel-fx'
-WALL=int(os.environ.get('BOT_WALL_SECONDS','13800'));HANDOFF=int(os.environ.get('BOT_HANDOFF_LEAD_S','300'));STOP=int(os.environ.get('BOT_STOP_OPEN_LEAD_S','120'))
+WALL=int(os.environ.get('BOT_WALL_SECONDS','17100'))
+HARD_STOP=int(os.environ.get('BOT_HARD_STOP_SECONDS','18000'))
+HANDOFF=int(os.environ.get('BOT_HANDOFF_LEAD_S','300'));STOP=int(os.environ.get('BOT_STOP_OPEN_LEAD_S','120'))
 
 def http_worker(method,path,body=None,timeout=20):
  req=urllib.request.Request(WORKER+path,method=method,data=json.dumps(body).encode() if body is not None else None,headers={'X-Bot-Secret':SECRET,'Content-Type':'application/json','Accept':'application/json','User-Agent':'sentinel-bot/4.0'})
@@ -66,8 +68,8 @@ def main_loop(mode='demo'):
  registry=ModelRegistry();start=time.time();lastbars={};lastresults={};peaks={};dispatched=False;was_leader=False
  since=datetime.now(timezone.utc)-timedelta(days=7)
  try:
-  while time.time()-start<WALL:
-   remaining=WALL-(time.time()-start)
+  while time.time()-start<HARD_STOP:
+   remaining=HARD_STOP-(time.time()-start)
    try:
     session=http_worker('GET','/api/bot/session');settings=session.get('settings',{});enabled=http_worker('GET','/api/bot/models')['symbols']
     registry.refresh(enabled,broker)
@@ -118,7 +120,7 @@ def main_loop(mode='demo'):
       if not http_worker('POST','/api/bot/lock',{'owner':OWNER}).get('acquired'):break
       result=adapter.execute(action,str(candles[-1]['epoch']));results.append(result);lastresults[symbol]=result
      decision_log(symbol,obs,out,results)
-    if remaining<HANDOFF and not dispatched and os.environ.get('BOT_CHAIN','true')=='true':dispatch_next_runner();dispatched=True
+    if time.time()-start>=WALL and not dispatched and os.environ.get('BOT_CHAIN','true')=='true':dispatch_next_runner();dispatched=True
     if remaining<STOP and dispatched:
      ready=http_worker('GET','/api/bot/ready').get('runners',[]);successor=next((r for r in ready if r['owner']!=OWNER),None)
      if successor:

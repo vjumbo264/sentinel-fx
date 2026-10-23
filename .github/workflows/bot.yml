@@ -7,9 +7,9 @@ on:
         required: false
         default: "demo"
       wall_seconds:
-        description: "Wall time; 1200 for acceptance, 13800 for regular runs"
+        description: "Wall time; 1200 for acceptance, 17100 for regular runs"
         required: false
-        default: "13800"
+        default: "17100"
       chain:
         description: "Enable READY successor handover"
         required: false
@@ -25,7 +25,7 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 235   # ~3h55m; stops opening ~2min before end
+    timeout-minutes: 300
     env:
       WORKER_URL: ${{ secrets.WORKER_URL }}
       BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
@@ -37,7 +37,8 @@ jobs:
       MT5_DEMO_SERVER: ${{ secrets.MT5_DEMO_SERVER }}
       BOT_MODE: ${{ github.event.inputs.mode || 'demo' }}
       BOT_CHAIN: ${{ inputs.chain || 'true' }}
-      BOT_WALL_SECONDS: ${{ inputs.wall_seconds || '13800' }}      # 3h50m total loop
+      BOT_WALL_SECONDS: ${{ inputs.wall_seconds || '17100' }}      # 4h45m dispatch trigger
+      BOT_HARD_STOP_SECONDS: "18000"
       BOT_HANDOFF_LEAD_S: "300"      # dispatch next run 5min before stop
       BOT_STOP_OPEN_LEAD_S: "120"    # stop opening 2min before end
     steps:
