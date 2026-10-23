@@ -2575,11 +2575,19 @@
         "first_epoch": 1704146640,
         "last_epoch": 1735682280,
         "sha256": "3b2c9ddd3252f6fec115a473a5a18ed69decc0bbddac90bfc03f637f528f7655"
+      },
+      "2025": {
+        "asset": "AUDJPY_2025.csv.gz",
+        "release_tag": "data-audjpy-01",
+        "rows": 371817,
+        "first_epoch": 1735769100,
+        "last_epoch": 1767218220,
+        "sha256": "8ee71dc27141c3bec9736cdacdd9c9cce270f9b372d9489da3b5f3f2b9b9622d"
       }
     },
-    "last_epoch": 1735682280,
+    "last_epoch": 1767218220,
     "first_epoch": 1029796320,
-    "rows": 7696162,
+    "rows": 8067979,
     "columns": [
       "epoch",
       "bid_open",
