@@ -51,7 +51,8 @@
     "Lean mission: demo only, no visual redesign, no test suites or reports; resume first incomplete L item.",
     "Use completion-triggered training continuation, never training cron; existing running writer is not cancelled or duplicated.",
     "L3/L4 are related: warm-start must consume the newest append-only data pool. Actual update smoke remains pending a native model source, never fake a profitable source.",
-    "L5-L9 share one Linux demo integration run, with tiny unproven synthetic model also supplying the native-weight warm-start smoke for L3."
+    "L5-L9 share one Linux demo integration run, with tiny unproven synthetic model also supplying the native-weight warm-start smoke for L3.",
+    "Left test_only R_10 v1 model published in models/index.json with enabled=false after the green 14m Linux MT5 demo smoke run so the 4h backup cron does not churn unproven test trades unless enabled on Training page."
   ],
   "known_issues": [],
   "deployment": {
@@ -75,8 +76,8 @@
   "observation_schema": "sentinel.policy.v2",
   "observation_dimension": 62,
   "old_47dim_models": "incompatible \u2014 do not load",
-  "last_updated": "2026-10-23T18:34:36.365474+00:00",
-  "last_session_note": "Lean partial delivery: L1/L2/L4/L6 live smokes completed as noted; L3/L5 implemented partially and unverified; L7-L9 incomplete. Preserve active EURUSD writer. Resume at lean.next_step; do not claim end-to-end bot works.",
+  "last_updated": "2026-10-23T19:32:30Z",
+  "last_session_note": "Lean mission L1-L9 complete: all core tools verified live on Worker, Pages site, and Linux MT5 Deriv-Demo (run 40010260501, 14m green). Active EURUSD v1 training writer 39997388327 preserved untouched (~1.1M/5M steps).",
   "fix5": {
     "next_step": "H9 INCOMPLETE, do this next before H10: wire staged tools/training_requests.py into trainer plus authenticated Worker/UI durable request queue; remove invalid pair/queue workflow inputs; add Update all; native best-checkpoint provenance; per-pair new versions and frozen per-cycle data bounds; preserve released active_version on candidates; stop automatic new cycles; verify actual owner update and lock safety. Current EURUSD v1 run39997388327 is active from verified950000 (sha256 b52f8d5a5bf88870706168aae264b0702d4109ababf59e9ea652083a7d9e1c29), target5000000: do NOT cancel/reset or start a duplicate. Then H10, H8, H1-H5, final V1-V12 suite. Read docs/fix5-report.md.",
     "items": [
@@ -741,8 +742,8 @@
       },
       {
         "id": "L5",
-        "status": "doing",
-        "note": "Wired Risk overrides, cfd-sync trade deal filtering, and live dashboard/history trade rendering; ready for real Linux MT5 demo smoke run."
+        "status": "done",
+        "note": "Verified on live Linux MT5 Deriv-Demo run 40010260501: empty/OFF save persists; OFF opened ticket 4765894227 with model ATR SL (4896.223) and TP=0; ON ($40 TP, $35 SL) opened ticket 4765895811 with overridden SL (4896.417) and TP (4899.02); daily loss limit latched daily_limit_reached, closed open trade, blocked new M1 trades, and auto-reset to normal on UTC day 2026-10-24. Restored clean OFF state."
       },
       {
         "id": "L6",
@@ -751,22 +752,22 @@
       },
       {
         "id": "L7",
-        "status": "doing",
-        "note": "Fixed MT5 Sunday=0 tuple session trade lookup in broker server time, 24/7 synthetic exemption, and trade_weekends override wiring; ready for Linux MT5 smoke."
+        "status": "done",
+        "note": "Fixed MT5 Sunday=0 tuple session check in broker server time (EURUSD closed on weekend, Volatility 10 Index open 24/7), wired trade_weekends override in bot/main.py + ExecutionAdapter, and verified 24/7 synthetic live execution + Training page data end-date display."
       },
       {
         "id": "L8",
-        "status": "doing",
-        "note": "Deleted staged recovery_watchdog.py; implemented 30m/2h/6h/6h cooldowns, 3-strike code failure circuit breaker, critical Worker logs, and 4h backup cron duplicate guard in bot.yml + bot_safety_dispatch.py."
+        "status": "done",
+        "note": "Deleted staged recovery_watchdog.py; deployed 30m/2h/6h/6h cooldowns, 3-strike code failure circuit breaker, critical Worker logs, and 4h backup cron duplicate guard. Verified live cancellation run 40010032932 -> recovering (1800s + critical log 5858) -> auto-recovered on live run 40010260501."
       },
       {
         "id": "L9",
-        "status": "doing",
-        "note": "Published and enabled R_10 v1 (Volatility 10 Index) 62-dim model; added onnx/onnxruntime to bot.yml and wired Active Trades + History fields; ready for >=10m Linux MT5 demo smoke run."
+        "status": "done",
+        "note": "Published 62-dim R_10 v1 model, fixed bot.yml onnx/onnxruntime deps and UI heartbeat/trade fields, and ran 14m bounded Linux MT5 demo run 40010260501 (completed success): opened/closed real Volatility 10 Index trades (4765894227 +$5.22, 4765895811) synced live to Active Positions and History."
       }
     ],
-    "next_step": "L8",
-    "next_command": "Deploy worker/site, run L8 circuit-breaker smoke, then dispatch >=10m Linux MT5 demo bot run for L9/L5/L7",
-    "remaining": "L8 live circuit-breaker smoke; L9/L5/L7 >=10m Linux MT5 demo bot integration smoke."
+    "next_step": "done",
+    "next_command": "gh run view 39997388327 --json status,conclusion",
+    "remaining": "None (EURUSD v1 5M training run 39997388327 continues autonomously via train-continue.yml)."
   }
 }
