@@ -111,6 +111,7 @@ async def connect_ws():
 async def pull(symbol, gran, start_after=None):
     import time as _t
     deadline = _t.time() + DEADLINE_S
+    pull.handoff_required = False
     rows, end, prev_oldest = [], "latest", None
     ws = None
     source_used = "unknown"
@@ -118,6 +119,7 @@ async def pull(symbol, gran, start_after=None):
 
     while True:
         if _t.time() > deadline:
+            pull.handoff_required = True
             print("[fetch] deadline reached; writing what we have", flush=True)
             break
         
@@ -239,7 +241,7 @@ def main():
         with gzip.open(os.path.join(a.out, fname), 'wt', newline='') as output:
             csv.writer(output).writerow(columns)
         print('STATS '+json.dumps({'symbol': a.symbol, 'file': fname, 'rows': 0,
-                                   'no_new_data': True, 'last_epoch': last_epoch, 'source': source_used}))
+                                   'no_new_data': True, 'last_epoch': last_epoch, 'source': source_used, 'handoff_required': bool(getattr(pull, 'handoff_required', False))}))
         return
 
     for c in rows:
@@ -315,6 +317,7 @@ def main():
         "last_checked_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "file": fname,
         "no_new_data": not bool(rows),
+        "handoff_required": bool(getattr(pull, "handoff_required", False)),
         "ask_assumption": "synthetic ask from registry spread" if is_fx else None,
     }
     print("STATS " + json.dumps(stats), flush=True)

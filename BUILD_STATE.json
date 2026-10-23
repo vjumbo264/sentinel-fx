@@ -851,7 +851,7 @@
         "id": "Q1",
         "title": "5h wall + self-dispatch on all workflows",
         "status": "done",
-        "notes": "Verified bot timeout 300, dispatch at elapsed WALL=17100, loop hard exit 18000; long existing fetch/backfill workflows timeout 300. New resumable workflows inherit same wall. Existing READY lease transfer preserved."
+        "notes": "Verified bot timeout 300, dispatch at elapsed WALL=17100, loop hard exit 18000; long existing fetch/backfill workflows timeout 300. New resumable workflows inherit same wall. Existing READY lease transfer preserved. Legacy long Dukascopy workflows now dispatch the resumable HistData replacement; incremental fetch publishes its checkpoint before wall successor dispatch."
       },
       {
         "id": "Q2",
@@ -900,7 +900,8 @@
       "Q1 resolves contradictory timing examples: WALL is dispatch trigger, HARD_STOP is loop end; subtracting handoff lead from WALL would dispatch 5 minutes too early. Workflow timeout also bounds setup and shutdown.",
       "Retain lazy legacy broker fallbacks for compatibility/tests; Windows short-circuits to native API and production bot installs no Wine/rpyc/mt5linux. Updated stale unit mock with required tick-size/value/freeze fields.",
       "Training causality takes priority over illustrative step ordering: execute selected action at its observed current-close tick, then process next bar intrabar and return next shared observation. This avoids executing stale-observation actions at an unseen future price; dedicated regression test passes.",
-      "GH_CHAIN_PAT and supplied Cloudflare credentials encrypted directly into existing Actions secret names; no secret values committed. Public training state endpoint is read-only and exposes no secrets."
+      "GH_CHAIN_PAT and supplied Cloudflare credentials encrypted directly into existing Actions secret names; no secret values committed. Public training state endpoint is read-only and exposes no secrets.",
+      "Q1/Q3 final integration: retired legacy parallel Dukascopy bulk/daily jobs into manual compatibility dispatchers to histdata-bulk; only fetch-candles owns daily incremental Deriv refresh. Old from/to inputs retained but deprecated; indexed annual history controls resumption. Fetch wall flag triggers successor only after publication succeeds."
     ],
     "secret_names_verified": [
       "BOT_SHARED_SECRET",

@@ -19,6 +19,7 @@ on:
     - cron: "0 3 1 * *"     # monthly keepalive (public-repo scheduled-workflow guard)
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: candles
   cancel-in-progress: false
@@ -79,7 +80,7 @@ jobs:
       SYMBOL: ${{ matrix.symbol }}
       GRANULARITY: ${{ github.event.inputs.granularity || '60' }}
       MODE: ${{ github.event.inputs.mode || 'incremental' }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_CHAIN_PAT || github.token }}
       DERIV_BEARER_TOKEN: ${{ secrets.DERIV_BEARER_TOKEN }}
       DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
     steps:
@@ -109,12 +110,24 @@ jobs:
           import json,gzip,csv,os
           from pathlib import Path
           stats=next(json.loads(line[6:]) for line in reversed(Path('fetch.log').read_text().splitlines()) if line.startswith('STATS '))
+          with open(os.environ['GITHUB_ENV'],'a') as env:
+              env.write('FETCH_HANDOFF='+str(bool(stats.get('handoff_required'))).lower()+'\n')
           path=Path('out')/stats['file']
           with gzip.open(path,'rt') as f:stats['columns']=next(csv.reader(f))
           Path(str(path)+'.report.json').write_text(json.dumps(stats,indent=2))
           PY
       - name: Verify immutable release upload before index CAS
         run: python tools/publish_data.py "out/${SYMBOL}_${GRANULARITY}s.csv.gz"
+      - name: Dispatch clean wall successor after published checkpoint
+        if: env.FETCH_HANDOFF == 'true'
+        run: |
+          python - <<'PY'
+          import os
+          from tools.release_utils import GitHub
+          GitHub(os.environ['GH_TOKEN']).dispatch('fetch-candles.yml', {
+              'symbols': os.environ['SYMBOL'], 'granularity': os.environ['GRANULARITY'], 'mode': 'incremental'
+          })
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
