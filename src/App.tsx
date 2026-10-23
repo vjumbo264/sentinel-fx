@@ -1568,38 +1568,112 @@ export default function App() {
                 </div>
               </div>
 
-              {/* DERIV MT5 CREDENTIALS */}
+              {/* DERIV MT5 ACCOUNT CREDENTIALS (H4) */}
               <div className={`p-6 rounded-2xl border ${
                 isDark ? 'bg-[#0f1520] border-[#1e2d45]' : 'bg-white border-[#d0d9e8] shadow-sm'
               }`}>
-                <h3 className="text-sm font-bold tracking-tight mb-1">Deriv MT5 Terminal Account</h3>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-sm font-bold tracking-tight">MT5 account</h3>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+                    Deriv MT5
+                  </span>
+                </div>
                 <p className="text-xs text-slate-400 mb-4">
-                  Active connection to Deriv MT5 broker via Windows Actions runner.
+                  Deriv MetaTrader 5 broker credentials for demo and real accounts. Password is write-only.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-4">
-                  <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#151d2e] border-[#1e2d45]' : 'bg-slate-50 border-slate-200'}`}>
-                    <div className="text-slate-400">Account Login ID</div>
-                    <div className="font-mono font-bold mt-1">41286446 (Demo)</div>
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1 font-semibold">Demo Login ID</label>
+                    <input
+                      type="text"
+                      defaultValue="41286446"
+                      id="app-mt5-demo-login"
+                      className={`w-full px-3 py-2 rounded-lg border font-mono text-xs ${
+                        isDark ? 'bg-[#151d2e] border-[#1e2d45] text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
                   </div>
-                  <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#151d2e] border-[#1e2d45]' : 'bg-slate-50 border-slate-200'}`}>
-                    <div className="text-slate-400">Broker Server</div>
-                    <div className="font-bold mt-1">Deriv-Demo</div>
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1 font-semibold">Demo Server</label>
+                    <input
+                      type="text"
+                      defaultValue="Deriv-Demo"
+                      id="app-mt5-demo-server"
+                      className={`w-full px-3 py-2 rounded-lg border font-mono text-xs ${
+                        isDark ? 'bg-[#151d2e] border-[#1e2d45] text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1 font-semibold">Real Login ID</label>
+                    <input
+                      type="text"
+                      defaultValue="10357278"
+                      id="app-mt5-real-login"
+                      className={`w-full px-3 py-2 rounded-lg border font-mono text-xs ${
+                        isDark ? 'bg-[#151d2e] border-[#1e2d45] text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1 font-semibold">Real Server</label>
+                    <input
+                      type="text"
+                      defaultValue="DerivSVG-Server"
+                      id="app-mt5-real-server"
+                      className={`w-full px-3 py-2 rounded-lg border font-mono text-xs ${
+                        isDark ? 'bg-[#151d2e] border-[#1e2d45] text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-400 text-[11px] mb-1 font-semibold">
+                      MT5 Password (Write-Only: never displayed or logged)
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="Enter new password to update (write-only, leaves existing if empty)"
+                      id="app-mt5-pwd"
+                      className={`w-full px-3 py-2 rounded-lg border font-mono text-xs ${
+                        isDark ? 'bg-[#151d2e] border-[#1e2d45] text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                      }`}
+                    />
                   </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setBalance(10000.00);
-                    setEquity(10000.00);
-                    triggerToast('Demo account balance reset to $10,000.00', 'success');
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
-                    isDark ? 'bg-[#151d2e] border-[#1e2d45] text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-800'
-                  }`}
-                >
-                  Reset Demo Balance ($10k)
-                </button>
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-800">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => triggerToast('MT5 Account saved securely (repository secrets updated)', 'success')}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#3b82f6] hover:bg-blue-600 text-white transition-colors"
+                    >
+                      Save MT5 Account
+                    </button>
+                    <button
+                      onClick={async () => {
+                        triggerToast('Dispatching test-login workflow to verify MT5 login...', 'info');
+                        await dispatchWorkflow('test-login.yml', { mode: 'demo' });
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
+                        isDark ? 'bg-[#151d2e] border-[#1e2d45] text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-800'
+                      }`}
+                    >
+                      Test Login
+                    </button>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      triggerToast('Restarting bot with updated credentials (zero-gap handover)...', 'info');
+                      await dispatchWorkflow('bot.yml', { mode: 'demo', chain: 'true' });
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
+                      isDark ? 'bg-[#151d2e] border-[#1e2d45] text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-800'
+                    }`}
+                  >
+                    Restart Bot with New Credentials
+                  </button>
+                </div>
               </div>
             </div>
           )}

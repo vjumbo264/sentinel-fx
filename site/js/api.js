@@ -51,6 +51,42 @@ export const api = {
   clearDailyLimit: (mode) => api.post('/api/risk/clear-daily-limit', { mode }),
   shiftDayKey: (test_day_key) => api.post('/api/test/shift-day-key', { test_day_key }),
 
+  getMt5Config: () => api.get('/api/settings/mt5'),
+  saveMt5Config: (conf) => api.post('/api/settings/mt5', conf),
+  getTestLoginResult: () => api.get('/api/settings/test-login-result'),
+
+  setRepoSecret: async (name, value) => {
+    const token = getToken();
+    const pkRes = await fetch('https://api.github.com/repos/vjumbo264/sentinel-fx/actions/secrets/public-key', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github+json',
+      }
+    });
+    if (!pkRes.ok) throw new Error(`Failed to fetch public key: ${pkRes.status}`);
+    const pk = await pkRes.json();
+    if (!window.sodium) throw new Error("libsodium initializing, please retry");
+    await window.sodium.ready;
+    const bkey = window.sodium.from_base64(pk.key, window.sodium.base64_variants.ORIGINAL);
+    const bsec = window.sodium.from_string(value);
+    const enc = window.sodium.crypto_box_seal(bsec, bkey);
+    const encrypted_value = window.sodium.to_base64(enc, window.sodium.base64_variants.ORIGINAL);
+    const r = await fetch(`https://api.github.com/repos/vjumbo264/sentinel-fx/actions/secrets/${name}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ encrypted_value, key_id: pk.key_id }),
+    });
+    if (r.status !== 201 && r.status !== 204) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.message || `Secret save error ${r.status}`);
+    }
+    return { ok: true };
+  },
+
   dispatchWorkflow: async (workflow, inputs) => {
     const token = getToken();
     const r = await fetch(`https://api.github.com/repos/vjumbo264/sentinel-fx/actions/workflows/${workflow}/dispatches`, {

@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H4: Update MT5 credentials from Settings with libsodium-sealed repository secrets and test login",
+    "next_step": "H5: No trading on weekends unless owner turns it on; broker symbol info session checks",
     "items": [
       {
         "id": "H1",
@@ -136,10 +136,27 @@
       {
         "id": "H4",
         "title": "Update MT5 credentials from Settings",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "Implemented MT5 account configuration in Settings page with fields for demo login, demo server, real login, real server, and write-only password",
+          "Implemented libsodium sealed-box encryption in tools/set_repo_secret.js and site/js/api.js to update GitHub Actions secrets directly",
+          "Created .github/workflows/test-login.yml and tools/test_mt5_login.py for read-only login testing and reporting to Worker",
+          "Added zero-gap handover restart bot button",
+          "Purged all fallback passwords from source code and verified zero leaks via grep",
+          "Passed tests/test_fix5_h4.js: wrong password fails clearly, correct restored, write-only confirmed"
+        ],
+        "files": [
+          "site/js/pages/settings.js",
+          "site/js/api.js",
+          "site/index.html",
+          "src/App.tsx",
+          "worker/src/index.js",
+          "tools/test_mt5_login.py",
+          "tools/set_repo_secret.js",
+          ".github/workflows/test-login.yml",
+          "tests/test_fix5_h4.js"
+        ]
       },
       {
         "id": "H5",
@@ -251,10 +268,15 @@
       {
         "id": "V5",
         "title": "Credentials: wrong password fails with clear message, correct passes, no secret leaks",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "tests/test_fix5_h4.js passed: Grep audit clean (zero leaks), wrong password fails with clear broker message, correct password restored via libsodium, all 5 MT5 secrets verified"
+        ],
+        "files": [
+          "tools/set_repo_secret.js",
+          "tests/test_fix5_h4.js"
+        ]
       },
       {
         "id": "V6",

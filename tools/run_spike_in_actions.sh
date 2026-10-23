@@ -12,7 +12,7 @@ echo "[1/4] Starting primary MT5 Linux Stack via mt5_stack.sh..."
 export MT5_CONTAINER_NAME="mt5-spike-primary"
 export MT5_PORT="18812"
 export MT5_DEMO_LOGIN="${MT5_DEMO_LOGIN:-41286446}"
-export MT5_PASSWORD="${MT5_PASSWORD:-Kaiju-No.8}"
+export MT5_PASSWORD="${MT5_PASSWORD}"
 export MT5_DEMO_SERVER="${MT5_DEMO_SERVER:-Deriv-Demo}"
 
 bash tools/mt5_stack.sh start
@@ -20,10 +20,10 @@ bash tools/mt5_stack.sh start
 echo "[2/4] Starting optional secondary container for concurrency check..."
 docker run -d --name mt5-spike-secondary -p 18813:18812 \
   -e MT5_LOGIN="${MT5_DEMO_LOGIN:-41286446}" \
-  -e MT5_PASSWORD="${MT5_PASSWORD:-Kaiju-No.8}" \
+  -e MT5_PASSWORD="${MT5_PASSWORD}" \
   -e MT5_SERVER="${MT5_DEMO_SERVER:-Deriv-Demo}" \
   -e LOGIN="${MT5_DEMO_LOGIN:-41286446}" \
-  -e PASSWORD="${MT5_PASSWORD:-Kaiju-No.8}" \
+  -e PASSWORD="${MT5_PASSWORD}" \
   -e SERVER="${MT5_DEMO_SERVER:-Deriv-Demo}" \
   lprett/mt5linux:latest || echo "[WARN] Secondary container start skipped"
 
@@ -46,7 +46,7 @@ python3 tools/mt5_spike.py \
   --port 18812 \
   --port-second 18813 \
   --login "${MT5_DEMO_LOGIN:-41286446}" \
-  --password "${MT5_PASSWORD:-Kaiju-No.8}" \
+  --password "${MT5_PASSWORD}" \
   --server "${MT5_DEMO_SERVER:-Deriv-Demo}" \
   --out-md docs/mt5-spike.md \
   --out-json mt5_spike_result.json || SPIKE_EXIT=$?

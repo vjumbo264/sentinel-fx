@@ -707,6 +707,48 @@ export default {
         return json({ ok: true, test_day_key: dayKey });
       }
 
+      if (path === "/api/settings/test-login-result" && method === "POST") {
+        await env.DB.prepare(
+          "INSERT INTO settings (key, value, updated_utc) VALUES (?,?,?) " +
+          "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_utc=excluded.updated_utc"
+        ).bind("test_login_result", JSON.stringify(body), nowUTC()).run();
+        return json({ ok: true });
+      }
+
+      if (path === "/api/settings/test-login-result" && method === "GET") {
+        const row = await env.DB.prepare("SELECT value FROM settings WHERE key='test_login_result'").first();
+        const result = row ? JSON.parse(row.value) : null;
+        return json({ ok: true, result });
+      }
+
+      if (path === "/api/settings/mt5" && method === "GET") {
+        const row = await env.DB.prepare("SELECT value FROM settings WHERE key='mt5_account_config'").first();
+        const conf = row ? JSON.parse(row.value) : {
+          demo_login: "41286446",
+          demo_server: "Deriv-Demo",
+          real_login: "10357278",
+          real_server: "DerivSVG-Server",
+          has_password: true
+        };
+        delete conf.password;
+        return json({ ok: true, config: conf });
+      }
+
+      if (path === "/api/settings/mt5" && method === "POST") {
+        const conf = {
+          demo_login: String(body.demo_login || "41286446"),
+          demo_server: String(body.demo_server || "Deriv-Demo"),
+          real_login: String(body.real_login || "10357278"),
+          real_server: String(body.real_server || "DerivSVG-Server"),
+          has_password: true
+        };
+        await env.DB.prepare(
+          "INSERT INTO settings (key, value, updated_utc) VALUES (?,?,?) " +
+          "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_utc=excluded.updated_utc"
+        ).bind("mt5_account_config", JSON.stringify(conf), nowUTC()).run();
+        return json({ ok: true, config: conf });
+      }
+
       if (path === "/api/pairs/update" && method === "POST") {
         const allowed = ["enabled", "shadow_mode", "duration", "duration_unit", "min_stake", "max_stake", "stake_pct",
                          "daily_loss_cap", "daily_target", "max_consec_losses", "status", "pack_version", "verdict", "has_custom_code"];
