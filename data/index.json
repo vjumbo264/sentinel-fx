@@ -883,11 +883,19 @@
         "first_epoch": 1388613660,
         "last_epoch": 1420063080,
         "sha256": "eacd9737bec90cbc027c0becf1cfd6add27d040fe4e424ec933f6716f1f71fef"
+      },
+      "2015": {
+        "asset": "EURGBP_2015.csv.gz",
+        "release_tag": "data-eurgbp-01",
+        "rows": 370668,
+        "first_epoch": 1420135200,
+        "last_epoch": 1451599080,
+        "sha256": "6dac66df495185944a5e0d833a8eb7623c60eb61fe7372427d1b2a0342c7fb58"
       }
     },
-    "last_epoch": 1420063080,
+    "last_epoch": 1451599080,
     "first_epoch": 1015200240,
-    "rows": 3967383,
+    "rows": 4338051,
     "columns": [
       "epoch",
       "bid_open",
