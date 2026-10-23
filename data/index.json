@@ -1727,11 +1727,19 @@
         "first_epoch": 1451858400,
         "last_epoch": 1483134960,
         "sha256": "fdd0b0e1ef085970b63fa8933000becd064a81aaf2b1206445ce2ffd4cd06120"
+      },
+      "2017": {
+        "asset": "EURJPY_2017.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 372258,
+        "first_epoch": 1483340460,
+        "last_epoch": 1514584620,
+        "sha256": "60668c660518f24bd5194faec79f9e136eef4532d476be333eb852ff0bddba68"
       }
     },
-    "last_epoch": 1483134960,
+    "last_epoch": 1514584620,
     "first_epoch": 1015200180,
-    "rows": 5266511,
+    "rows": 5638769,
     "columns": [
       "epoch",
       "bid_open",
