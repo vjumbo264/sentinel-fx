@@ -1,45 +1,74 @@
 # Fix5 acceptance report — INCOMPLETE
 
-This is a partial completion report, **not** a claim that Fix Mission 5 passed. FAIL below means the acceptance test is either known failing or has not been demonstrated; the reason distinguishes them. No owner-side blocker has been established. Unfinished engineering/testing is not labelled blocked.
+This mission is not complete. FAIL includes acceptance not yet demonstrated; it does not mean every implemented feature is broken. No owner-side blocker has been established. The required final fresh V1–V12 suite has not been run.
 
 ## Test results
 
-| Test | Result | Evidence / missing requirement |
+| Test | Result | Evidence / remaining acceptance |
 |---|---|---|
-| V1 | FAIL — not freshly verified | Existing375px screenshots retained, but fresh save/toggle/reload browser suite not rerun. |
-| V2 | FAIL — evidence incomplete | Inherited test uses mock broker, not actual demo synthetic trades; actual ON/OFF levels and day reset not proved. |
-| V3 | FAIL — evidence incomplete | Live original chain stopped; current state has no checkpoint_history. No fresh live displayed/hand ETA comparison. |
-| V4 | FAIL | Original EURUSD run failed with invalid volatility.900,000-step checkpoint preserved; no fresh new-evaluation resume/best-release short CPU acceptance. |
-| V5 | FAIL | Real native correct-password test failed IPC timeout: [39985636231](https://github.com/vjumbo264/sentinel-fx/actions/runs/39985636231). All five correct secrets restored. No secret matches in scoped audit; password absent from API. Wrong/correct broker acceptance still missing. |
-| V6 | FAIL — evidence incomplete | No fresh actual closed-session broker/synthetic proof; inherited evidence is mocked. |
-| V7 | PASS | [39986703235](https://github.com/vjumbo264/sentinel-fx/actions/runs/39986703235): green, 59 actual demo heartbeats, elapsed 2–657s; Worker snapshots in docs/evidence/h6_heartbeat.json; no FAIL CLOSED or assertion; no cancellation. |
-| V8 | FAIL — not completed | No actual bot/training cancellation/recovery/adoption demonstration. Watcher is staged, explicitly disabled pending atomic Worker routes. |
-| V9 | FAIL — not completed | Both train.yml cron entries still remain. Update-training semantics and safe training-lock integration not implemented/verified in this session. |
-| V10 | FAIL — not completed | Weekly authenticated Deriv append/seam run and schedule cleanup have not been implemented or verified in this session. |
-| V11 | FAIL — integration incomplete | Six pure recovery decision regressions pass, including 30m/2h/6h and code halt after 3; actual recovery integration/cancellation evidence missing. |
-| V12 | FAIL — full suite not rerun | 12 local authored regressions pass; actual ONNX 47 input rejected by real sfx CLI (exit1, expected62), forged metadata rejected, 62 shape accepted. These do not substitute for the required full fresh live suite. |
+| V1 | FAIL — not rerun | No fresh 375px save/toggle/reload browser evidence. Existing screenshots are inherited, not new acceptance. |
+| V2 | FAIL — unproved | Real demo synthetic OFF/ON stops, daily halt and day reset still need broker evidence; inherited tests are mocked. |
+| V3 | FAIL — unproved | Chain is running again and one new checkpoint is in history. Displayed-versus-hand ETA and fresh measuring-state browser checks remain. Do not infer current throughput from the old 12.5-minute rate. |
+| V4 | FAIL — partial progress | **Resume now proved:** actual [950000-producing run](https://github.com/vjumbo264/sentinel-fx/actions/runs/39992955869) and [patched active resume](https://github.com/vjumbo264/sentinel-fx/actions/runs/39997388327); embedded purged validation score -50.414696, verdict no_edge. Best-release short real CPU/gates acceptance still missing, so V4 is NOT passing. |
+| V5 | FAIL — unproved | Wrong/correct-password real login flow is not completed. Do not use native Windows again; the previous IPC failure is already established. Supplied secrets have no matches in the scoped current scan. |
+| V6 | FAIL — unproved | Real closed-session forex and synthetic behavior plus simulator acceptance remain. |
+| V7 | PASS — retained prior evidence | [39986703235](https://github.com/vjumbo264/sentinel-fx/actions/runs/39986703235): green demo run, 59 heartbeats, elapsed 2–657s. Not rerun here, as instructed not to re-prove it; this is not the final fresh suite. |
+| V8 | FAIL — unfinished | Actual bot/training API cancellation/recovery/adoption proof is not done. Prior watchdog remains staged and disabled; atomic Worker routes are absent. |
+| V9 | FAIL — partial progress | Both train.yml crons removed. Live site now states manual-only starts and correctly says training does not pause trading. Owner update request queue, Update all, new-version warm-start integration and real update proof remain unfinished. |
+| V10 | FAIL — not started | Weekly Deriv append, seam verification, immutable-base cleanup and real append run remain. H10 has not been skipped ahead of H9. |
+| V11 | FAIL — integration unfinished | Existing pure retry/classification tests are not live recovery evidence. No scheduled recovery activation or real circuit-breaker acceptance yet. |
+| V12 | FAIL — full suite not rerun | Six current local regressions PASS, including real sfx rejection of a 47-input model and forged metadata. This does not substitute for the full fresh live suite. |
 
-## Changes actually delivered
-- H6: restored the known-green Linux MT5 runtime after two native Windows verification runs still failed IPC; preserved READY handover, per-run concurrency, lease and 4h backup cron. Bounded chain=false acceptance exits normally after its requested wall time. Workflow account mode cannot silently change to real. Added explicit login-report User-Agent after a real probe proved Cloudflare1010/HTTP403 for default urllib andHTTP200 for the explicit agent.
-- H7: centralized 62-dimensional observation contract; actual policy ONNX shape and metadata checked before inference; sfx/bot/shared simulation reject retired inputs; added authenticated model registry endpoint and retired label using existing UI styling; exporter/registry carry compatibility metadata; operational documentation added.
-- H8 partial: bounded transport retry helper and recovery/watchdog logic plus pure decision tests are committed. **Not wired to any schedule.** Missing atomic Worker record/claim routes and real recovery acceptance; explicit activation guard prevents premature use.
+## H0 completed: genuine checkpoint progression, not a mock
 
-## Actual failed-action root cause
-Latest original failed bot run [39983309547](https://github.com/vjumbo264/sentinel-fx/actions/runs/39983309547) failed before establishing native MT5 IPC:
+Original failure [39929904179](https://github.com/vjumbo264/sentinel-fx/actions/runs/39929904179) reached evaluation and raised at `sentinel_engine/observation.py`, `causal_market`, original line27:
+
+```text
+if atr<=0 or not math.isfinite(atr):raise ValueError('invalid volatility')
+ValueError: invalid volatility
+```
+
+Replayed the original function on immutable release candles with the actual EURUSD_v1_s900000.zip. A flat fourteen-bar EURUSD window ending at epoch1626388800 reproduces the exception; USDCHF has the same issue at epoch1790548200. The inherited shared-observation floor already handles finite flat windows; that behavior was verified rather than falsely claimed as newly added. All13 pairs were probed using real release candles and actual checkpoint inference, returning finite62-dimensional observations.
+
+New per-checkpoint evaluation uses three deterministic1024-bar validation windows, a2400-bar purge and2400-bar warmup. Invalid windows are logged/skipped, and skipped/error evaluations cannot become the best checkpoint. Insufficient data never borrows the locked holdout. Coverage is explicitly sampled validation, not the whole validation fold. Two local invalid-window regressions pass. Actual900000-checkpoint CPU validation on real2025 candles also passes evaluator execution with a poisoned, unread locked holdout; its profitability verdict is no_edge.
+
+Actual run39992955869 trained from900000 to950000 and uploaded EURUSD_v1_s950000.zip. Its evaluation completed, but post-upload digest verification hit:
+
+```text
+urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='release-assets.githubusercontent.com', port=443): Read timed out. (read timeout=180)
+```
+
+That run failed; it is not represented as green. Bounded retries now cover safe GitHub read/CAS transport timeouts and connection resets, without blindly repeating asset-creation POSTs. Restore now recovers an uploaded-but-unindexed archive's digest, steps, validation history and best metadata idempotently.
+
+Patched run39997388327 restored the actual950000-step archive and committed remote status=training with last_error cleared. Recorded digest: `b52f8d5a5bf88870706168aae264b0702d4109ababf59e9ea652083a7d9e1c29`. The target remains5000000, version remains1, and no model was released or enabled. At the final verification the writer was in progress; do not cancel it or dispatch a duplicate.
+
+Evidence: `docs/evidence/h0_original_failure.txt`, `h0_real_pair_probes.json`, `h0_real_validation_cpu.json`, `h0_actions950000.json`, and `h0_resumed_state.json`.
+
+## H9 partial changes and exact next work
+
+Removed both daily and Saturday schedules from `.github/workflows/train.yml`; single-writer concurrency and cancel-in-progress=false are unchanged. The current Worker training-lock endpoint only writes training_locked/training_lock_reason to D1. Current bot/main.py does not read that flag; it is not a live-trading interlock. Its use as a real duplicate-start guard still needs request integration.
+
+Corrected false UI statements about pausing the bot and scheduled Saturday retraining. [Site deployment39998311804](https://github.com/vjumbo264/sentinel-fx/actions/runs/39998311804) is green. Actual deployed training.js HTTP200 contains the corrected text. No design/layout changes were made. This source-level live verification is not a rendered browser screenshot.
+
+`tools/training_requests.py` is explicitly STAGED and unused. Do not activate it as-is. Finish Worker-authenticated durable owner request submission, single-writer request consumption, per-pair Update training and Update all; remove current invalid extra workflow inputs; implement native checkpoint provenance, isolated version counters, per-cycle frozen data bounds and no automatic new cycles. Preserve existing active_version until a new candidate passes and is selected through the owner enable flow. Current registry is empty, so no live update from a released model was proved.
+
+## Failed bot action: retained established root cause
+
+Original bot39983309547 failed before native MT5 IPC became ready:
+
 ```text
 2026-10-23T16:05:47.8206445Z 2026-10-23 16:05:47,819 [WARNING] sentinel.broker: initialize attempt 3 returned False (last_err: (-10005, 'IPC timeout'))
 2026-10-23T16:05:53.8227685Z AssertionError: demo login failed
 ```
-Full exact original lines and all 40 audited run URLs are in FIX5_PROGRESS.md. Separate older failures were the Windows-incompatible `resource` import and inline safety-dispatch `IndentationError: unexpected indent`. No evidence supports blaming owner cancellation or concurrency cancellation for these runs. The corrective green demo run is39986703235, not an old pre-fix success.
 
-## Training/account integrity
-- Original [EURUSD run39929904179](https://github.com/vjumbo264/sentinel-fx/actions/runs/39929904179) was already completed/failure, not actively running when this session inspected it. It failed during evaluation with `ValueError: invalid volatility`.
-- training_state.json is unchanged from starting commitc43649f: EURUSD v1,900,000 steps, durable asset EURUSD_v1_s900000.zip, recorded digest preserved. Training was not reset, cancelled or restarted by this session. It is **not currently resumed**.
-- Final mode remains **demo**. The bounded verification ended normally; no model was enabled, so V7 proves actual broker connectivity/supervision, not trading or adoption.
-- Scoped exact-value scan found zero supplied PAT/password/Cloudflare-token matches in 205 tracked files, 96 retrieved Actions log files and four live API responses. This is not an audit of every historical git object or every unavailable log. Correct credential secrets restored; API password absent.
+The known-green Linux runtime remains in place. Older resource-import and inline IndentationError failures are documented in FIX5_PROGRESS.md. No new native-Windows test or speculative duplicate bot was started.
 
-## Resume order
-Unsupported inherited H1–H5 PASS claims have been reopened, with prior evidence retained. Resume H1 actual live/demo acceptance, then H2–H5. H6/H7 have fresh evidence. Complete staged H8 and H9, then H10, then the entire V1–V12 suite from scratch. Do not mark passing from pure/mock tests for broker/Worker/Actions/site requirements.
+## Final safety and verification scope
 
-## Owner-side blockers
-None established. No owner action is requested; the mission is unfinished, not owner-blocked.
+Mode remains demo; no credentials were modified, no model was enabled, and no trading tests were performed on real. No active training run was cancelled or reset. Current exact-value scan:215 tracked files, two failure-log excerpts, live state API and deployed training.js; zero supplied PAT/password/Cloudflare-token matches. This is NOT a scan of every historical git object/log. Evidence is `docs/evidence/fix5_resume_final_checks.json`.
+
+The specified /opt/pw-browsers/chromium binary is absent in this environment. No playwright install was run and no missing browser proof is claimed. This environment limitation is not labelled an owner-side blocker.
+
+## Resume order and owner blockers
+
+H0 is verified. Resume H9 at the exact BUILD_STATE.json fix5.next_step; then H10, H8, H1–H5 and the full V1–V12 suite from scratch. Existing H6/H7 evidence is preserved. No owner-side blocker has been established and no owner input is requested. This is an incomplete handover at the session limit, not a completed mission.

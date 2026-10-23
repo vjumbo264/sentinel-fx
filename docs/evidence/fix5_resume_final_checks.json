@@ -1,0 +1,23 @@
+{
+  "deployment": {
+    "run_url": "https://github.com/vjumbo264/sentinel-fx/actions/runs/39998311804",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "live_site_checks": {
+    "http_status": 200,
+    "manual_only_text": true,
+    "lock_does_not_pause_text": true,
+    "old_saturday_schedule_removed": true
+  },
+  "worker_http": 200,
+  "mode": "demo",
+  "secret_scan": {
+    "tracked_files": 215,
+    "matched_file_paths": [],
+    "scoped_failure_log_matches": 0,
+    "worker_state_or_live_js_matches": false,
+    "scope": "current tracked worktree, two failure-log excerpts, live state API and training JS; not every historical object/log"
+  },
+  "browser_constraint": "/opt/pw-browsers/chromium is absent; no browser install attempted and no screenshot acceptance claimed"
+}

@@ -1,15 +1,14 @@
-"""Consume explicit owner requests only when the current authorized queue ends.
-No schedule can invent a new cycle. A queued update never replaces active weights.
+"""STAGED H9 helper: not imported by train_agent or activated by any workflow.
+Intended to consume explicit owner requests after the current queue ends.
+Worker/UI wiring, version/data pinning, provenance and acceptance remain unfinished.
+Do not activate this helper until its integration and real update test are complete.
 """
 import base64
 import copy
-import io
 import json
 import hashlib
-import zipfile
-from pathlib import Path
 from datetime import datetime, timezone
-from tools.release_utils import ROOT, pair_key
+from tools.release_utils import ROOT
 
 ACTIVE = {'training', 'checkpointed', 'resuming', 'queued'}
 
