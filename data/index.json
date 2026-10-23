@@ -964,7 +964,33 @@
     },
     "shard_releases": [
       "data-nzdusd-01"
-    ]
+    ],
+    "bulk_years": {
+      "2005": {
+        "asset": "NZDUSD_2005.csv.gz",
+        "release_tag": "data-nzdusd-01",
+        "rows": 89140,
+        "first_epoch": 1123884060,
+        "last_epoch": 1135893420,
+        "sha256": "cd7818b025bfe700e795913b7131606c9e37665547b0caa266696c9745724d2e"
+      }
+    },
+    "last_epoch": 1135893420,
+    "first_epoch": 1123884060,
+    "rows": 89140,
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "source": "histdata-bid-only-synthetic-ask",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   },
   "frxAUDJPY": {
     "bulk_unavailable": {
