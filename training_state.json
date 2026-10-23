@@ -38,7 +38,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-23T22:34:34.863099+00:00",
+  "updated_utc": "2026-10-23T22:35:05.499051+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -76,7 +76,7 @@
     "updated_utc": "2026-10-23T08:25:40.987197+00:00",
     "duration_seconds": 71.68
   },
-  "status": "checkpointed",
+  "status": "training",
   "checkpoint": {
     "asset": "EURUSD_v1_s1483816.zip",
     "release_tag": "training-checkpoints",
@@ -1051,5 +1051,6 @@
     "join_overlap_rows": 5749,
     "timezone": "UTC"
   },
-  "cycle_started_utc": "2026-10-23T22:34:34.863046+00:00"
+  "cycle_started_utc": "2026-10-23T22:34:34.863046+00:00",
+  "data_end_utc": "2026-10-23T18:24:00+00:00"
 }
