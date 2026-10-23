@@ -1993,11 +1993,19 @@
         "first_epoch": 1609711200,
         "last_epoch": 1640987880,
         "sha256": "aceac85972e7db2c481f4687b5a5f2907062a3bdc1243926a2d795e58a61525b"
+      },
+      "2022": {
+        "asset": "EURJPY_2022.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 372134,
+        "first_epoch": 1641161400,
+        "last_epoch": 1672437480,
+        "sha256": "6133749356cdf005b73bae50ef5d0ba2b71da783804453d9b193e36cddeedd38"
       }
     },
-    "last_epoch": 1640987880,
+    "last_epoch": 1672437480,
     "first_epoch": 1015200180,
-    "rows": 7128515,
+    "rows": 7500649,
     "columns": [
       "epoch",
       "bid_open",
