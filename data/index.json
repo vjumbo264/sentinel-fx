@@ -1913,11 +1913,19 @@
         "first_epoch": 1672616640,
         "last_epoch": 1703887080,
         "sha256": "b36722021f36f0593bf979ea57e152e9fa3fd50ed5497b38530f93af0092f08c"
+      },
+      "2024": {
+        "asset": "GBPJPY_2024.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 372582,
+        "first_epoch": 1704146640,
+        "last_epoch": 1735682280,
+        "sha256": "58e32b1eb0448ae770e60be4876011cd0e52bdd247d2e3ebb9c7f5b2283839c3"
       }
     },
-    "last_epoch": 1703887080,
+    "last_epoch": 1735682280,
     "first_epoch": 1020265200,
-    "rows": 7453759,
+    "rows": 7826341,
     "columns": [
       "epoch",
       "bid_open",
