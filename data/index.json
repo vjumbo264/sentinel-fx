@@ -1179,11 +1179,19 @@
         "first_epoch": 1136246400,
         "last_epoch": 1167427800,
         "sha256": "8a3fc215a334c24af68595ba9644b15aa18c702ba2a9023866b92c951b7a7231"
+      },
+      "2007": {
+        "asset": "EURJPY_2007.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 345179,
+        "first_epoch": 1167699600,
+        "last_epoch": 1199138220,
+        "sha256": "1c7e10d60bb04ec9d1b8eb6a018b01327724511784b12839127494aa27c78764"
       }
     },
-    "last_epoch": 1167427800,
+    "last_epoch": 1199138220,
     "first_epoch": 1015200180,
-    "rows": 1597964,
+    "rows": 1943143,
     "columns": [
       "epoch",
       "bid_open",
