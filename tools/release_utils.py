@@ -27,8 +27,17 @@ class GitHub:
     def request(self, method, path, **kwargs):
         url = path if path.startswith('https://') else self.base + path
         for attempt in range(6):
-            response = self.session.request(method, url, timeout=180, **kwargs)
-            if response.status_code in (429, 500, 502, 503, 504):
+            try:
+                response = self.session.request(method, url, timeout=(30, 180), **kwargs)
+            except (requests.Timeout, requests.ConnectionError) as exc:
+                # Reads/CAS writes are safe to retry. Never blindly repeat asset
+                # creation: an interrupted POST may already have succeeded.
+                if method.upper() not in ('GET', 'HEAD', 'PUT', 'DELETE') or attempt == 5:
+                    raise
+                print(f'GitHub transport retry {attempt+1}/6 ({type(exc).__name__})', flush=True)
+                time.sleep(min(30, 2 ** attempt))
+                continue
+            if response.status_code in (408, 429, 500, 502, 503, 504):
                 time.sleep(max(float(response.headers.get('Retry-After', 0) or 0), 2 ** attempt))
                 continue
             response.raise_for_status()

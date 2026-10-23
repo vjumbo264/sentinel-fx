@@ -316,3 +316,7 @@ Next: H0: await new verified checkpoint and validation metrics from39992955869; 
 ## H0 — Verify writer remains active without a duplicate dispatch
 Measured17:36UTC: resumed writer has been in training since17:12UTC and has not yet committed its next checkpoint. No failure/cancellation is reported by Actions; no duplicate writer was dispatched. Original12.5-minute throughput cannot be assumed for this run; ETA must be based on its actual verified checkpoint times. Actual per-pair and real CPU validation evidence remains committed.
 Next: H0: keep39992955869 running and wait for verified >900000 checkpoint; if it fails inspect only failing step tail and repair without resetting.
+
+## H0 — Repair proven checkpoint verification transport failure
+Resume39992955869 trained to950000 and uploaded immutable EURUSD_v1_s950000.zip (asset669882729), but the GitHub release download used for digest verification timed out after180s. This is a transport failure, not invalid volatility: per-checkpoint validation completed before upload. Added bounded retries for GET/HEAD/PUT/DELETE timeouts and connection resets; asset-creation POST is not blindly replayed. Next recover embedded950000 metadata and validation before re-dispatch.
+Next: H0: repair restore to recover uploaded-but-unindexed950000 checkpoint and its validation metrics, then resume it and verify real Actions state.
