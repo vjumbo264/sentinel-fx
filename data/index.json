@@ -349,7 +349,8 @@
         "checked_utc": "2026-10-23T08:47:50.672804+00:00",
         "status": "unavailable_not_complete"
       }
-    }
+    },
+    "bulk_complete": false
   },
   "R_25": {
     "symbol": "R_25",
