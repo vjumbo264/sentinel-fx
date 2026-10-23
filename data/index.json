@@ -1213,11 +1213,19 @@
         "first_epoch": 1735769040,
         "last_epoch": 1767218220,
         "sha256": "8be85aed40fade63955dd34205d1559b427d85e9e40bc5ac93b584acb7132119"
+      },
+      "2026": {
+        "asset": "USDJPY_2026_through_09.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 277037,
+        "first_epoch": 1767305040,
+        "last_epoch": 1790830680,
+        "sha256": "193d46ed8f374fd1146dc55302f553a6fe0ce939df5d3070b6d59403c6583c98"
       }
     },
-    "last_epoch": 1767218220,
+    "last_epoch": 1790830680,
     "first_epoch": 959727480,
-    "rows": 8682758,
+    "rows": 8959795,
     "columns": [
       "epoch",
       "bid_open",
