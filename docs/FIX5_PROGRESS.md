@@ -280,3 +280,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ## H0 — Resume mission in required order
 Verified original training is completed/failure, EURUSD v1 durable checkpoint remains 900000. Existing H6/H7 evidence retained, H1-H5 acceptance remains reopened. Work order H0, H9, H10, H8, H1-H5, V1-V12. No visual redesign and demo only.
 Next: H0: retrieve failing evaluation stack, reproduce on durable 900000 checkpoint and indexed data, fix invalid volatility, resume and verify checkpoint >900000 before H9.
+
+## H0 — Bound purged checkpoint validation and skip bad windows
+Exact original stack proves observation.py causal_market raised invalid volatility on nonpositive ATR; prior H5 already installed finite flat-window floor. Added deterministic purged validation module with explicit coverage, skip records, no holdout fallback and disqualification when windows are skipped. Must wire trainer and verify actual checkpoint before acceptance.
+Next: H0: wire validation, reproduce flat historical window with checkpoint900000, then dispatch resume and wait for verified >900000 checkpoint.
