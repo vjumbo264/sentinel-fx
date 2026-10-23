@@ -2487,6 +2487,11 @@
         "error": "502 Server Error: Bad Gateway for url: https://api.github.com/repos/vjumbo264/sentinel-fx/contents/data/index.json",
         "checked_utc": "2026-10-23T08:01:36.416783+00:00",
         "status": "unavailable_not_complete"
+      },
+      "2017": {
+        "error": "502 Server Error: Bad Gateway for url: https://api.github.com/repos/vjumbo264/sentinel-fx/contents/data/index.json",
+        "checked_utc": "2026-10-23T08:01:36.416783+00:00",
+        "status": "unavailable_not_complete"
       }
     },
     "shard_releases": [
