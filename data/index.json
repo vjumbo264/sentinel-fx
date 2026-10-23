@@ -1669,11 +1669,19 @@
         "first_epoch": 1199232000,
         "last_epoch": 1230757080,
         "sha256": "cf0f500d88d5b6b8f7103b579af73763993d1b4ce65ff038d6fba9cc927b0fd4"
+      },
+      "2009": {
+        "asset": "EURAUD_2009.csv.gz",
+        "release_tag": "data-euraud-01",
+        "rows": 368910,
+        "first_epoch": 1230854340,
+        "last_epoch": 1262295540,
+        "sha256": "d5654d5d6864c3501b0afd2ca9b5c5457934012382245a8d1570ca5afd6bde0c"
       }
     },
-    "last_epoch": 1230757080,
+    "last_epoch": 1262295540,
     "first_epoch": 1029796680,
-    "rows": 2200815,
+    "rows": 2569725,
     "columns": [
       "epoch",
       "bid_open",
