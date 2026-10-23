@@ -5,7 +5,7 @@
   "status": "in_progress",
   "current_item": "F1",
   "queue": [
-    { "id": "F1", "title": "Fetch missing 11 forex pair data", "status": "pending", "notes": "" },
+    { "id": "F1", "title": "Fetch missing 11 forex pair data", "status": "in_progress", "notes": "Workflow dispatched: https://github.com/vjumbo264/sentinel-fx/actions/runs/39920396628. Active shard downloads and uploads in progress." },
     { "id": "F2", "title": "Training engine overhaul — observation v2, actions, reward, walk-forward", "status": "pending", "notes": "" },
     { "id": "F3", "title": "Training interlock — bot pauses during training", "status": "pending", "notes": "" },
     { "id": "F4", "title": "Complete site rebuild — 4 pages, no polling, fast", "status": "pending", "notes": "" },
