@@ -167,6 +167,7 @@ export async function trainingPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               <span>Schedule Training for Selected</span>
             </button>
+            <button id="update-all-training-btn" class="btn btn-ghost btn-sm">Update all trained models</button>
             <button id="toggle-lock-btn" class="btn btn-ghost btn-sm">
               ${isLocked ? 'Clear Training Lock' : 'Engage Training Lock'}
             </button>
@@ -225,7 +226,7 @@ export async function trainingPage() {
 
     // Check models index for model verdict
     const model = modelsIndex[pair] || modelsIndex[symbolKey] || {};
-    const hasModel = !!model.verdict || !!model.bundle_url;
+    const hasModel = !!model.checkpoint_asset || (model.versions || []).some(v => v.checkpoint_asset);
     const verdict = model.verdict || (hasModel ? 'pass' : 'untrained');
     const isCurrentlyActive = (trainingState.active_pair === pair);
 
@@ -255,7 +256,7 @@ export async function trainingPage() {
     const bestCp = (isThisActive && trainingState.best_checkpoint) ? trainingState.best_checkpoint : null;
     const holdoutLooks = (isThisActive && trainingState.holdout_looks !== undefined) ? trainingState.holdout_looks : (model.holdout_looks || 0);
     const releaseDecision = (isThisActive && trainingState.release_decision) ? trainingState.release_decision : (model.release_decision || (verdict === 'pass' ? 'Released' : verdict === 'no_edge' ? 'No proven edge, not released' : 'Pending 5M steps'));
-    const lastDataDate = pairData.last_date || pairData.end_date || 'latest';
+    const lastDataDate = (isThisActive && (trainingState.data_end_utc || trainingState.data_snapshot?.last_utc)) || model.data_end_utc || pairData.last_utc || pairData.last_date || pairData.end_date || 'not indexed';
 
     return `
       <div style="background:var(--bg-card-sub); border:1px solid var(--border); border-radius:var(--radius); padding:14px; display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
@@ -334,10 +335,10 @@ export async function trainingPage() {
           <span>${isSynthetic ? 'Synthetic CFD' : 'Forex Major/Cross'}</span>
           <button
             class="btn btn-ghost btn-sm single-train-btn"
-            data-pair="${pair}"
+            data-pair="${pair}" data-mode="${hasModel ? 'update' : 'start'}"
             style="padding:2px 8px; font-size:11px; height:26px;"
           >
-            Update Training (${pair})
+            ${hasModel ? 'Update Training' : 'Train'} (${pair})
           </button>
         </div>
       </div>
@@ -361,15 +362,7 @@ export async function trainingPage() {
         scheduleBtn.textContent = 'Scheduling...';
 
         try {
-          // 1. Set training lock via worker
-          await api.setTrainLock(true, `user_scheduled: ${selectedPairs.join(',')}`);
-
-          // 2. Dispatch train workflow
-          await api.dispatchWorkflow('train.yml', {
-            mode: 'start',
-            pair: selectedPairs[0],
-            queue: selectedPairs.join(',')
-          });
+          await api.post('/api/training/dispatch', { mode: 'start', pair: selectedPairs.join(',') });
 
           toast('Training dispatched. Live trading is not paused by training.', 'success');
           loadData();
@@ -385,20 +378,24 @@ export async function trainingPage() {
     document.querySelectorAll('.single-train-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const pair = btn.dataset.pair;
-        if (!confirm(`Start training RL Scalper model for ${pair}?`)) return;
-
         try {
-          await api.setTrainLock(true, `manual_train_${pair}`);
-          await api.dispatchWorkflow('train.yml', {
-            mode: 'start',
-            pair: pair
-          });
+          btn.disabled = true;
+          await api.post('/api/training/dispatch', { mode: btn.dataset.mode, pair });
           toast(`Training dispatched for ${pair}!`, 'success');
           loadData();
         } catch(err) {
           toast(err.message || 'Error dispatching training', 'error');
+          btn.disabled = false;
         }
       });
+    });
+    document.getElementById('update-all-training-btn')?.addEventListener('click', async (event) => {
+      event.currentTarget.disabled = true;
+      try {
+        await api.post('/api/training/dispatch', { mode: 'update', pair: 'all' });
+        toast('Update all dispatched; released models keep trading until you enable a passing candidate.', 'success');
+      } catch (err) { toast(err.message, 'error'); }
+      event.currentTarget.disabled = false;
     });
 
     // Toggle training lock button
