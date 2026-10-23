@@ -312,3 +312,7 @@ Next: H0: confirm >900000 verified checkpoint on https://github.com/vjumbo264/se
 ## H0 — Preserve checkpoint while real runner trains
 Actions39992955869 remains in Resume pair training with no cancellation or failure. In-progress GitHub job-log API returns404, so no speculative log claims or repeated log downloads. Last durable checkpoint remains900000 until the next50000-step save and evaluation complete. New evaluator is verified locally on real candles; no later queue item has started.
 Next: H0: await new verified checkpoint and validation metrics from39992955869; do not cancel, reset, or re-dispatch its active writer.
+
+## H0 — Verify writer remains active without a duplicate dispatch
+Measured17:36UTC: resumed writer has been in training since17:12UTC and has not yet committed its next checkpoint. No failure/cancellation is reported by Actions; no duplicate writer was dispatched. Original12.5-minute throughput cannot be assumed for this run; ETA must be based on its actual verified checkpoint times. Actual per-pair and real CPU validation evidence remains committed.
+Next: H0: keep39992955869 running and wait for verified >900000 checkpoint; if it fails inspect only failing step tail and repair without resetting.
