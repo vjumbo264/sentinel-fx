@@ -1429,11 +1429,19 @@
         "first_epoch": 1262556060,
         "last_epoch": 1293825480,
         "sha256": "f441a23148fd0b0d4ca8d799cda10b3f23f93022614be5b141c4858959d0e7bc"
+      },
+      "2011": {
+        "asset": "EURJPY_2011.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 364154,
+        "first_epoch": 1294005600,
+        "last_epoch": 1325282280,
+        "sha256": "73b8d6a6674d6ba9781c7355700407e8e6d4a05c99afcfa8dd928b5bbbd3faf1"
       }
     },
-    "last_epoch": 1293825480,
+    "last_epoch": 1325282280,
     "first_epoch": 1015200180,
-    "rows": 3041236,
+    "rows": 3405390,
     "columns": [
       "epoch",
       "bid_open",
