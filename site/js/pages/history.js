@@ -1,254 +1,305 @@
-/**
- * SENTINEL-FX · Closed Trade History & Performance Journal
- * Metrics header, daily PnL performance bars, search & filters, CSV export.
- */
+import { api } from '../api.js';
+import { toast } from '../toast.js';
 
-import { icons, pairAvatar } from "../icons.js";
-import { store } from "../store.js";
-import { api } from "../api.js";
-import {
-  formatCurrency,
-  formatPercent,
-  formatPips,
-  formatLots,
-  formatLagosDate,
-  formatLagosTime,
-  sfxBusy,
-  showToast
-} from "../ui.js";
-import { getPageState, setPageState } from "../pageState.js";
+export async function historyPage() {
+  const root = document.getElementById('page-container');
+  if (!root) return;
 
-export const historyView = {
-  searchQuery: "",
-  filterOutcome: "all", // 'all' | 'win' | 'loss'
-  filterSymbol: "all",
+  root.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-2);">Loading trade history records...</div>`;
 
-  // F3: no store subscription — poll ticks never rebuild this page.
-  // Filters/search live in persistent page state and survive navigation.
-  async render(container) {
-    this.container = container;
-    const ps = getPageState("history", { searchQuery: "", filterOutcome: "all", filterSymbol: "all" });
-    this.searchQuery = ps.searchQuery;
-    this.filterOutcome = ps.filterOutcome;
-    this.filterSymbol = ps.filterSymbol;
-    this.updateDom();
-  },
+  let allTrades = [];
+  let filteredTrades = [];
+  let currentPage = 1;
+  const pageSize = 50;
 
-  updateDom() {
-    if (!this.container) return;
-    const s = store.state;
-    let trades = s.history || [];
+  // Filter states
+  let selectedPair = 'ALL';
+  let selectedOutcome = 'ALL';
+  let fromDate = '';
+  let toDate = '';
 
-    
+  try {
+    const res = await api.getTrades().catch(() => ({ trades: [] }));
+    const raw = Array.isArray(res) ? res : (res.trades || []);
+    // Filter closed trades only
+    allTrades = raw.filter(t => t.close_utc || t.closed_at || t.net_pnl !== undefined || t.close_time);
+    allTrades.sort((a, b) => {
+      const ta = new Date(a.close_utc || a.closed_at || a.time || 0).getTime();
+      const tb = new Date(b.close_utc || b.closed_at || b.time || 0).getTime();
+      return tb - ta;
+    });
+    applyFilters();
+  } catch(err) {
+    toast(err.message || 'Error loading trades', 'error');
+  }
 
-    // Filter trades
-    const filtered = trades.filter((t) => {
-      if (this.filterOutcome === "win" && (t.pnl || 0) <= 0) return false;
-      if (this.filterOutcome === "loss" && (t.pnl || 0) >= 0) return false;
-      if (this.filterSymbol !== "all" && t.pair !== this.filterSymbol) return false;
-      if (this.searchQuery) {
-        const q = this.searchQuery.toLowerCase();
-        const sym = (t.pair || "").toLowerCase();
-        const reason = (t.reason || "").toLowerCase();
-        const ticket = String(t.contract_id || t.id || "");
-        if (!sym.includes(q) && !reason.includes(q) && !ticket.includes(q)) return false;
-      }
+  function applyFilters() {
+    filteredTrades = allTrades.filter(t => {
+      const pair = (t.symbol || t.pair || '').toUpperCase();
+      if (selectedPair !== 'ALL' && pair !== selectedPair) return false;
+
+      const pnl = Number(t.net_pnl || t.profit || 0);
+      if (selectedOutcome === 'WIN' && pnl <= 0) return false;
+      if (selectedOutcome === 'LOSS' && pnl >= 0) return false;
+
+      const tDate = (t.close_utc || t.closed_at || t.open_utc || '').slice(0, 10);
+      if (fromDate && tDate && tDate < fromDate) return false;
+      if (toDate && tDate && tDate > toDate) return false;
+
       return true;
     });
+    currentPage = 1;
+    render();
+  }
 
-    // Summary calculations
-    const totalTrades = trades.length;
-    const wins = trades.filter(t => (t.pnl || 0) > 0);
-    const losses = trades.filter(t => (t.pnl || 0) < 0);
-    const winRate = totalTrades > 0 ? (wins.length / totalTrades) * 100 : 0;
-    const netPnl = trades.reduce((acc, t) => acc + (t.pnl || 0), 0);
-    const totalWinMoney = wins.reduce((acc, t) => acc + (t.pnl || 0), 0);
-    const totalLossMoney = Math.abs(losses.reduce((acc, t) => acc + (t.pnl || 0), 0));
-    const profitFactor = totalLossMoney > 0 ? (totalWinMoney / totalLossMoney) : (totalWinMoney > 0 ? 99 : 1.0);
-    const avgWin = wins.length > 0 ? totalWinMoney / wins.length : 0;
-    const avgLoss = losses.length > 0 ? totalLossMoney / losses.length : 0;
+  function render() {
+    // Unique pairs for filter dropdown
+    const pairs = Array.from(new Set(allTrades.map(t => (t.symbol || t.pair || '').toUpperCase()).filter(Boolean)));
 
-    const netSign = netPnl >= 0 ? "+" : "";
-    const netClass = netPnl >= 0 ? "text-profit" : "text-loss";
+    // Calculate Summary Metrics
+    const totalTrades = filteredTrades.length;
+    const wins = filteredTrades.filter(t => Number(t.net_pnl || t.profit || 0) > 0);
+    const losses = filteredTrades.filter(t => Number(t.net_pnl || t.profit || 0) < 0);
+    const winRate = totalTrades > 0 ? ((wins.length / totalTrades) * 100).toFixed(1) : '0.0';
 
-    this.container.innerHTML = `
-      <div style="display:flex; flex-direction:column; gap:var(--space-4);">
+    const netPnl = filteredTrades.reduce((acc, t) => acc + Number(t.net_pnl || t.profit || 0), 0);
+    const grossProfit = wins.reduce((acc, t) => acc + Number(t.net_pnl || t.profit || 0), 0);
+    const grossLoss = Math.abs(losses.reduce((acc, t) => acc + Number(t.net_pnl || t.profit || 0), 0));
+    const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? '∞' : '0.00');
 
-        <!-- HEADER & CSV EXPORT -->
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:var(--space-3);">
-          <div>
-            <h2 class="card-title">TRADE AUDIT JOURNAL</h2>
-            <div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:2px;">
-              Permanent execution history across all models
+    // Pagination
+    const totalPages = Math.max(1, Math.ceil(filteredTrades.length / pageSize));
+    const startIdx = (currentPage - 1) * pageSize;
+    const pageTrades = filteredTrades.slice(startIdx, startIdx + pageSize);
+
+    root.innerHTML = `
+      <!-- SUMMARY KPI METRICS -->
+      <div class="grid-4" style="margin-bottom:20px;">
+        <div class="card" style="margin-bottom:0; padding:16px;">
+          <div style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase;">Total Trades</div>
+          <div class="tabular" style="font-size:24px; font-weight:800; color:var(--text); margin-top:4px;">
+            ${totalTrades.toLocaleString()}
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0; padding:16px;">
+          <div style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase;">Win Rate</div>
+          <div class="tabular" style="font-size:24px; font-weight:800; color:var(--profit); margin-top:4px;">
+            ${winRate}%
+          </div>
+          <div style="font-size:11px; color:var(--text-3); margin-top:2px;">${wins.length}W / ${losses.length}L</div>
+        </div>
+
+        <div class="card" style="margin-bottom:0; padding:16px;">
+          <div style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase;">Net Realized P&L</div>
+          <div class="tabular" style="font-size:24px; font-weight:800; color:${netPnl >= 0 ? 'var(--profit)' : 'var(--loss)'}; margin-top:4px;">
+            ${netPnl >= 0 ? '+' : ''}$${netPnl.toFixed(2)}
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0; padding:16px;">
+          <div style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase;">Profit Factor</div>
+          <div class="tabular" style="font-size:24px; font-weight:800; color:var(--text); margin-top:4px;">
+            ${profitFactor}
+          </div>
+          <div style="font-size:11px; color:var(--text-3); margin-top:2px;">Gross P/L: $${grossProfit.toFixed(0)} / $${grossLoss.toFixed(0)}</div>
+        </div>
+      </div>
+
+      <!-- FILTER CONTROLS & EXPORT -->
+      <div class="card">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
+          <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
+            <div>
+              <select id="pair-filter" style="min-width:130px;">
+                <option value="ALL">All Pairs</option>
+                ${pairs.map(p => `<option value="${p}" ${selectedPair === p ? 'selected' : ''}>${p}</option>`).join('')}
+              </select>
+            </div>
+
+            <div>
+              <select id="outcome-filter" style="min-width:110px;">
+                <option value="ALL" ${selectedOutcome === 'ALL' ? 'selected' : ''}>All Results</option>
+                <option value="WIN" ${selectedOutcome === 'WIN' ? 'selected' : ''}>Wins Only</option>
+                <option value="LOSS" ${selectedOutcome === 'LOSS' ? 'selected' : ''}>Losses Only</option>
+              </select>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-2);">
+              <span>From:</span>
+              <input type="date" id="from-date" value="${fromDate}" style="font-size:12px; padding:6px 10px;" />
+              <span>To:</span>
+              <input type="date" id="to-date" value="${toDate}" style="font-size:12px; padding:6px 10px;" />
             </div>
           </div>
 
-          <button id="btn-export-csv" class="btn btn-secondary btn-sm" aria-label="Export trade history to CSV">
-            ${icons.download("w-4 h-4")} <span>Export CSV</span>
+          <button id="export-csv-btn" class="btn btn-ghost btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export CSV</span>
           </button>
         </div>
+      </div>
 
-        <!-- STICKY SUMMARY METRICS CARD -->
-        <section class="card" style="padding:var(--space-4);">
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:var(--space-3);">
-            <div>
-              <div style="font-size:var(--text-xs); color:var(--text-muted);">Net Realized P/L</div>
-              <div class="tabular ${netClass}" style="font-size:var(--text-xl); font-weight:700;">
-                ${netSign}${formatCurrency(netPnl)}
-              </div>
-            </div>
-
-            <div>
-              <div style="font-size:var(--text-xs); color:var(--text-muted);">Win Rate</div>
-              <div class="tabular" style="font-size:var(--text-xl); font-weight:700;">
-                ${winRate.toFixed(1)}% <span style="font-size:var(--text-xs); color:var(--text-muted); font-weight:400;">(${wins.length}/${totalTrades})</span>
-              </div>
-            </div>
-
-            <div>
-              <div style="font-size:var(--text-xs); color:var(--text-muted);">Profit Factor</div>
-              <div class="tabular" style="font-size:var(--text-xl); font-weight:700; color:var(--accent-primary);">
-                ${profitFactor.toFixed(2)}
-              </div>
-            </div>
-
-            <div>
-              <div style="font-size:var(--text-xs); color:var(--text-muted);">Avg Win / Loss</div>
-              <div class="tabular" style="font-size:var(--text-sm); font-weight:600; margin-top:4px;">
-                <span class="text-profit">+${formatCurrency(avgWin)}</span> / <span class="text-loss">-${formatCurrency(avgLoss)}</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- SEARCH & FILTER BAR -->
-        <div style="display:flex; gap:var(--space-2); flex-wrap:wrap; align-items:center;">
-          <input id="input-history-search" class="input" type="text" placeholder="Search pair, ticket, reason..." value="${this.searchQuery}" style="flex:1; min-width:180px;">
-
-          <div style="display:inline-flex; background:var(--bg-surface-elevated); border-radius:var(--radius-sm); padding:2px;">
-            <button id="filter-all-btn" class="btn btn-sm ${this.filterOutcome === "all" ? "btn-secondary" : "btn-ghost"}" style="min-height:36px; padding:0 10px;">All</button>
-            <button id="filter-win-btn" class="btn btn-sm ${this.filterOutcome === "win" ? "btn-secondary" : "btn-ghost"}" style="min-height:36px; padding:0 10px; color:var(--profit);">Wins</button>
-            <button id="filter-loss-btn" class="btn btn-sm ${this.filterOutcome === "loss" ? "btn-secondary" : "btn-ghost"}" style="min-height:36px; padding:0 10px; color:var(--loss);">Losses</button>
+      <!-- TRADES TABLE -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Closed Trade History (${filteredTrades.length} trades)</div>
+          <div style="font-size:12px; color:var(--text-2);">
+            Page ${currentPage} of ${totalPages}
           </div>
         </div>
 
-        <!-- JOURNAL ENTRIES -->
-        ${filtered.length === 0 ? `
-          <div class="card" style="text-align:center; padding:var(--space-8) var(--space-4);">
-            <div style="color:var(--text-muted); margin-bottom:var(--space-2);">${icons.history("w-8 h-8")}</div>
-            <div style="font-weight:600; margin-bottom:4px;">No Closed Trades Found</div>
-            <div style="font-size:var(--text-sm); color:var(--text-muted);">Completed orders will appear here with execution timestamps and P/L.</div>
-          </div>
-        ` : `
-          <div style="display:flex; flex-direction:column; gap:var(--space-2);">
-            ${filtered.map(t => {
-              const pnl = Number(t.pnl || 0);
-              const isWin = pnl > 0;
-              const sign = pnl >= 0 ? "+" : "";
-              const pnlColor = isWin ? "text-profit" : "text-loss";
-              const sideBadge = (t.side || "BUY").toUpperCase() === "BUY" ? "badge-side-buy" : "badge-side-sell";
-              const dateStr = t.close_utc ? formatLagosDate(t.close_utc) : "Today";
-              const timeStr = t.close_utc ? formatLagosTime(t.close_utc) : "—";
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Close Date / Time</th>
+                <th>Pair</th>
+                <th>Side</th>
+                <th>Lots</th>
+                <th>Net P&L</th>
+                <th>Result</th>
+                <th>Duration / Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                pageTrades.length === 0
+                  ? `
+                    <tr>
+                      <td colspan="7" style="text-align:center; padding:36px; color:var(--text-2);">
+                        No trades match the selected filters.
+                      </td>
+                    </tr>
+                  `
+                  : pageTrades.map(t => {
+                    const pnl = Number(t.net_pnl || t.profit || 0);
+                    const isWin = pnl > 0;
+                    const dateStr = t.close_utc || t.closed_at || t.open_utc || t.time || '-';
+                    return `
+                      <tr>
+                        <td class="tabular" style="color:var(--text-2); font-size:12px;">${dateStr.slice(0, 19).replace('T', ' ')}</td>
+                        <td><strong>${t.symbol || t.pair || '-'}</strong></td>
+                        <td>
+                          <span class="badge ${t.side === 'buy' || t.side === 'BUY' ? 'badge-profit' : 'badge-loss'}">
+                            ${(t.side || 'BUY').toUpperCase()}
+                          </span>
+                        </td>
+                        <td class="tabular">${t.volume || t.lots || 0.01}</td>
+                        <td class="tabular font-bold ${isWin ? 'badge-profit' : 'badge-loss'}" style="font-size:13px;">
+                          ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}
+                        </td>
+                        <td>
+                          <span class="badge ${isWin ? 'badge-profit' : 'badge-loss'}">
+                            ${isWin ? 'WIN' : 'LOSS'}
+                          </span>
+                        </td>
+                        <td style="font-size:12px; color:var(--text-3);">
+                          ${t.exit_reason || t.comment || 'Agent Closed'}
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')
+              }
+            </tbody>
+          </table>
+        </div>
 
-              return `
-                <div class="card" style="padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">
-                  <div style="display:flex; align-items:center; gap:var(--space-3);">
-                    ${pairAvatar(t.pair, 34)}
-                    <div>
-                      <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="font-weight:700; font-size:var(--text-sm);">${t.pair}</span>
-                        <span class="${sideBadge}">${t.side || "BUY"}</span>
-                        <span style="font-size:11px; color:var(--text-muted);">${formatLots(t.stake)}</span>
-                      </div>
-                      <div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:2px;">
-                        <span>${dateStr} ${timeStr}</span> &bull; <span>${t.reason || "Autonomous exit"}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style="text-align:right;">
-                    <div class="tabular ${pnlColor}" style="font-weight:700; font-size:var(--text-base);">
-                      ${sign}${formatCurrency(pnl)}
-                    </div>
-                    <div class="tabular" style="font-size:var(--text-xs); color:var(--text-muted);">
-                      ${formatPips(pnl * 10)}
-                    </div>
-                  </div>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        `}
-
+        <!-- PAGINATION -->
+        ${
+          totalPages > 1
+            ? `
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                <button id="prev-page-btn" class="btn btn-ghost btn-sm" ${currentPage <= 1 ? 'disabled' : ''}>
+                  Previous
+                </button>
+                <span style="font-size:12px; color:var(--text-2);">
+                  Page ${currentPage} of ${totalPages}
+                </span>
+                <button id="next-page-btn" class="btn btn-ghost btn-sm" ${currentPage >= totalPages ? 'disabled' : ''}>
+                  Next
+                </button>
+              </div>
+            `
+            : ''
+        }
       </div>
     `;
 
-    this.bindEvents(filtered);
-  },
+    bindEvents();
+  }
 
-  bindEvents(currentList) {
-    // Search input (F3: restore focus + caret after rebuild, persist draft)
-    const searchInput = document.getElementById("input-history-search");
-    if (searchInput) {
-      searchInput.addEventListener("input", (e) => {
-        this.searchQuery = e.target.value;
-        setPageState("history", { searchQuery: this.searchQuery });
-        const caret = e.target.selectionStart;
-        this.updateDom();
-        const again = document.getElementById("input-history-search");
-        if (again) {
-          again.focus();
-          try { again.setSelectionRange(caret, caret); } catch (_) {}
-        }
-      });
+  function bindEvents() {
+    document.getElementById('pair-filter')?.addEventListener('change', (e) => {
+      selectedPair = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('outcome-filter')?.addEventListener('change', (e) => {
+      selectedOutcome = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('from-date')?.addEventListener('change', (e) => {
+      fromDate = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('to-date')?.addEventListener('change', (e) => {
+      toDate = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('prev-page-btn')?.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        render();
+      }
+    });
+
+    document.getElementById('next-page-btn')?.addEventListener('click', () => {
+      const totalPages = Math.ceil(filteredTrades.length / pageSize);
+      if (currentPage < totalPages) {
+        currentPage++;
+        render();
+      }
+    });
+
+    document.getElementById('export-csv-btn')?.addEventListener('click', () => {
+      exportCsv();
+    });
+  }
+
+  function exportCsv() {
+    if (filteredTrades.length === 0) {
+      toast('No trades to export', 'warn');
+      return;
     }
 
-    // Outcome filters (persisted in page state)
-    const filterAll = document.getElementById("filter-all-btn");
-    const filterWin = document.getElementById("filter-win-btn");
-    const filterLoss = document.getElementById("filter-loss-btn");
-
-    const setOutcome = (v) => {
-      this.filterOutcome = v;
-      setPageState("history", { filterOutcome: v });
-      this.updateDom();
-    };
-    if (filterAll) filterAll.addEventListener("click", () => setOutcome("all"));
-    if (filterWin) filterWin.addEventListener("click", () => setOutcome("win"));
-    if (filterLoss) filterLoss.addEventListener("click", () => setOutcome("loss"));
-
-    // CSV Export button
-    const exportBtn = document.getElementById("btn-export-csv");
-    if (exportBtn) {
-      exportBtn.addEventListener("click", () => {
-        sfxBusy(exportBtn, async () => {
-          this.downloadCsv(currentList);
-        }, { pending: "Preparing CSV...", ok: "CSV downloaded" });
-      });
-    }
-  },
-
-  downloadCsv(trades) {
-    const headers = ["Ticket", "Symbol", "Side", "Lots", "PnL", "Open_UTC", "Close_UTC", "Reason"];
-    const rows = trades.map(t => [
-      t.contract_id || t.id || "",
-      t.pair || "",
-      t.side || "BUY",
-      t.stake || 0.01,
-      t.pnl || 0,
-      t.open_utc || "",
-      t.close_utc || "",
-      `"${(t.reason || "").replace(/"/g, '""')}"`
+    const headers = ['Close Time', 'Pair', 'Side', 'Lots', 'Open Price', 'Close Price', 'Net PnL', 'Exit Reason'];
+    const rows = filteredTrades.map(t => [
+      t.close_utc || t.closed_at || '',
+      t.symbol || t.pair || '',
+      t.side || '',
+      t.volume || t.lots || '',
+      t.open_price || '',
+      t.close_price || '',
+      t.net_pnl || t.profit || 0,
+      t.exit_reason || t.comment || ''
     ]);
 
-    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `sentinel_trades_${new Date().toISOString().slice(0,10)}.csv`);
+    const csvContent = 'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `sentinel_trades_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    link.remove();
+    toast('CSV downloaded successfully', 'success');
   }
-};
+
+  render();
+}

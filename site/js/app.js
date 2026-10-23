@@ -1,231 +1,103 @@
-import { BUILD_INFO } from "./version.js";
-/**
- * SENTINEL-FX · Main Application Entrypoint
- * Orchestrates navigation shell, reactive store, mode management, and page views.
- */
+import { register, handleRoute, navigate } from './router.js';
+import { dashPage } from './pages/dash.js';
+import { trainingPage } from './pages/training.js';
+import { historyPage } from './pages/history.js';
+import { settingsPage } from './pages/settings.js';
+import { loginPage } from './pages/login.js';
+import { api, getToken } from './api.js';
 
-import { icons } from "./icons.js";
-import { themeController } from "./theme.js";
-import { api } from "./api.js";
-import { store } from "./store.js";
-import { router } from "./router.js";
-import { sfxBusy, showToast, showConfirmSheet, formatLagosTime } from "./ui.js";
+// Build navigation
+function buildNav() {
+  const pages = [
+    {
+      id: 'dash',
+      label: 'Dashboard',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>'
+    },
+    {
+      id: 'training',
+      label: 'Training',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="m17 5-5-3-5 3"/><path d="m17 19-5 3-5-3"/><path d="M2 12h20"/></svg>'
+    },
+    {
+      id: 'history',
+      label: 'History',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>'
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+    },
+  ];
 
-// Page Views
-import { loginView } from "./pages/login.js";
-import { homeView } from "./pages/home.js";
-import { tradesView } from "./pages/trades.js";
-import { chartView } from "./pages/chart.js";
-import { modelsView } from "./pages/models.js";
-import { historyView } from "./pages/history.js";
-import { uploadView } from "./pages/upload.js";
-import { riskView } from "./pages/risk.js";
-import { settingsView } from "./pages/settings.js";
+  // Desktop rail
+  const rail = document.getElementById('rail-nav');
+  if (rail) {
+    rail.innerHTML = pages.map(p => `
+      <a href="#${p.id}" class="rail-link" data-page="${p.id}">
+        ${p.icon}
+        <span>${p.label}</span>
+      </a>
+    `).join('');
+  }
 
-function mountIcons() {
-  const mount = (id, html) => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = html;
+  // Mobile bottom tabs
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => navigate(btn.dataset.page));
+  });
+}
+
+// Training lock banner status check
+async function refreshBanner() {
+  try {
+    const state = await api.getState();
+    const locked = !!state?.settings?.training_locked;
+    const banner = document.getElementById('train-banner');
+    if (banner) {
+      banner.classList.toggle('visible', locked);
+      if (locked && state?.settings?.training_lock_reason) {
+        banner.textContent = `⚠ TRAINING IN PROGRESS (${state.settings.training_lock_reason}) — Bot paused, trade execution paused until training completes`;
+      }
+    }
+  } catch(_) {}
+}
+
+// Real-time clock (UTC+1 West Africa Time / Lagos)
+function startClock() {
+  const el = document.getElementById('rail-clock');
+  if (!el) return;
+  const update = () => {
+    const now = new Date(Date.now() + 60 * 60 * 1000); // WAT is UTC+1
+    el.textContent = now.toUTCString().slice(17, 25) + ' WAT';
   };
-
-  mount("brand-icon-root", icons.sentinel("w-6 h-6"));
-  mount("rail-logo-root", icons.sentinel("w-6 h-6"));
-  mount("refresh-icon-root", icons.refresh("w-4 h-4"));
-
-  // Desktop rail icons
-  mount("icon-dash", icons.home("w-5 h-5"));
-  mount("icon-trades", icons.trades("w-5 h-5"));
-  mount("icon-chart", icons.chart("w-5 h-5"));
-  mount("icon-models", icons.models("w-5 h-5"));
-  mount("icon-history", icons.history("w-5 h-5"));
-  mount("icon-train", icons.train("w-5 h-5"));
-  mount("icon-upload", icons.upload("w-5 h-5"));
-  mount("icon-risk", icons.risk("w-5 h-5"));
-  mount("icon-settings", icons.settings("w-5 h-5"));
-
-  // Mobile bottom bar icons
-  mount("m-icon-dash", icons.home("w-5 h-5"));
-  mount("m-icon-trades", icons.trades("w-5 h-5"));
-  mount("m-icon-chart", icons.chart("w-5 h-5"));
-  mount("m-icon-models", icons.models("w-5 h-5"));
-  mount("m-icon-more", icons.more("w-5 h-5"));
-
-  // More drawer icons
-  mount("m-sheet-icon-history", icons.history("w-6 h-6"));
-  mount("m-sheet-icon-train", icons.train("w-6 h-6"));
-  mount("m-sheet-icon-upload", icons.upload("w-6 h-6"));
-  mount("m-sheet-icon-risk", icons.risk("w-6 h-6"));
-  mount("m-sheet-icon-settings", icons.settings("w-5 h-5"));
-  mount("m-sheet-chevron", icons.chevronRight("w-4 h-4 text-muted"));
-  mount("icon-close-more", icons.x("w-5 h-5"));
+  update();
+  setInterval(update, 1000);
 }
 
-function initShellEvents() {
-  // Quick refresh button
-  const refreshBtn = document.getElementById("btn-top-refresh");
-  if (refreshBtn) {
-    refreshBtn.addEventListener("click", () => {
-      sfxBusy(refreshBtn, async () => {
-        await store.fetchSnapshot();
-      }, { pending: "Refreshing...", ok: "Data updated" });
-    });
-  }
-
-  // Mode Pill switcher (DEMO vs REAL confirmation)
-  const modePill = document.getElementById("top-mode-pill");
-  if (modePill) {
-    modePill.addEventListener("click", () => {
-      const current = store.state.mode;
-      const target = current === "demo" ? "real" : "demo";
-
-      if (target === "real") {
-        showConfirmSheet({
-          title: "Switch to REAL CFD Trading?",
-          description: "WARNING: Real mode executes live trades on your Deriv MT5 real account using real capital. The MT5 bot enforces strict server-side Stop Loss, but market risk applies.",
-          confirmText: "Enable REAL Trading",
-          confirmVariant: "danger",
-          onConfirm: async () => {
-            await api.saveSettings({ mode: "real" });
-            store.state.mode = "real";
-            store.notify();
-          }
-        });
-      } else {
-        showConfirmSheet({
-          title: "Return to DEMO Mode?",
-          description: "Switches execution back to demo risk-free environment ($10,000 balance).",
-          confirmText: "Switch to Demo",
-          confirmVariant: "primary",
-          onConfirm: async () => {
-            await api.saveSettings({ mode: "demo" });
-            store.state.mode = "demo";
-            store.notify();
-          }
-        });
-      }
-    });
-  }
-
-  // Mobile More Drawer
-  const moreBtn = document.getElementById("btn-open-more");
-  const moreBackdrop = document.getElementById("more-sheet-backdrop");
-  const closeMoreBtn = document.getElementById("btn-close-more");
-
-  if (moreBtn && moreBackdrop) {
-    moreBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      moreBackdrop.classList.add("open");
-    });
-  }
-
-  if (closeMoreBtn && moreBackdrop) {
-    closeMoreBtn.addEventListener("click", () => {
-      moreBackdrop.classList.remove("open");
-    });
-  }
-
-  if (moreBackdrop) {
-    moreBackdrop.addEventListener("click", (e) => {
-      if (e.target === moreBackdrop) {
-        moreBackdrop.classList.remove("open");
-      }
-    });
-    // Close drawer when any sheet link is tapped
-    moreBackdrop.querySelectorAll(".more-sheet-link").forEach((link) => {
-      link.addEventListener("click", () => {
-        moreBackdrop.classList.remove("open");
-      });
-    });
-  }
-
-  // Bottom nav tab navigation
-  document.querySelectorAll(".bottom-tab:not(#btn-open-more)").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const route = tab.getAttribute("data-route");
-      if (route) router.navigate(route);
-    });
-  });
-
-  // Clock ticker in rail (Lagos time UTC+1)
-  setInterval(() => {
-    const clockEl = document.getElementById("rail-clock");
-    if (clockEl) clockEl.textContent = formatLagosTime();
-  }, 1000);
+// Auth gate
+function isAuth() {
+  return !!getToken();
 }
 
-function bindStoreToShell() {
-  store.subscribe((state) => {
-    // Mode pill update
-    const modePill = document.getElementById("top-mode-pill");
-    const modeText = document.getElementById("mode-text");
-    if (modePill && modeText) {
-      modeText.textContent = state.mode.toUpperCase();
-      if (state.mode === "real") {
-        modePill.className = "mode-pill real";
-      } else {
-        modePill.className = "mode-pill demo";
-      }
-    }
+register('login', loginPage);
+register('dash', () => isAuth() ? dashPage() : navigate('login'));
+register('training', () => isAuth() ? trainingPage() : navigate('login'));
+register('history', () => isAuth() ? historyPage() : navigate('login'));
+register('settings', settingsPage);
 
-    // Runner dot
-    const runnerDot = document.getElementById("runner-dot");
-    if (runnerDot) {
-      runnerDot.className = state.runnerActive ? "dot-live" : "dot-paused";
-    }
-  });
-}
-
-function registerRoutes() {
-  router.register("login", loginView);
-  router.register("dash", homeView);
-  router.register("trades", tradesView);
-  router.register("chart", chartView);
-  router.register("models", modelsView);
-  router.register("history", historyView);
-  router.register("upload", uploadView);
-  router.register("risk", riskView);
-  router.register("settings", settingsView);
-}
-
-// Bootstrap
-window.addEventListener("DOMContentLoaded", () => {
-  mountIcons();
-  const railBuild = document.getElementById("rail-build-id"); if (railBuild) railBuild.textContent = BUILD_INFO.buildId;
-  initShellEvents();
-  bindStoreToShell();
-  registerRoutes();
-  router.handleRoute();
+window.addEventListener('DOMContentLoaded', () => {
+  buildNav();
+  startClock();
+  refreshBanner();
+  setInterval(refreshBanner, 30000);
+  handleRoute();
 });
 
-// Offline Network Banner Listener
-function initNetworkListeners() {
-  const showOfflineAlert = () => {
-    let banner = document.getElementById("network-offline-banner");
-    if (!banner) {
-      banner = document.createElement("div");
-      banner.id = "network-offline-banner";
-      banner.style.cssText = "position:sticky; top:56px; z-index:45; background:var(--warning); color:#fff; text-align:center; padding:6px 12px; font-size:12px; font-weight:600;";
-      banner.textContent = "Offline · Displaying cached terminal data. Reconnecting when internet is restored...";
-      const header = document.querySelector(".top-bar");
-      if (header && header.parentNode) {
-        header.parentNode.insertBefore(banner, header.nextSibling);
-      }
-    }
-  };
-
-  const removeOfflineAlert = () => {
-    const banner = document.getElementById("network-offline-banner");
-    if (banner) banner.remove();
-    showToast("Internet connection restored", "success");
-    store.fetchSnapshot();
-  };
-
-  window.addEventListener("offline", showOfflineAlert);
-  window.addEventListener("online", removeOfflineAlert);
-
-  if (!navigator.onLine) {
-    showOfflineAlert();
-  }
+// Auto-route on initial script load if DOM is already ready
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  buildNav();
+  startClock();
+  refreshBanner();
+  handleRoute();
 }
-
-window.addEventListener("DOMContentLoaded", initNetworkListeners);

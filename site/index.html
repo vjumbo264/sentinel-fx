@@ -2,216 +2,472 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>SENTINEL-FX Terminal · Autonomous CFD Forex System</title>
-  <meta name="description" content="Autonomous CFD Forex Trading Terminal & Multi-Model Execution Engine for Deriv MT5">
-  <meta property="og:title" content="SENTINEL-FX Terminal">
-  <meta property="og:description" content="Autonomous CFD Forex Trading Terminal & Multi-Model Execution Engine for Deriv MT5">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>SENTINEL-FX — Autonomous CFD Trading Platform</title>
+  <meta name="theme-color" content="#080c14">
+  <meta name="description" content="Autonomous MT5 CFD forex & synthetic index trading platform with PPO reinforcement learning models.">
+  <style>
+    :root {
+      --bg: #080c14;
+      --bg-card: #0f1520;
+      --bg-card-sub: #131b29;
+      --bg-input: #151d2e;
+      --border: #1e2d45;
+      --border-sub: #162234;
+      --text: #e8edf5;
+      --text-2: #8a9bb5;
+      --text-3: #4a5c75;
+      --accent: #3b82f6;
+      --accent-dim: #1e3a5f;
+      --profit: #22c55e;
+      --profit-dim: rgba(34, 197, 94, 0.15);
+      --loss: #ef4444;
+      --loss-dim: rgba(239, 68, 68, 0.15);
+      --warning: #f59e0b;
+      --warning-dim: rgba(245, 158, 11, 0.15);
+      --radius-sm: 6px;
+      --radius: 8px;
+      --radius-lg: 14px;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
 
-  <!-- Dual Android / Browser Theme Color Meta -->
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8fafc">
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#080c14">
+    [data-theme="light"] {
+      --bg: #f0f4f8;
+      --bg-card: #ffffff;
+      --bg-card-sub: #f8fafc;
+      --bg-input: #e8edf5;
+      --border: #d0d9e8;
+      --border-sub: #e2e8f0;
+      --text: #0f1520;
+      --text-2: #4a5c75;
+      --text-3: #8a9bb5;
+      --accent: #2563eb;
+      --accent-dim: #dbeafe;
+      --profit: #16a34a;
+      --profit-dim: rgba(22, 163, 74, 0.12);
+      --loss: #dc2626;
+      --loss-dim: rgba(220, 38, 38, 0.12);
+      --warning: #d97706;
+      --warning-dim: rgba(217, 119, 6, 0.12);
+    }
 
-  <!-- Pre-paint Theme Script (Eliminates Flash of Unstyled Theme) -->
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-rows: 54px 1fr 60px;
+      grid-template-areas: "topbar" "main" "bottomnav";
+      min-height: 100dvh;
+    }
+
+    @media (min-width: 1024px) {
+      .shell {
+        grid-template-columns: 240px 1fr;
+        grid-template-rows: 1fr;
+        grid-template-areas: "rail main";
+      }
+      .bottom-nav { display: none !important; }
+      .top-bar { display: none !important; }
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .rail {
+      display: none;
+      flex-direction: column;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      padding: 20px 0;
+      user-select: none;
+    }
+
+    @media (min-width: 1024px) {
+      .rail { display: flex; }
+    }
+
+    .rail-brand {
+      padding: 0 20px 20px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    .rail-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rail-subtitle {
+      font-size: 11px;
+      color: var(--text-2);
+      margin-top: 2px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.05em;
+    }
+
+    .rail-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 0 12px;
+      flex: 1;
+    }
+
+    .rail-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .rail-link:hover {
+      background: var(--bg-input);
+      color: var(--text);
+    }
+
+    .rail-link.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .rail-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: var(--font-mono);
+    }
+
+    .bottom-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      z-index: 40;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: transparent;
+      border: none;
+      color: var(--text-2);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      flex: 1;
+      height: 100%;
+      transition: color 0.15s;
+    }
+
+    .tab.active {
+      color: var(--accent);
+    }
+
+    main {
+      padding: 20px;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      overflow-y: auto;
+    }
+
+    .train-banner {
+      background: var(--warning);
+      color: #000000;
+      text-align: center;
+      padding: 10px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      display: none;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+
+    .train-banner.visible { display: block; }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      min-height: 40px;
+      min-width: 40px;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.05s;
+    }
+
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+    .btn-primary { background: var(--accent); color: #ffffff; }
+    .btn-danger { background: var(--loss); color: #ffffff; }
+    .btn-ghost { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; min-height: 32px; }
+
+    .tabular { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .dot-live { background: var(--profit); box-shadow: 0 0 8px var(--profit); }
+    .dot-paused { background: var(--text-3); }
+    .dot-train { background: var(--warning); animation: pulse 1.5s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--bg-card-sub);
+      color: var(--text-2);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-sub);
+      color: var(--text);
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-input); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+    }
+    .badge-profit { background: var(--profit-dim); color: var(--profit); }
+    .badge-loss { background: var(--loss-dim); color: var(--loss); }
+    .badge-warning { background: var(--warning-dim); color: var(--warning); }
+    .badge-muted { background: var(--bg-input); color: var(--text-2); }
+
+    input, select {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+  </style>
   <script>
+    // Automatic Dark & Light UI theme resolution
     (function() {
       try {
-        var p = localStorage.getItem('sentinel_theme');
-        if (p === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-        else if (p === 'light') document.documentElement.setAttribute('data-theme', 'light');
-      } catch (_) {}
+        var saved = localStorage.getItem('sfx_theme') || 'auto';
+        var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        function applyTheme(theme) {
+          var isDark = theme === 'auto' ? darkQuery.matches : theme === 'dark';
+          document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+        }
+        applyTheme(saved);
+        darkQuery.addEventListener('change', function() {
+          if ((localStorage.getItem('sfx_theme') || 'auto') === 'auto') {
+            applyTheme('auto');
+          }
+        });
+      } catch(e) {}
     })();
   </script>
-
-  <!-- Google Fonts: Refined Typography Pairing -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Pinned Lightweight Charts Financial Candlestick Library -->
-  <script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
-
-  <!-- Design System CSS -->
-  <link rel="stylesheet" href="./styles/tokens.css">
-  <link rel="stylesheet" href="./styles/components.css">
-  <link rel="stylesheet" href="./styles/fix3.css">
 </head>
 <body>
+  <div class="shell">
+    <!-- Mobile top bar -->
+    <header class="top-bar">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-weight:800; font-size:15px; color:var(--accent);">SENTINEL-FX</span>
+        <span id="top-mode" class="badge badge-muted">DEMO</span>
+      </div>
+      <div id="top-status" style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-2);">
+        <span class="dot dot-paused"></span>
+        <span id="top-status-text">Connecting...</span>
+      </div>
+    </header>
 
-  <!-- Top Bar Contract -->
-  <header class="top-bar">
-    <div class="top-bar-left">
-      <a href="#/dash" class="brand-mark" aria-label="SENTINEL-FX Terminal Home">
-        <div id="brand-icon-root" style="color: var(--accent-primary);"></div>
-        <div style="display:flex; flex-direction:column;">
-          <span class="brand-title">SENTINEL-FX</span>
-          <span class="brand-badge">MOTIONSALT</span>
+    <!-- Desktop rail -->
+    <aside class="rail">
+      <div class="rail-brand">
+        <div class="rail-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          SENTINEL-FX
         </div>
-      </a>
-    </div>
-
-    <div class="top-bar-right">
-      <!-- Mode Pill -->
-      <button id="top-mode-pill" class="mode-pill demo" aria-label="Switch Trading Mode">
-        <span id="mode-text">DEMO</span>
-      </button>
-
-      <!-- Runner Live Dot -->
-      <div id="top-status-indicator" class="status-indicator">
-        <span id="runner-dot" class="dot-paused"></span>
-        <span id="runner-label" style="display:none; font-weight:500;"></span>
+        <div class="rail-subtitle">MOTIONSALT CFD AUTONOMOUS</div>
       </div>
-
-      <!-- Quick Refresh Button -->
-      <button id="btn-top-refresh" class="btn btn-ghost btn-sm" aria-label="Refresh Market Data" style="padding: 0 8px;">
-        <span id="refresh-icon-root"></span>
-      </button>
-    </div>
-  </header>
-
-  <!-- Desktop Rail Navigation (>=1024px) -->
-  <aside class="desktop-rail">
-    <div class="rail-header">
-      <div id="rail-logo-root" style="color: var(--accent-primary);"></div>
-      <div>
-        <div style="font-family:var(--font-display); font-weight:700; font-size:var(--text-base); color:var(--text-primary);">SENTINEL-FX</div>
-        <div style="font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing:0.05em;">CFD TERMINAL</div>
+      <nav id="rail-nav" class="rail-nav"></nav>
+      <div class="rail-footer">
+        <div id="rail-clock" style="font-weight:600; color:var(--text-2);">--:--:-- WAT</div>
+        <div style="margin-top:4px;">Deriv MT5 Cloud Coordinator</div>
       </div>
-    </div>
+    </aside>
 
-    <nav class="rail-links">
-      <a href="#/dash" class="rail-link active" data-page="dash">
-        <span id="icon-dash"></span>
+    <!-- Main content -->
+    <main id="view">
+      <div id="train-banner" class="train-banner">
+        ⚠ TRAINING IN PROGRESS — Bot paused, trade execution paused until training completes
+      </div>
+      <div id="page-container"></div>
+    </main>
+
+    <!-- Mobile bottom nav -->
+    <nav class="bottom-nav">
+      <button class="tab" data-page="dash">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
         <span>Dashboard</span>
-      </a>
-      <a href="#/trades" class="rail-link" data-page="trades">
-        <span id="icon-trades"></span>
-        <span>Active Trades</span>
-      </a>
-      <a href="#/chart" class="rail-link" data-page="chart">
-        <span id="icon-chart"></span>
-        <span>Candle Chart</span>
-      </a>
-      <a href="#/models" class="rail-link" data-page="models">
-        <span id="icon-models"></span>
-        <span>Trained Pairs</span>
-      </a>
-      <a href="#/history" class="rail-link" data-page="history">
-        <span id="icon-history"></span>
-        <span>Trade History</span>
-      </a>
-
-      <a href="#/training" class="rail-link" data-page="training">
-        <span id="icon-train"></span>
+      </button>
+      <button class="tab" data-page="training">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="m17 5-5-3-5 3"/><path d="m17 19-5 3-5-3"/><path d="M2 12h20"/></svg>
         <span>Training</span>
-      </a>
-      <a href="#/upload" class="rail-link" data-page="upload">
-        <span id="icon-upload"></span>
-        <span>Upload Model</span>
-      </a>
-      <a href="#/risk" class="rail-link" data-page="risk">
-        <span id="icon-risk"></span>
-        <span>Risk &amp; Auth</span>
-      </a>
-      <a href="#/settings" class="rail-link" data-page="settings">
-        <span id="icon-settings"></span>
+      </button>
+      <button class="tab" data-page="history">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        <span>History</span>
+      </button>
+      <button class="tab" data-page="settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>Settings</span>
-      </a>
+      </button>
     </nav>
-
-    <div class="rail-footer">
-      <div style="font-size:11px; color:var(--text-muted); display:flex; justify-content:space-between;">
-        <span>Deriv MT5 Engine</span>
-        <span id="rail-build-id" class="tabular"></span>
-      </div>
-      <div style="font-size:11px; color:var(--text-muted); display:flex; justify-content:space-between;">
-        <span>Lagos Time</span>
-        <span id="rail-clock" class="tabular">—:—:—</span>
-      </div>
-    </div>
-  </aside>
-
-  <!-- Main Content Viewport Mount -->
-  <main id="app-view" class="main-content" role="main"></main>
-
-  <!-- Mobile Bottom Tab Bar (<1024px) -->
-  <nav class="bottom-nav" aria-label="Mobile Navigation">
-    <button class="bottom-tab active" data-route="dash" aria-label="Home Dashboard">
-      <span id="m-icon-dash"></span>
-      <span>Home</span>
-    </button>
-    <button class="bottom-tab" data-route="trades" aria-label="Active Trades">
-      <span id="m-icon-trades"></span>
-      <span>Trades</span>
-    </button>
-    <button class="bottom-tab" data-route="chart" aria-label="Candlestick Chart">
-      <span id="m-icon-chart"></span>
-      <span>Chart</span>
-    </button>
-    <button class="bottom-tab" data-route="models" aria-label="Trained Models">
-      <span id="m-icon-models"></span>
-      <span>Models</span>
-    </button>
-    <button class="bottom-tab" id="btn-open-more" data-route="more" aria-label="More Features">
-      <span id="m-icon-more"></span>
-      <span>More</span>
-    </button>
-  </nav>
-
-  <!-- Mobile More Drawer / Sheet -->
-  <div id="more-sheet-backdrop" class="sheet-backdrop">
-    <div class="sheet-container">
-      <div class="sheet-handle"></div>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4);">
-        <h3 style="font-family:var(--font-display); font-size:var(--text-lg); font-weight:700;">Terminal Navigation</h3>
-        <button id="btn-close-more" class="btn btn-ghost btn-sm" aria-label="Close Drawer" style="padding:0 6px;">
-          <span id="icon-close-more"></span>
-        </button>
-      </div>
-
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-4);">
-        <a href="#/history" class="card more-sheet-link" style="text-decoration:none; display:flex; flex-direction:column; gap:6px;">
-          <div id="m-sheet-icon-history" style="color:var(--accent-primary);"></div>
-          <span style="font-weight:600; font-size:var(--text-sm); color:var(--text-primary);">Trade History</span>
-          <span style="font-size:var(--text-xs); color:var(--text-muted);">Audit journal &amp; metrics</span>
-        </a>
-
-        <a href="#/training" class="card more-sheet-link" style="text-decoration:none; display:flex; flex-direction:column; gap:6px;">
-          <div id="m-sheet-icon-train" style="color:var(--warning);"></div>
-          <span style="font-weight:600; font-size:var(--text-sm); color:var(--text-primary);">Training</span>
-          <span style="font-size:var(--text-xs); color:var(--text-muted);">Queue &amp; live PPO progress</span>
-        </a>
-
-        <a href="#/upload" class="card more-sheet-link" style="text-decoration:none; display:flex; flex-direction:column; gap:6px;">
-          <div id="m-sheet-icon-upload" style="color:var(--profit);"></div>
-          <span style="font-weight:600; font-size:var(--text-sm); color:var(--text-primary);">Upload Bundle</span>
-          <span style="font-size:var(--text-xs); color:var(--text-muted);">Install .sfxmodel.zip</span>
-        </a>
-
-        <a href="#/risk" class="card more-sheet-link" style="text-decoration:none; display:flex; flex-direction:column; gap:6px;">
-          <div id="m-sheet-icon-risk" style="color:var(--loss);"></div>
-          <span style="font-weight:600; font-size:var(--text-sm); color:var(--text-primary);">Risk &amp; Auth</span>
-          <span style="font-size:var(--text-xs); color:var(--text-muted);">Kill switch &amp; overrides</span>
-        </a>
-      </div>
-
-      <a href="#/settings" class="card more-sheet-link" style="text-decoration:none; display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-4);">
-        <div style="display:flex; align-items:center; gap:var(--space-3);">
-          <div id="m-sheet-icon-settings" style="color:var(--text-secondary);"></div>
-          <div>
-            <div style="font-weight:600; font-size:var(--text-sm); color:var(--text-primary);">Settings &amp; Theme</div>
-            <div style="font-size:var(--text-xs); color:var(--text-muted);">Preferences, PAT &amp; diagnostics</div>
-          </div>
-        </div>
-        <span id="m-sheet-chevron"></span>
-      </a>
-    </div>
   </div>
 
-  <!-- Toast Notification Anchor -->
-  <div id="toast-root"></div>
+  <!-- Toast notification container -->
+  <div id="toasts" style="position:fixed; bottom:76px; right:16px; z-index:100; display:flex; flex-direction:column; gap:8px; pointer-events:none;"></div>
 
-  <!-- Main Application Entrypoint -->
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>

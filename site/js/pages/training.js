@@ -1,431 +1,332 @@
 import { api } from '../api.js';
-import { icons } from '../icons.js';
-import { formatLagosTime, showToast } from '../ui.js';
+import { startPoll, stopPoll } from '../router.js';
+import { toast } from '../toast.js';
 
-/**
- * SENTINEL-FX · Training Page (Reinforcement Learning Scalping Engine)
- * Real-time monitoring of 13-pair CPU PPO training pipeline on GitHub Actions.
- * Displays live progress from /api/training/state, explains RL architecture,
- * and tracks checkpointing across all pairs.
- */
-export const trainingView = {
-  timer: null,
-  generation: 0,
-  loading: false,
+const FOREX_PAIRS = [
+  'EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD',
+  'USDCAD', 'NZDUSD', 'EURGBP', 'EURJPY', 'GBPJPY',
+  'AUDJPY', 'EURAUD', 'GBPAUD'
+];
 
-  PAIRS_META: {
-    EURUSD: { name: 'Euro / US Dollar', digits: 5, spread: '1.2 pts', flag: '🇪🇺🇺🇸' },
-    GBPUSD: { name: 'British Pound / US Dollar', digits: 5, spread: '1.6 pts', flag: '🇬🇧🇺🇸' },
-    USDJPY: { name: 'US Dollar / Japanese Yen', digits: 3, spread: '1.4 pts', flag: '🇺🇸🇯🇵' },
-    USDCHF: { name: 'US Dollar / Swiss Franc', digits: 5, spread: '1.8 pts', flag: '🇺🇸🇨🇭' },
-    AUDUSD: { name: 'Australian Dollar / US Dollar', digits: 5, spread: '1.5 pts', flag: '🇦🇺🇺🇸' },
-    USDCAD: { name: 'US Dollar / Canadian Dollar', digits: 5, spread: '1.9 pts', flag: '🇺🇸🇨🇦' },
-    NZDUSD: { name: 'New Zealand Dollar / US Dollar', digits: 5, spread: '2.1 pts', flag: '🇳🇿🇺🇸' },
-    EURGBP: { name: 'Euro / British Pound', digits: 5, spread: '1.7 pts', flag: '🇪🇺🇬🇧' },
-    EURJPY: { name: 'Euro / Japanese Yen', digits: 3, spread: '1.8 pts', flag: '🇪🇺🇯🇵' },
-    GBPJPY: { name: 'British Pound / Japanese Yen', digits: 3, spread: '2.4 pts', flag: '🇬🇧🇯🇵' },
-    AUDJPY: { name: 'Australian Dollar / Japanese Yen', digits: 3, spread: '2.0 pts', flag: '🇦🇺🇯🇵' },
-    EURAUD: { name: 'Euro / Australian Dollar', digits: 5, spread: '2.2 pts', flag: '🇪🇺🇦🇺' },
-    GBPAUD: { name: 'British Pound / Australian Dollar', digits: 5, spread: '2.8 pts', flag: '🇬🇧🇦🇺' }
-  },
+const SYNTHETICS = [
+  'R_10', 'R_25', 'R_50', 'R_75', 'R_100',
+  '1HZ10V', '1HZ25V', '1HZ50V', '1HZ75V', '1HZ100V'
+];
 
-  async render(container) {
-    this.destroy();
-    this.container = container;
-    const gen = this.generation;
+export async function trainingPage() {
+  const root = document.getElementById('page-container');
+  if (!root) return;
 
-    container.innerHTML = `
-      <div style="display:flex; flex-direction:column; gap:var(--space-4); max-width:1200px; margin:0 auto; padding-bottom:var(--space-8);">
-        
-        <!-- HEADER CARD -->
-        <div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:var(--space-4); border-left:4px solid var(--accent-primary);">
+  root.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-2);">Loading training environment & pair datasets...</div>`;
+
+  let trainingState = {};
+  let dataIndex = {};
+  let modelsIndex = {};
+  let settings = {};
+
+  async function loadData() {
+    try {
+      const [trSt, dtIdx, st] = await Promise.all([
+        api.getTraining().catch(() => ({})),
+        api.getDataIndex().catch(() => ({})),
+        api.getState().catch(() => ({})),
+      ]);
+      trainingState = trSt || {};
+      dataIndex = dtIdx || {};
+      settings = st?.settings || {};
+
+      // Try fetching models index if available
+      try {
+        const m = await api.get('/api/models/index');
+        modelsIndex = m || {};
+      } catch(_) {}
+
+      render();
+    } catch(err) {
+      toast(err.message || 'Error loading training data', 'error');
+    }
+  }
+
+  function render() {
+    const isTraining = trainingState.status === 'training';
+    const activePair = trainingState.active_pair || '';
+    const stepsDone = trainingState.total_steps_done || 0;
+    const stepsTarget = trainingState.total_steps_target || 5000000;
+    const progressPct = Math.min(100, Math.round((stepsDone / Math.max(1, stepsTarget)) * 100));
+    const isLocked = !!settings.training_locked;
+
+    // Estimate ETA (approx 50k steps per 4.75 hours)
+    const remainingSteps = Math.max(0, stepsTarget - stepsDone);
+    const etaHours = Math.round((remainingSteps / 50000) * 4.75);
+
+    root.innerHTML = `
+      <!-- TRAINING STATUS BANNER CARD -->
+      <div class="card">
+        <div class="card-header">
           <div>
-            <div style="display:flex; align-items:center; gap:var(--space-2); margin-bottom:4px;">
-              <span style="font-size:var(--text-xs); font-weight:700; color:var(--accent-primary); letter-spacing:0.08em; text-transform:uppercase;">Autonomous RL Engine</span>
-              <span id="training-pill-status" class="badge badge-neutral" style="font-size:11px; padding:2px 8px;">Connecting...</span>
+            <div class="card-title">Reinforcement Learning Scalper Training (PPO v2)</div>
+            <div style="font-size:12px; color:var(--text-2); margin-top:2px;">
+              62-dimensional causal observation schema · 8 discrete execution actions · Walk-forward 70/15/15 validation
             </div>
-            <h1 class="card-title" style="font-size:var(--text-xl); font-family:var(--font-display); font-weight:800; letter-spacing:-0.02em;">
-              MODEL TRAINING COMMAND CENTER
-            </h1>
-            <p style="font-size:var(--text-xs); color:var(--text-muted); margin-top:2px;">
-              Self-dispatching CPU PPO policy learning across 13 target forex pairs on GitHub Actions
-            </p>
           </div>
-          <div style="display:flex; gap:var(--space-2); align-items:center;">
-            <button id="training-refresh-btn" class="btn btn-secondary btn-sm" type="button" style="display:flex; align-items:center; gap:6px;">
-              <span id="refresh-icon">🔄</span>
-              <span>Refresh State</span>
+          <div>
+            <span class="badge ${isTraining ? 'badge-warning' : isLocked ? 'badge-warning' : 'badge-muted'}">
+              ${isTraining ? 'Training Active' : isLocked ? 'Training Interlock Engaged' : 'Engine Idle'}
+            </span>
+          </div>
+        </div>
+
+        ${
+          isTraining
+            ? `
+              <div style="background:var(--bg-input); padding:16px; border-radius:var(--radius); border:1px solid var(--border);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <div style="font-size:14px; font-weight:700;">
+                    Active Pair: <span style="color:var(--accent);">${activePair}</span>
+                  </div>
+                  <div class="tabular" style="font-size:12px; color:var(--text-2);">
+                    ${stepsDone.toLocaleString()} / ${stepsTarget.toLocaleString()} steps (${progressPct}%)
+                  </div>
+                </div>
+                <div style="background:var(--bg-card); height:8px; border-radius:4px; overflow:hidden; border:1px solid var(--border);">
+                  <div style="background:var(--accent); width:${progressPct}%; height:100%; transition:width 0.4s ease;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:11px; color:var(--text-3);">
+                  <span>Self-chaining via GitHub Actions (train.yml)</span>
+                  <span>Estimated time remaining: ~${etaHours} hours</span>
+                </div>
+              </div>
+            `
+            : isLocked
+            ? `
+              <div style="background:var(--warning-dim); border:1px solid var(--warning); padding:14px; border-radius:var(--radius); color:var(--warning); font-size:13px; font-weight:600;">
+                ⚠ Training lock active (${settings.training_lock_reason || 'training queued'}). Bot is idle and not opening new positions.
+              </div>
+            `
+            : `
+              <div style="color:var(--text-2); font-size:13px; padding:8px 0;">
+                No training run currently executing. Select ready pairs below and dispatch a training cycle.
+              </div>
+            `
+        }
+
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+          <div style="display:flex; gap:8px;">
+            <button id="schedule-training-btn" class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Schedule Training for Selected</span>
             </button>
-            <a href="https://github.com/vjumbo264/sentinel-fx/actions/workflows/train.yml" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="display:flex; align-items:center; gap:6px; text-decoration:none;">
-              <span>⚡ View Action Logs ↗</span>
-            </a>
+            <button id="toggle-lock-btn" class="btn btn-ghost btn-sm">
+              ${isLocked ? 'Clear Training Lock' : 'Engage Training Lock'}
+            </button>
+          </div>
+          <div style="font-size:11px; color:var(--text-3);">
+            Weekend automated retrain schedule: Every Saturday 02:00 UTC
           </div>
         </div>
+      </div>
 
-        <!-- STATUS BANNER / NOTICE -->
-        <div id="training-banner" style="display:none; padding:var(--space-3) var(--space-4); border-radius:var(--radius-md); font-size:var(--text-xs);"></div>
-
-        <!-- ACTIVE PAIR HERO WORKBENCH -->
-        <div class="card" style="background:linear-gradient(180deg, rgba(30,41,59,0.3) 0%, rgba(15,23,42,0.6) 100%);">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:var(--space-3); margin-bottom:var(--space-4);">
-            <div style="display:flex; align-items:center; gap:var(--space-3);">
-              <div id="active-pair-flag" style="font-size:2rem; line-height:1; padding:8px; background:var(--bg-surface); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
-                🌐
-              </div>
-              <div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <h2 id="active-pair-name" style="font-size:var(--text-lg); font-family:var(--font-display); font-weight:700;">
-                    Loading active pair...
-                  </h2>
-                  <span id="active-version-badge" class="badge badge-info" style="font-size:11px;">v1</span>
-                </div>
-                <div id="active-pair-desc" style="font-size:var(--text-xs); color:var(--text-muted);">
-                  Target: 5,000,000 PPO environment steps per pair
-                </div>
-              </div>
-            </div>
-
-            <!-- KEY STATS ROW -->
-            <div style="display:flex; gap:var(--space-4); flex-wrap:wrap;">
-              <div style="text-align:right;">
-                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Retrain Cycle</div>
-                <div id="stat-cycle" class="tabular" style="font-size:var(--text-base); font-weight:700; color:var(--text-primary);">-</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Last Checkpoint</div>
-                <div id="stat-checkpoint" style="font-size:var(--text-xs); font-weight:600; color:var(--text-secondary);">-</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Next Retrain Date</div>
-                <div id="stat-next" style="font-size:var(--text-xs); font-weight:600; color:var(--text-secondary);">-</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- PROGRESS BAR & STEP COUNTER -->
-          <div style="margin-bottom:var(--space-2);">
-            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
-              <span style="font-size:var(--text-xs); font-weight:600; color:var(--text-secondary);">
-                Active Training Progress
-              </span>
-              <span id="active-steps-label" class="tabular" style="font-size:var(--text-sm); font-weight:700; color:var(--accent-primary);">
-                0 / 5,000,000 steps (0.0%)
-              </span>
-            </div>
-            <div style="width:100%; height:12px; background:rgba(0,0,0,0.4); border-radius:var(--radius-full); overflow:hidden; border:1px solid var(--border-subtle); position:relative;">
-              <div id="active-progress-fill" style="width:0%; height:100%; background:linear-gradient(90deg, #0284c7 0%, #38bdf8 100%); transition:width 0.4s ease; border-radius:var(--radius-full);"></div>
-            </div>
-          </div>
-
-          <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-muted); padding-top:4px;">
-            <span>Wall limit: 4h45m per run with auto self-dispatch & durable checkpoint upload</span>
-            <span id="training-engine-note">Shared Engine Observation: 47 Floats</span>
-          </div>
+      <!-- 13 FOREX PAIRS GRID -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Forex Major & Cross Pairs (13)</div>
+          <span style="font-size:12px; color:var(--text-2);">HistData M1 Historical Ingestion</span>
         </div>
 
-        <!-- WHAT IS GOING ON: ARCHITECTURE EXPLAINER -->
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" id="toggle-explainer">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:1.1rem;">💡</span>
-              <h3 style="font-size:var(--text-sm); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-primary);">
-                How Sentinel-FX Trains Models (What is going on?)
-              </h3>
-            </div>
-            <span id="explainer-chevron" style="font-size:12px; color:var(--text-muted);">▼ Click to view pipeline</span>
-          </div>
+        <div class="grid-3">
+          ${FOREX_PAIRS.map(pair => renderPairCard(pair, false)).join('')}
+        </div>
+      </div>
 
-          <div id="explainer-content" style="display:block; margin-top:var(--space-4); border-top:1px solid var(--border-subtle); padding-top:var(--space-4);">
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:var(--space-3);">
-              
-              <div style="background:var(--bg-surface); padding:var(--space-3); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
-                <div style="font-size:10px; font-weight:700; color:#38bdf8; text-transform:uppercase; margin-bottom:4px;">1. Market Data</div>
-                <div style="font-weight:700; font-size:var(--text-xs); margin-bottom:4px;">Historical M1 Candles</div>
-                <p style="font-size:11px; color:var(--text-muted); line-height:1.4;">
-                  Ingests 1.5M+ rows of real M1 bid/ask candles from HistData shards. Training uses 80% chronologically, reserving 20% holdout for out-of-sample forward evaluation.
-                </p>
-              </div>
-
-              <div style="background:var(--bg-surface); padding:var(--space-3); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
-                <div style="font-size:10px; font-weight:700; color:#a855f7; text-transform:uppercase; margin-bottom:4px;">2. Vectorizer</div>
-                <div style="font-weight:700; font-size:var(--text-xs); margin-bottom:4px;">47-Float Observation</div>
-                <p style="font-size:11px; color:var(--text-muted); line-height:1.4;">
-                  Builds identical 47-dimensional feature vectors: 32 multi-timeframe candle signals (M1, M5, M15, H1) + 15 CFD state scalars (spread, drawdown, margin, session time).
-                </p>
-              </div>
-
-              <div style="background:var(--bg-surface); padding:var(--space-3); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
-                <div style="font-size:10px; font-weight:700; color:#10b981; text-transform:uppercase; margin-bottom:4px;">3. RL Optimizer</div>
-                <div style="font-weight:700; font-size:var(--text-xs); margin-bottom:4px;">Stable-Baselines3 PPO</div>
-                <p style="font-size:11px; color:var(--text-muted); line-height:1.4;">
-                  The neural policy learns 5 discrete actions: Hold, Open Long, Open Short, Close, Move Stop to Break-even. Rewards penalize drawdowns, holding costs, and spread drag.
-                </p>
-              </div>
-
-              <div style="background:var(--bg-surface); padding:var(--space-3); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
-                <div style="font-size:10px; font-weight:700; color:#f59e0b; text-transform:uppercase; margin-bottom:4px;">4. Production Bundle</div>
-                <div style="font-weight:700; font-size:var(--text-xs); margin-bottom:4px;">Checked .sfxmodel.zip</div>
-                <p style="font-size:11px; color:var(--text-muted); line-height:1.4;">
-                  Upon convergence (5M steps or plateau), exports ONNX policy and passes 7 strict integrity tests before publishing to GitHub Releases for live MT5 execution.
-                </p>
-              </div>
-
-            </div>
-          </div>
+      <!-- SYNTHETICS GRID -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Deriv Synthetic Volatility Indices (10)</div>
+          <span style="font-size:12px; color:var(--text-2);">Continuous 24/7 Tick/Bar History</span>
         </div>
 
-        <!-- 13 PAIRS TRAINING QUEUE -->
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-3); flex-wrap:wrap; gap:var(--space-2);">
-            <div>
-              <h3 style="font-size:var(--text-sm); font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">
-                Forex Pair Training Queue (13 Pairs Target)
-              </h3>
-              <p style="font-size:var(--text-xs); color:var(--text-muted);">
-                Each pair trains sequentially to convergence before the next pair begins
-              </p>
-            </div>
-            <div id="queue-counts" style="font-size:var(--text-xs); color:var(--text-secondary);">
-              Loading pairs...
-            </div>
-          </div>
-
-          <div id="training-pairs-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:var(--space-3);">
-            <div style="color:var(--text-muted); font-size:var(--text-xs); padding:var(--space-4);">Loading queue data...</div>
-          </div>
+        <div class="grid-3">
+          ${SYNTHETICS.map(sym => renderPairCard(sym, true)).join('')}
         </div>
-
-        <!-- SMOKE TEST & VERIFICATION EVIDENCE CARD -->
-        <div class="card" style="border:1px solid rgba(16,185,129,0.3); background:rgba(16,185,129,0.03);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="color:#10b981; font-size:1.2rem;">🛡️</span>
-              <h3 style="font-size:var(--text-sm); font-weight:700; color:#10b981; text-transform:uppercase; letter-spacing:0.04em;">
-                Engine Safety Verification & Smoke Test
-              </h3>
-            </div>
-            <span id="smoke-status-badge" class="badge" style="background:#065f46; color:#a7f3d0; font-size:11px;">PASSING</span>
-          </div>
-
-          <p style="font-size:var(--text-xs); color:var(--text-secondary); margin-bottom:var(--space-3);">
-            Automated verification confirms the PPO loop, durable save/resume, ONNX export, and 47-dimensional shared engine observation contract work offline without mocking:
-          </p>
-
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:var(--space-2); font-size:11px;">
-            <div style="background:var(--bg-surface); padding:8px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
-              <span style="color:var(--text-muted);">PPO Steps:</span>
-              <strong style="color:var(--text-primary); margin-left:4px;">1,000 steps</strong>
-            </div>
-            <div style="background:var(--bg-surface); padding:8px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
-              <span style="color:var(--text-muted);">Observation Dim:</span>
-              <strong style="color:var(--text-primary); margin-left:4px;">47 floats</strong>
-            </div>
-            <div style="background:var(--bg-surface); padding:8px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
-              <span style="color:var(--text-muted);">Checkpoint Resume:</span>
-              <strong style="color:#10b981; margin-left:4px;">PASS</strong>
-            </div>
-            <div style="background:var(--bg-surface); padding:8px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
-              <span style="color:var(--text-muted);">ONNX Latency:</span>
-              <strong style="color:var(--text-primary); margin-left:4px;">0.241 ms</strong>
-            </div>
-            <div style="background:var(--bg-surface); padding:8px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
-              <span style="color:var(--text-muted);">Bundle Checks:</span>
-              <strong style="color:#10b981; margin-left:4px;">7/7 passed</strong>
-            </div>
-          </div>
-        </div>
-
       </div>
     `;
 
-    // Bind event handlers
-    const refreshBtn = container.querySelector('#training-refresh-btn');
-    if (refreshBtn) {
-      refreshBtn.onclick = () => {
-        showToast('Refreshing training state…');
-        this.refresh(gen);
-      };
+    bindEvents();
+
+    if (isTraining) {
+      startPoll(async () => {
+        try {
+          const trSt = await api.getTraining();
+          trainingState = trSt || {};
+          render();
+        } catch(_) {}
+      }, 30000);
+    } else {
+      stopPoll();
+    }
+  }
+
+  function renderPairCard(pair, isSynthetic) {
+    const symbolKey = isSynthetic ? pair : `frx${pair}`;
+    const pairData = dataIndex[symbolKey] || dataIndex[pair] || {};
+    const rows = pairData.rows || pairData.total_rows || 0;
+    const isDataReady = rows > 0;
+
+    // Check models index for model verdict
+    const model = modelsIndex[pair] || modelsIndex[symbolKey] || {};
+    const hasModel = !!model.verdict || !!model.bundle_url;
+    const verdict = model.verdict || (hasModel ? 'pass' : 'untrained');
+    const isCurrentlyActive = (trainingState.active_pair === pair);
+
+    let trainChip = 'badge-muted';
+    let trainText = 'Untrained';
+
+    if (isCurrentlyActive) {
+      trainChip = 'badge-warning';
+      trainText = 'Training...';
+    } else if (verdict === 'pass') {
+      trainChip = 'badge-profit';
+      trainText = 'Trained (Pass)';
+    } else if (verdict === 'no_edge') {
+      trainChip = 'badge-warning';
+      trainText = 'No Edge';
+    } else if (trainingState.queue && trainingState.queue.includes(pair)) {
+      trainChip = 'badge-muted';
+      trainText = 'Queued';
     }
 
-    const toggleExplainer = container.querySelector('#toggle-explainer');
-    const explainerContent = container.querySelector('#explainer-content');
-    const explainerChevron = container.querySelector('#explainer-chevron');
-    if (toggleExplainer && explainerContent) {
-      toggleExplainer.onclick = () => {
-        const isHidden = explainerContent.style.display === 'none';
-        explainerContent.style.display = isHidden ? 'block' : 'none';
-        explainerChevron.textContent = isHidden ? '▼ Click to hide pipeline' : '▶ Click to view pipeline';
-      };
-    }
-
-    this.onVisible = () => {
-      if (!document.hidden) this.refresh(gen);
-    };
-    document.addEventListener('visibilitychange', this.onVisible);
-
-    await this.refresh(gen);
-  },
-
-  async refresh(gen = this.generation) {
-    if (gen !== this.generation || this.loading || !this.container?.isConnected) return;
-    clearTimeout(this.timer);
-    this.loading = true;
-
-    const refreshBtn = this.container.querySelector('#training-refresh-btn');
-    const refreshIcon = this.container.querySelector('#refresh-icon');
-    if (refreshIcon) refreshIcon.style.animation = 'spin 1s linear infinite';
-    if (refreshBtn) refreshBtn.disabled = true;
-
-    try {
-      const state = await api.request('/api/training/state');
-      if (gen !== this.generation || !this.container?.isConnected) return;
-      if (!state || !Array.isArray(state.queue)) throw new Error('Invalid training state response');
-
-      this.updateUI(state);
-    } catch (err) {
-      if (gen === this.generation && this.container?.isConnected) {
-        const banner = this.container.querySelector('#training-banner');
-        if (banner) {
-          banner.style.display = 'block';
-          banner.style.background = 'rgba(239, 68, 68, 0.15)';
-          banner.style.border = '1px solid rgba(239, 68, 68, 0.4)';
-          banner.style.color = '#fca5a5';
-          banner.innerHTML = `⚠️ <strong>Training API Notice:</strong> ${err.message}. Retrying automatically every 30 seconds.`;
-        }
-      }
-    } finally {
-      if (gen === this.generation) {
-        this.loading = false;
-        if (refreshIcon) refreshIcon.style.animation = 'none';
-        if (refreshBtn) refreshBtn.disabled = false;
-        this.timer = setTimeout(() => {
-          if (!document.hidden) this.refresh(gen);
-          else {
-            this.loading = false;
-            this.timer = setTimeout(() => this.refresh(gen), 30000);
-          }
-        }, 30000);
-      }
-    }
-  },
-
-  updateUI(state) {
-    const text = (id, val) => {
-      const el = this.container.querySelector(`#${id}`);
-      if (el) el.textContent = val;
-    };
-
-    const doneSteps = typeof state.total_steps_done === 'number' ? state.total_steps_done : 0;
-    const targetSteps = typeof state.total_steps_target === 'number' ? state.total_steps_target : 5000000;
-    const activePair = state.active_pair || 'EURUSD';
-    const version = state.active_version || 1;
-    const cycle = state.retrain_cycle || 1;
-    const doneList = new Set(Array.isArray(state.pairs_done) ? state.pairs_done : []);
-    const isWaiting = state.next_retrain_after_utc && Date.parse(state.next_retrain_after_utc) > Date.now();
-
-    // Overall Status
-    let statusText = 'QUEUED';
-    let pillClass = 'badge-neutral';
-    if (state.last_error && state.status === 'blocked') {
-      statusText = 'BLOCKED: ' + state.last_error;
-      pillClass = 'badge-danger';
-    } else if (isWaiting) {
-      statusText = 'WAITING FOR CYCLE ' + (cycle + 1);
-      pillClass = 'badge-warning';
-    } else if (state.status === 'training' || doneSteps > 0) {
-      statusText = 'ACTIVE TRAINING';
-      pillClass = 'badge-success';
-    }
-
-    const pill = this.container.querySelector('#training-pill-status');
-    if (pill) {
-      pill.textContent = statusText;
-      pill.className = `badge ${pillClass}`;
-    }
-
-    // Active Pair info
-    const meta = this.PAIRS_META[activePair] || { name: activePair, flag: '💱' };
-    text('active-pair-flag', meta.flag);
-    text('active-pair-name', `${activePair} · ${meta.name}`);
-    text('active-version-badge', `Policy v${version}`);
-    text('stat-cycle', `Cycle ${cycle}`);
-
-    const formatDate = (val, fallback) => {
-      if (!val) return fallback;
-      const d = new Date(val);
-      return isNaN(d.getTime()) ? fallback : d.toLocaleString();
-    };
-
-    text('stat-checkpoint', formatDate(state.last_checkpoint_utc, 'None yet (starts at 50k steps)'));
-    text('stat-next', formatDate(state.next_retrain_after_utc, 'After queue finishes'));
-
-    // Progress bar
-    const pct = targetSteps > 0 ? (Math.min(doneSteps, targetSteps) / targetSteps) * 100 : 0;
-    text('active-steps-label', `${doneSteps.toLocaleString()} / ${targetSteps.toLocaleString()} steps (${pct.toFixed(1)}%)`);
-    const fill = this.container.querySelector('#active-progress-fill');
-    if (fill) fill.style.width = `${pct}%`;
-
-    // Queue Counts
-    const queue = Array.isArray(state.queue) ? state.queue : [];
-    const pendingCount = queue.filter(p => !doneList.has(p) && p !== activePair).length;
-    text('queue-counts', `${doneList.size} Completed · 1 Active · ${pendingCount} Queued`);
-
-    // Pairs Grid
-    const grid = this.container.querySelector('#training-pairs-grid');
-    if (grid) {
-      grid.innerHTML = '';
-      queue.forEach(pair => {
-        const pMeta = this.PAIRS_META[pair] || { name: pair, digits: 5, spread: '1.5 pts', flag: '💱' };
-        const isDone = doneList.has(pair);
-        const isActive = pair === activePair && !isDone && !isWaiting;
-
-        let badge = `<span class="badge badge-neutral" style="font-size:10px;">⏳ Queued</span>`;
-        let cardBg = 'background:var(--bg-surface); border:1px solid var(--border-subtle);';
-
-        if (isDone) {
-          badge = `<span class="badge badge-success" style="font-size:10px;">✅ Completed</span>`;
-          cardBg = 'background:rgba(16, 185, 129, 0.05); border:1px solid rgba(16, 185, 129, 0.3);';
-        } else if (isActive) {
-          badge = `<span class="badge badge-primary" style="font-size:10px; animation:pulse 2s infinite;">🔄 Active</span>`;
-          cardBg = 'background:rgba(2, 132, 199, 0.08); border:1px solid var(--accent-primary);';
-        }
-
-        const card = document.createElement('div');
-        card.style.cssText = `padding:var(--space-3); border-radius:var(--radius-md); ${cardBg} display:flex; flex-direction:column; gap:8px;`;
-        card.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center;">
+    return `
+      <div style="background:var(--bg-card-sub); border:1px solid var(--border); border-radius:var(--radius); padding:14px; display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+          <div>
             <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:1.4rem;">${pMeta.flag}</span>
-              <div>
-                <strong style="font-size:var(--text-sm); font-family:var(--font-display);">${pair}</strong>
-                <div style="font-size:10px; color:var(--text-muted);">${pMeta.name}</div>
-              </div>
+              <input
+                type="checkbox"
+                class="pair-select-checkbox"
+                data-pair="${pair}"
+                data-has-data="${isDataReady}"
+                ${isDataReady ? 'checked' : ''}
+              />
+              <span style="font-weight:700; font-size:15px; color:var(--text);">${pair}</span>
             </div>
-            ${badge}
+            <div class="tabular" style="font-size:11px; color:var(--text-3); margin-top:4px;">
+              ${rows > 0 ? `${rows.toLocaleString()} bars ready` : 'No local M1 bars'}
+            </div>
           </div>
-          <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); padding-top:4px; border-top:1px solid var(--border-subtle);">
-            <span>Digits: ${pMeta.digits}</span>
-            <span>Typical Spread: ${pMeta.spread}</span>
-            <span>Target: 5M steps</span>
+
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+            <span class="badge ${isDataReady ? 'badge-profit' : 'badge-loss'}">
+              ${isDataReady ? 'Ready ✓' : 'No Data ✗'}
+            </span>
+            <span class="badge ${trainChip}">
+              ${trainText}
+            </span>
           </div>
-        `;
-        grid.appendChild(card);
+        </div>
+
+        ${
+          model.sharpe_annualized !== undefined || model.win_rate_pct !== undefined
+            ? `
+              <div style="font-size:11px; color:var(--text-2); background:var(--bg-input); padding:8px; border-radius:var(--radius-sm); border:1px solid var(--border-sub);">
+                <div style="display:flex; justify-content:space-between;">
+                  <span>Walk-Forward Sharpe:</span>
+                  <strong class="tabular" style="color:var(--text);">${model.sharpe_annualized || '-'}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:2px;">
+                  <span>Win Rate:</span>
+                  <strong class="tabular" style="color:var(--profit);">${model.win_rate_pct ? model.win_rate_pct + '%' : '-'}</strong>
+                </div>
+              </div>
+            `
+            : ''
+        }
+
+        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--text-3); pt-1;">
+          <span>${isSynthetic ? 'Synthetic CFD' : 'Forex Major/Cross'}</span>
+          <button
+            class="btn btn-ghost btn-sm single-train-btn"
+            data-pair="${pair}"
+            style="padding:2px 8px; font-size:11px; height:26px;"
+          >
+            Train ${pair}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function bindEvents() {
+    // Schedule training for all selected
+    const scheduleBtn = document.getElementById('schedule-training-btn');
+    if (scheduleBtn) {
+      scheduleBtn.addEventListener('click', async () => {
+        const checkboxes = Array.from(document.querySelectorAll('.pair-select-checkbox:checked'));
+        const selectedPairs = checkboxes.map(cb => cb.dataset.pair);
+
+        if (selectedPairs.length === 0) {
+          toast('Please select at least one pair to train', 'warn');
+          return;
+        }
+
+        scheduleBtn.disabled = true;
+        scheduleBtn.textContent = 'Scheduling...';
+
+        try {
+          // 1. Set training lock via worker
+          await api.setTrainLock(true, `user_scheduled: ${selectedPairs.join(',')}`);
+
+          // 2. Dispatch train workflow
+          await api.dispatchWorkflow('train.yml', {
+            mode: 'start',
+            pair: selectedPairs[0],
+            queue: selectedPairs.join(',')
+          });
+
+          toast('Training scheduled! Bot will pause once current trade closes.', 'success');
+          loadData();
+        } catch(err) {
+          toast(err.message || 'Failed to dispatch training workflow', 'error');
+          scheduleBtn.disabled = false;
+          scheduleBtn.textContent = 'Schedule Training for Selected';
+        }
       });
     }
 
-    // Smoke Test
-    const smoke = state.smoke_test;
-    if (smoke && smoke.status === 'passing') {
-      const smokeBadge = this.container.querySelector('#smoke-status-badge');
-      if (smokeBadge) smokeBadge.textContent = 'PASSING (1000 PPO Steps)';
-    }
-  },
+    // Single train buttons
+    document.querySelectorAll('.single-train-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pair = btn.dataset.pair;
+        if (!confirm(`Start training RL Scalper model for ${pair}?`)) return;
 
-  destroy() {
-    clearTimeout(this.timer);
-    if (this.onVisible) document.removeEventListener('visibilitychange', this.onVisible);
-    this.generation++;
-    this.loading = false;
-    this.container = null;
+        try {
+          await api.setTrainLock(true, `manual_train_${pair}`);
+          await api.dispatchWorkflow('train.yml', {
+            mode: 'start',
+            pair: pair
+          });
+          toast(`Training dispatched for ${pair}!`, 'success');
+          loadData();
+        } catch(err) {
+          toast(err.message || 'Error dispatching training', 'error');
+        }
+      });
+    });
+
+    // Toggle training lock button
+    const toggleLockBtn = document.getElementById('toggle-lock-btn');
+    if (toggleLockBtn) {
+      toggleLockBtn.addEventListener('click', async () => {
+        const currentLocked = !!settings.training_locked;
+        try {
+          await api.setTrainLock(!currentLocked, currentLocked ? '' : 'manual_lock');
+          toast(`Training lock ${currentLocked ? 'cleared' : 'engaged'}`, 'info');
+          loadData();
+        } catch(err) {
+          toast(err.message, 'error');
+        }
+      });
+    }
   }
-};
+
+  loadData();
+}

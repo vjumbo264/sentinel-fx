@@ -3,7 +3,7 @@
   "repo": "vjumbo264/sentinel-fx",
   "goal": "Rebuild training engine with professional scalper observation (v2 schema), implement training interlock, fetch missing forex data, completely rebuild site, and start EURUSD training.",
   "status": "in_progress",
-  "current_item": "F2",
+  "current_item": "F5",
   "queue": [
     {
       "id": "F1",
@@ -13,27 +13,27 @@
     },
     {
       "id": "F2",
-      "title": "Training engine overhaul \u2014 observation v2, actions, reward, walk-forward",
+      "title": "Training engine overhaul — observation v2, actions, reward, walk-forward",
       "status": "done",
       "notes": "Completed v2 observation overhaul (62 dimensions, causally safe), 8-action catalog, scalper composite reward, and walk-forward validation (split 70/15/15). Policy schema version updated to sentinel.policy.v2. Smoke test and test_overhaul_training passed."
     },
     {
       "id": "F3",
-      "title": "Training interlock \u2014 bot pauses during training",
+      "title": "Training interlock — bot pauses during training",
       "status": "done",
       "notes": "Added /api/settings/training-lock endpoint in worker/src/index.js; purged dead packs/staging endpoints; updated bot/main.py with training_locked check and dynamic mode from settings; added lock/unlock steps and Saturday 2am UTC cron to train.yml."
     },
     {
       "id": "F4",
-      "title": "Complete site rebuild \u2014 4 pages, no polling, fast",
-      "status": "in_progress",
-      "notes": ""
+      "title": "Complete site rebuild — 4 pages, no polling, fast",
+      "status": "done",
+      "notes": "Rebuilt site completely from scratch with a fresh, clean, automatic dark and light UI. 4 core pages (Dashboard, Training, History, Settings). Desktop left rail with Lagos WAT clock + mobile bottom nav. Zero polling when idle, ~69KB uncompressed JS payload. Also mirrored in AI Studio React supervisor applet."
     },
     {
       "id": "F5",
       "title": "Start EURUSD training",
-      "status": "pending",
-      "notes": ""
+      "status": "done",
+      "notes": "Set training lock on worker Coordinator (locked=true, reason=initial_eurusd_training); dispatched train.yml with mode=start; Actions run 39929904179 active at https://github.com/vjumbo264/sentinel-fx/actions/runs/39929904179."
     }
   ],
   "decisions": [
@@ -44,10 +44,10 @@
     "Updated observation schema to sentinel.policy.v2 locked with 62 dimensions across M1, M5, M15, H1",
     "Adopted 8-action catalog with discrete actions for hold, full/half long, full/half short, close, breakeven, and trailing stop",
     "Added training_locked interlock in worker and bot main loop with dynamic mode control",
-    "Created dedicated data-synthetics-01 release containing all Deriv synthetic volatility index datasets (R_10, R_25, R_50, R_75, R_100, 1HZ10V, 1HZ25V, 1HZ50V, 1HZ75V, 1HZ100V, 1HZ150V, 1HZ250V)",
-    "Unblocked deep HistData 26-year ingestion for initial forex pairs EURUSD and AUDUSD to refresh them with full 2000-2026 history matching all other pairs",
-    "Updated completed_pair logic in tools/fetch_histdata_bulk.py to verify >=20 annual shards before skipping",
-    "Updated tools/publish_data.py and .github/workflows/fetch-candles.yml to route synthetic indices to data-synthetics-01"
+    "Created dedicated data-synthetics-01 release containing all Deriv synthetic volatility index datasets",
+    "Rebuilt site/ from scratch with pure ES modules, automatic dark/light UI, and <70KB total JS payload",
+    "Mirrored fresh UI in src/App.tsx for immediate AI Studio live interaction",
+    "Dispatched initial EURUSD PPO v2 training cycle via train.yml on GitHub Actions"
   ],
   "known_issues": [],
   "deployment": {
@@ -70,7 +70,7 @@
   },
   "observation_schema": "sentinel.policy.v2",
   "observation_dimension": 62,
-  "old_47dim_models": "incompatible \u2014 do not load",
-  "last_updated": "2026-10-23T08:47:11.568285+00:00",
-  "last_session_note": "Migrated synthetic indices to data-synthetics-01 release; dispatched EURUSD and AUDUSD deep 26-year HistData bulk refresh."
+  "old_47dim_models": "incompatible — do not load",
+  "last_updated": "2026-10-23T09:10:50.000000+00:00",
+  "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179."
 }
