@@ -1474,11 +1474,19 @@
         "first_epoch": 1294005600,
         "last_epoch": 1325282280,
         "sha256": "73b8d6a6674d6ba9781c7355700407e8e6d4a05c99afcfa8dd928b5bbbd3faf1"
+      },
+      "2012": {
+        "asset": "EURJPY_2012.csv.gz",
+        "release_tag": "data-eurjpy-01",
+        "rows": 372617,
+        "first_epoch": 1325487600,
+        "last_epoch": 1356991080,
+        "sha256": "4f458cbe5cdb83f283e42f14a7fab8a937a9b2eae301c0bebe847fdca2bf67a3"
       }
     },
-    "last_epoch": 1325282280,
+    "last_epoch": 1356991080,
     "first_epoch": 1015200180,
-    "rows": 3405390,
+    "rows": 3778007,
     "columns": [
       "epoch",
       "bid_open",
