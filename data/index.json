@@ -855,7 +855,33 @@
     },
     "shard_releases": [
       "data-gbpjpy-01"
-    ]
+    ],
+    "bulk_years": {
+      "2002": {
+        "asset": "GBPJPY_2002.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 184502,
+        "first_epoch": 1020265200,
+        "last_epoch": 1041358620,
+        "sha256": "17efd0ca63d40bfb5019a5815fc826b4c6e5ef9a677554b966e0203805e539e8"
+      }
+    },
+    "last_epoch": 1041358620,
+    "first_epoch": 1020265200,
+    "rows": 184502,
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "source": "histdata-bid-only-synthetic-ask",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   },
   "frxEURJPY": {
     "bulk_unavailable": {
