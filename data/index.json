@@ -1006,11 +1006,19 @@
         "first_epoch": 1262556000,
         "last_epoch": 1293825420,
         "sha256": "6edb4dd9dc06c3f46ea06032d193267242ee04f0cc24f32fb8b5decfc6a9e988"
+      },
+      "2011": {
+        "asset": "USDJPY_2011.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 300286,
+        "first_epoch": 1294005600,
+        "last_epoch": 1325282280,
+        "sha256": "62398603d48dfdd5825fb4c40387db4caba9fbc5b529bca5febaf6fb0e8ead6c"
       }
     },
-    "last_epoch": 1293825420,
+    "last_epoch": 1325282280,
     "first_epoch": 959727480,
-    "rows": 3238735,
+    "rows": 3539021,
     "columns": [
       "epoch",
       "bid_open",
