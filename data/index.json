@@ -1173,11 +1173,19 @@
         "first_epoch": 1104734880,
         "last_epoch": 1135893420,
         "sha256": "576ae9fecadbf137285825a56d4588acdb049aff46045b2f869f1c34db777150"
+      },
+      "2007": {
+        "asset": "GBPJPY_2007.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 361038,
+        "first_epoch": 1167699600,
+        "last_epoch": 1199138160,
+        "sha256": "a9923c58dc842ffd7a96504c60c36b154d7b5271ac7205feb70603267c70b71b"
       }
     },
-    "last_epoch": 1135893420,
+    "last_epoch": 1199138160,
     "first_epoch": 1020265200,
-    "rows": 1218203,
+    "rows": 1579241,
     "columns": [
       "epoch",
       "bid_open",
