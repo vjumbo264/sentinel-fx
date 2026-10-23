@@ -2843,11 +2843,19 @@
         "first_epoch": 1704146640,
         "last_epoch": 1735682280,
         "sha256": "30f30aaf2a5347d5cd309259077c225315c6327c73c5103711d13bc234c10e32"
+      },
+      "2025": {
+        "asset": "EURAUD_2025.csv.gz",
+        "release_tag": "data-euraud-01",
+        "rows": 371669,
+        "first_epoch": 1735769100,
+        "last_epoch": 1767218220,
+        "sha256": "1dd766e7d7bf603aa3b848e68728d5d7459854239925de4e5ee3eda2c81637b4"
       }
     },
-    "last_epoch": 1735682280,
+    "last_epoch": 1767218220,
     "first_epoch": 1029796680,
-    "rows": 8097627,
+    "rows": 8469296,
     "columns": [
       "epoch",
       "bid_open",
