@@ -284,7 +284,10 @@ def main():
     if args.smoke_test:
         smoke_test();return
     state = json.loads(STATE.read_text())
-    gh = GitHub(os.environ.get('GH_CHAIN_PAT') or os.environ.get('GITHUB_TOKEN') or '')
+    token = os.environ.get("GH_CHAIN_PAT") or os.environ.get("GITHUB_TOKEN") or ""
+    if str(token).strip().lower() in ("true", "false"):
+        token = os.environ.get("GITHUB_TOKEN") or ""
+    gh = GitHub(token)
     deadline = time.monotonic()+int(os.environ.get('TRAIN_WALL_SECONDS','17100'))
     due = state.get('next_retrain_after_utc')
     if due and datetime.fromisoformat(due)>datetime.now(timezone.utc):

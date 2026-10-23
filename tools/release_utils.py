@@ -13,6 +13,11 @@ REPO = os.environ.get('GITHUB_REPOSITORY', 'vjumbo264/sentinel-fx')
 
 class GitHub:
     def __init__(self, token, repo=REPO):
+        if not token or str(token).strip().lower() in ("true", "false"):
+            token = os.environ.get("GH_CHAIN_PAT") or os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN") or ""
+            if str(token).strip().lower() in ("true", "false"):
+                token = ""
+
         self.repo = repo
         self.base = f'https://api.github.com/repos/{repo}'
         self.session = requests.Session()
