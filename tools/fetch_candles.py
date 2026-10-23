@@ -279,10 +279,11 @@ def main():
     with open(path + ".tmp", "wb") as raw:
         with gzip.open(raw, "wt", newline="") as f:
             w = csv.writer(f)
-            w.writerow(["epoch", "open", "high", "low", "close"])
+            columns = list(existing[epochs[0]])
+            w.writerow(columns)
             for ep in epochs:
                 r = existing[ep]
-                w.writerow([ep, r["open"], r["high"], r["low"], r["close"]])
+                w.writerow([r[key] for key in columns])
 
     with open(path + ".tmp", "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
