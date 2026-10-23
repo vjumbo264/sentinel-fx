@@ -1900,11 +1900,19 @@
         "first_epoch": 1641162600,
         "last_epoch": 1672437480,
         "sha256": "de219d9207211295bd837241fe3c0d95b9fbe8d54b7f2574887567fe24b03969"
+      },
+      "2023": {
+        "asset": "NZDUSD_2023.csv.gz",
+        "release_tag": "data-nzdusd-01",
+        "rows": 320972,
+        "first_epoch": 1672618560,
+        "last_epoch": 1703887080,
+        "sha256": "e389d4e16d3c9d664be1e490ff073b9b395b6efd598e7ea04c5af16faa51f3c7"
       }
     },
-    "last_epoch": 1672437480,
+    "last_epoch": 1703887080,
     "first_epoch": 1123884060,
-    "rows": 5915518,
+    "rows": 6236490,
     "columns": [
       "epoch",
       "bid_open",
