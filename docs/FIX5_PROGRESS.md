@@ -340,3 +340,7 @@ Next: H9: remove both training crons; implement owner-only start/update with war
 ## H9 — Remove both autonomous training schedules
 Removed daily02:00 and Saturday02:00 cron entries from train.yml. It remains workflow_dispatch-only with the same rl-training-single-writer concurrency and cancel-in-progress=false. Existing activeEURUSD run39997388327 is not cancelled or reset. Inspection confirms bot/main.py no longer reads training_locked; Worker lock currently only writes two D1 settings, while stale UI text incorrectly says it pauses trading. Next implement durable owner request/update queue and correct that text.
 Next: H9: add owner-authenticated request queue and warm-start new-version handling; verify safe training lock and live controls without replacing active models.
+
+## H9 — Stage durable owner request and warm-start cycle helpers
+Added training_requests.py: explicit queued owner starts/updates only, paused/idle guards, native checkpoint warm starts with62-input validation, isolated new5M-step version counters, and durable claim identity. This helper is staged until trainer/Worker/UI wiring and tests are complete; no new requests or models have been created. Current EURUSD writer remains untouched.
+Next: H9: wire request consumption into trainer and preserve live active_version on candidate publication; then authenticated Worker/UI integration and live verification.
