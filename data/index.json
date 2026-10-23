@@ -1685,11 +1685,19 @@
         "first_epoch": 1735769040,
         "last_epoch": 1767218220,
         "sha256": "3aa00d6b9c2cdea087d5d40713613dd9874e2715e6a1ba5d4c9355f7168f5f64"
+      },
+      "2001": {
+        "asset": "USDCHF_2001.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 252065,
+        "first_epoch": 978426600,
+        "last_epoch": 1009822920,
+        "sha256": "f551b0b518e2dc283a7f6f7e2552265d428c58b54c49bd09995b24f4c9833883"
       }
     },
     "last_epoch": 1767218220,
     "first_epoch": 959725380,
-    "rows": 8100031,
+    "rows": 8352096,
     "columns": [
       "epoch",
       "bid_open",
