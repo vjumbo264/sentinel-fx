@@ -74,11 +74,11 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H0: dispatch patched resume and verify remote state950000 with validation while Actions is active, then H9.",
+    "next_step": "H9: remove both training crons; implement owner-only start/update with warm-start version isolation and remove training-lock trading side effect. Preserve running39997388327.",
     "items": [
       {
         "id": "H0",
-        "status": "doing",
+        "status": "passing",
         "attempts": [
           {
             "what": "Resume mission in required order",
@@ -131,13 +131,23 @@
           {
             "what": "Verify real Actions950000 checkpoint and recoverable metadata",
             "result": "Downloaded actual Actions-produced EURUSD_v1_s950000.zip, ZIP integrity passes, actual SB3 model has950000 steps and62 inputs; embedded validation and digest committed in docs/evidence/h0_actions950000.json. Idempotent recovery restores validation/history exactly once. Run39992955869 advanced from900000 without reset and failed only on GitHub verification transport; replacement will use durable950000."
+          },
+          {
+            "what": "PASS actual resumed chain beyond900000",
+            "result": "Actual run39992955869 produced verified950000-step62-input checkpoint and validation. After its post-upload GitHub read timeout, patched run39997388327 restored950000 with exact digest, recovered validation/history and committed status=training; last_error cleared. No restart from zero. Validation score-50.414696, no_edge, not released. All13 real pair probes and poisoned-window/holdout protections verified."
           }
         ],
         "evidence": [
           "https://github.com/vjumbo264/sentinel-fx/actions/runs/39929904179",
           "docs/evidence/h0_real_pair_probes.json",
           "docs/evidence/h0_real_validation_cpu.json",
-          "docs/evidence/h0_original_failure.txt"
+          "docs/evidence/h0_original_failure.txt",
+          "https://github.com/vjumbo264/sentinel-fx/actions/runs/39997388327",
+          "docs/evidence/h0_actions950000.json",
+          "docs/evidence/h0_resumed_state.json",
+          "https://github.com/vjumbo264/sentinel-fx/commit/6e56ec0f181b542c2244d82d46b88f55ae9096ec",
+          "https://github.com/vjumbo264/sentinel-fx/commit/19b5c6ea1bc2d421abe676cf500d750e370b0d6d",
+          "https://github.com/vjumbo264/sentinel-fx/commit/053188a556bf158bfadcbf7f7eee71a8374973ed"
         ],
         "files": [
           "tools/validation.py",
@@ -145,7 +155,10 @@
           "tests/test_fix5_h0.py",
           "docs/evidence/h0_real_pair_probes.json",
           "docs/evidence/h0_real_validation_cpu.json",
-          "docs/evidence/h0_original_failure.txt"
+          "docs/evidence/h0_original_failure.txt",
+          "tools/release_utils.py",
+          "docs/evidence/h0_actions950000.json",
+          "docs/evidence/h0_resumed_state.json"
         ]
       },
       {
@@ -466,11 +479,15 @@
       {
         "id": "H9",
         "title": "Manual training only; no automatic or weekend schedule",
-        "status": "todo",
+        "status": "doing",
         "attempts": [
           {
             "what": "Verified status transition",
             "result": "Related Actions/recovery/manual-start changes are one unit, separately accepted. Preserve current bot READY lease, per-run concurrency, backup cron and training single-writer group."
+          },
+          {
+            "what": "Start next queue item after H0 verified",
+            "result": "H0 is passing with real Actions evidence. Begin manual-only training and safe lock semantics; no visual redesign. Running EURUSD v1 remains active, untouched."
           }
         ],
         "evidence": [],

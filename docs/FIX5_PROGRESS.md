@@ -328,3 +328,11 @@ Next: H0: download and verify950000 archive and metadata, run regression, then r
 ## H0 — Verify real Actions950000 checkpoint and recoverable metadata
 Downloaded actual Actions-produced EURUSD_v1_s950000.zip, ZIP integrity passes, actual SB3 model has950000 steps and62 inputs; embedded validation and digest committed in docs/evidence/h0_actions950000.json. Idempotent recovery restores validation/history exactly once. Run39992955869 advanced from900000 without reset and failed only on GitHub verification transport; replacement will use durable950000.
 Next: H0: dispatch patched resume and verify remote state950000 with validation while Actions is active, then H9.
+
+## H0 — PASS actual resumed chain beyond900000
+Actual run39992955869 produced verified950000-step62-input checkpoint and validation. After its post-upload GitHub read timeout, patched run39997388327 restored950000 with exact digest, recovered validation/history and committed status=training; last_error cleared. No restart from zero. Validation score-50.414696, no_edge, not released. All13 real pair probes and poisoned-window/holdout protections verified.
+Next: H9: remove both training crons; implement owner-only start/update with warm-start version isolation and remove training-lock trading side effect. Preserve running39997388327.
+
+## H9 — Start next queue item after H0 verified
+H0 is passing with real Actions evidence. Begin manual-only training and safe lock semantics; no visual redesign. Running EURUSD v1 remains active, untouched.
+Next: H9: remove both training crons; implement owner-only start/update with warm-start version isolation and remove training-lock trading side effect. Preserve running39997388327.
