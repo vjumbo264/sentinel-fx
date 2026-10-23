@@ -83,3 +83,81 @@
 ### H6: Add first-run authentication regression checks
 - Two local startup regression tests PASS: first initialize supplies stored credentials, exact portable executable and 60000ms timeout; unknown account modes rejected. These are unit regressions only, not MT5 integration evidence.
 - Next: H6: check actual Windows login and bounded bot run; do not start H7 until verified.
+
+## H6 original Actions evidence (fresh last-40 audit)
+
+| Run | Workflow | Conclusion |
+|---|---|---|
+| [39983309547](https://github.com/vjumbo264/sentinel-fx/actions/runs/39983309547) | bot | failure |
+| [39983297756](https://github.com/vjumbo264/sentinel-fx/actions/runs/39983297756) | deploy-site | success |
+| [39982672444](https://github.com/vjumbo264/sentinel-fx/actions/runs/39982672444) | bot | failure |
+| [39977248997](https://github.com/vjumbo264/sentinel-fx/actions/runs/39977248997) | deploy-site | success |
+| [39969387021](https://github.com/vjumbo264/sentinel-fx/actions/runs/39969387021) | fetch-candles | failure |
+| [39954361287](https://github.com/vjumbo264/sentinel-fx/actions/runs/39954361287) | deploy-worker | success |
+| [39954361185](https://github.com/vjumbo264/sentinel-fx/actions/runs/39954361185) | deploy-site | success |
+| [39953308318](https://github.com/vjumbo264/sentinel-fx/actions/runs/39953308318) | deploy-site | success |
+| [39952690696](https://github.com/vjumbo264/sentinel-fx/actions/runs/39952690696) | deploy-site | success |
+| [39947541199](https://github.com/vjumbo264/sentinel-fx/actions/runs/39947541199) | news-archive | success |
+| [39946637997](https://github.com/vjumbo264/sentinel-fx/actions/runs/39946637997) | deploy-site | success |
+| [39946637995](https://github.com/vjumbo264/sentinel-fx/actions/runs/39946637995) | deploy-worker | success |
+| [39933073507](https://github.com/vjumbo264/sentinel-fx/actions/runs/39933073507) | bot | failure |
+| [39930039712](https://github.com/vjumbo264/sentinel-fx/actions/runs/39930039712) | validate-pack | success |
+| [39930028180](https://github.com/vjumbo264/sentinel-fx/actions/runs/39930028180) | deploy-site | success |
+| [39929904179](https://github.com/vjumbo264/sentinel-fx/actions/runs/39929904179) | RL Training | failure |
+| [39927748378](https://github.com/vjumbo264/sentinel-fx/actions/runs/39927748378) | bot | failure |
+| [39927204714](https://github.com/vjumbo264/sentinel-fx/actions/runs/39927204714) | validate-pack | success |
+| [39927180416](https://github.com/vjumbo264/sentinel-fx/actions/runs/39927180416) | HistData bulk M1 history | success |
+| [39927177030](https://github.com/vjumbo264/sentinel-fx/actions/runs/39927177030) | HistData bulk M1 history | failure |
+| [39927174581](https://github.com/vjumbo264/sentinel-fx/actions/runs/39927174581) | Publish Synthetic Indices Release | failure |
+| [39926598852](https://github.com/vjumbo264/sentinel-fx/actions/runs/39926598852) | validate-pack | success |
+| [39925073579](https://github.com/vjumbo264/sentinel-fx/actions/runs/39925073579) | deploy-worker | success |
+| [39921733418](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921733418) | HistData bulk M1 history | failure |
+| [39921176961](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921176961) | HistData bulk M1 history | failure |
+| [39921172313](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921172313) | HistData bulk M1 history | failure |
+| [39921167489](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921167489) | HistData bulk M1 history | failure |
+| [39921162907](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921162907) | HistData bulk M1 history | failure |
+| [39921158472](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921158472) | HistData bulk M1 history | failure |
+| [39921153517](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921153517) | HistData bulk M1 history | failure |
+| [39921148510](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921148510) | HistData bulk M1 history | failure |
+| [39921143724](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921143724) | HistData bulk M1 history | failure |
+| [39921139091](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921139091) | HistData bulk M1 history | failure |
+| [39921134518](https://github.com/vjumbo264/sentinel-fx/actions/runs/39921134518) | HistData bulk M1 history | failure |
+| [39920430375](https://github.com/vjumbo264/sentinel-fx/actions/runs/39920430375) | validate-pack | success |
+| [39920396628](https://github.com/vjumbo264/sentinel-fx/actions/runs/39920396628) | HistData bulk M1 history | failure |
+| [39913893059](https://github.com/vjumbo264/sentinel-fx/actions/runs/39913893059) | deploy-site | success |
+| [39913893031](https://github.com/vjumbo264/sentinel-fx/actions/runs/39913893031) | deploy-worker | success |
+| [39911588022](https://github.com/vjumbo264/sentinel-fx/actions/runs/39911588022) | deploy-worker | failure |
+| [39911588005](https://github.com/vjumbo264/sentinel-fx/actions/runs/39911588005) | deploy-site | success |
+
+### Exact failure lines
+
+Run 39983309547:
+```text
+2026-10-23T16:04:59.5220134Z 2026-10-23 16:04:59,521 [WARNING] sentinel.broker: initialize attempt 1 returned False (last_err: (-10005, 'IPC timeout'))
+2026-10-23T16:05:22.7877856Z 2026-10-23 16:05:22,787 [WARNING] sentinel.broker: initialize attempt 2 returned False (last_err: (-10005, 'IPC timeout'))
+2026-10-23T16:05:47.8206445Z 2026-10-23 16:05:47,819 [WARNING] sentinel.broker: initialize attempt 3 returned False (last_err: (-10005, 'IPC timeout'))
+2026-10-23T16:05:53.8227685Z AssertionError: demo login failed
+```
+
+Run 39982672444:
+```text
+2026-10-23T16:01:12.1197391Z IndentationError: unexpected indent
+```
+
+Run 39933073507:
+```text
+2026-10-23T09:40:39.4022563Z ModuleNotFoundError: No module named 'resource'
+```
+
+Run 39929904179:
+```text
+2026-10-23T12:59:35.6015446Z ValueError: invalid volatility
+```
+
+The most recent failed live workflow was **not cancelled**: the native Windows terminal never established IPC, then the broker asserted demo login failed. The older Windows startup error (POSIX-only `resource` import) and broken indented safety-dispatch Python are separate proven failures. No log evidence in these failures supports blaming owner cancellation, concurrency cancellation or the six-hour limit. The last green bot run 39907951207 used the Linux MT5 stack; a later migration changed it to Windows.
+
+A separate original training run failed in evaluation with `ValueError: invalid volatility`; durable EURUSD v1 checkpoint is **900,000** steps, not zero. Training state/checkpoints have not been reset. This requires repair in the training queue; no claim of a healthy running chain is made.
+
+### H6: Document original last-40 run evidence and exact failure lines
+- Fresh audit proves latest failure is native MT5 IPC timeout, not owner cancellation. Last green bot used Linux stack. Original training stopped at durable EURUSD v1 900000-step checkpoint due invalid volatility during evaluation. Exact lines and all 40 run URLs are in docs/FIX5_PROGRESS.md.
+- Next: H6: complete bounded real MT5 demo runtime verification before continuing queue.
