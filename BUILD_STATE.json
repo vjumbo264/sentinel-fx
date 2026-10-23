@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H0: wait for real CPU validation and Actions checkpoint950000, commit run/checkpoint evidence, then begin H9.",
+    "next_step": "H0: verify Actions checkpoint >900000 with recorded validation; then H9 manual training only. Do not release this unproven model.",
     "items": [
       {
         "id": "H0",
@@ -103,6 +103,10 @@
           {
             "what": "Verify nonfatal invalid-window behavior",
             "result": "Two local real-SB3 regressions pass: insufficient validation never borrows holdout, and all3 poisoned validation windows are logged/skipped with eligible=false instead of killing the checkpoint chain. Real historical checkpoint CPU evaluation is running separately; Actions resume39992955869 is in Resume pair training at preserved900000. No further queue item started before H0 verification."
+          },
+          {
+            "what": "Verify actual checkpoint purged validation on real candles",
+            "result": "Actual EURUSD_v1_s900000.zip CPU evaluation on real EURUSD2025 release candles completed:3069 evaluated bars across3 fixed purged windows,1077 trades, return -34.714882%, maxDD78.820308%, verdict no_edge. Poisoned locked holdout was not accessed. Evidence docs/evidence/h0_real_validation_cpu.json. This proves evaluator operation, NOT profitability. Actions39992955869 remains active at last durable900000; awaiting950000."
           }
         ],
         "evidence": [],

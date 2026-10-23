@@ -1,0 +1,49 @@
+{
+  "source_asset": "668557931_EURUSD_2025.csv.gz",
+  "checkpoint": "EURUSD_v1_s900000.zip",
+  "steps": 900000,
+  "poisoned_holdout_not_read": true,
+  "result": {
+    "verdict": "no_edge",
+    "eligible": true,
+    "val_rows": 3069,
+    "purge_bars": 2400,
+    "holdout_rows": 18000,
+    "holdout_accessed": false,
+    "total_return_pct": -34.714882,
+    "max_drawdown_pct": 78.820308,
+    "sharpe_annualized": -4.779384,
+    "trade_count": 1077,
+    "activity_days": 5,
+    "evaluated_days": 5,
+    "cost_paid": 1997.374000012861,
+    "windows": [
+      {
+        "start_epoch": 1743179220,
+        "end_epoch": 1743420600,
+        "rows": 1024,
+        "status": "evaluated",
+        "final_equity": 5736.407999996586,
+        "trades": 380
+      },
+      {
+        "start_epoch": 1743725760,
+        "end_epoch": 1743787260,
+        "rows": 1024,
+        "status": "evaluated",
+        "final_equity": 7891.989999997214,
+        "trades": 377
+      },
+      {
+        "start_epoch": 1744264740,
+        "end_epoch": 1744326300,
+        "rows": 1024,
+        "status": "evaluated",
+        "final_equity": 14420.742999998032,
+        "trades": 320
+      }
+    ],
+    "skipped_windows": [],
+    "sampling": "three fixed 1024-bar purged validation windows; not full validation coverage"
+  }
+}

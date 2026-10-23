@@ -300,3 +300,7 @@ Next: H0: complete actual checkpoint validation CPU evidence and verify first >9
 ## H0 — Verify nonfatal invalid-window behavior
 Two local real-SB3 regressions pass: insufficient validation never borrows holdout, and all3 poisoned validation windows are logged/skipped with eligible=false instead of killing the checkpoint chain. Real historical checkpoint CPU evaluation is running separately; Actions resume39992955869 is in Resume pair training at preserved900000. No further queue item started before H0 verification.
 Next: H0: wait for real CPU validation and Actions checkpoint950000, commit run/checkpoint evidence, then begin H9.
+
+## H0 — Verify actual checkpoint purged validation on real candles
+Actual EURUSD_v1_s900000.zip CPU evaluation on real EURUSD2025 release candles completed:3069 evaluated bars across3 fixed purged windows,1077 trades, return -34.714882%, maxDD78.820308%, verdict no_edge. Poisoned locked holdout was not accessed. Evidence docs/evidence/h0_real_validation_cpu.json. This proves evaluator operation, NOT profitability. Actions39992955869 remains active at last durable900000; awaiting950000.
+Next: H0: verify Actions checkpoint >900000 with recorded validation; then H9 manual training only. Do not release this unproven model.
