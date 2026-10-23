@@ -851,11 +851,19 @@
         "first_epoch": 1262556060,
         "last_epoch": 1293825480,
         "sha256": "2dfa120d64573becaf6cbf61cc2e386445441674232a4d4a00cee4473cb1e903"
+      },
+      "2011": {
+        "asset": "EURGBP_2011.csv.gz",
+        "release_tag": "data-eurgbp-01",
+        "rows": 337159,
+        "first_epoch": 1294005600,
+        "last_epoch": 1325282280,
+        "sha256": "779795b917c66390d5df0390516201a86d50cf8eb7782dec5f8b6921328599ad"
       }
     },
-    "last_epoch": 1293825480,
+    "last_epoch": 1325282280,
     "first_epoch": 1015200240,
-    "rows": 2533855,
+    "rows": 2871014,
     "columns": [
       "epoch",
       "bid_open",
