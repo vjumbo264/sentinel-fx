@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H7: verify static and runtime policy input gates with actual ONNX archives.",
+    "next_step": "H7: run actual sfx mismatch checks, expose compatible model index and document exact behavior.",
     "items": [
       {
         "id": "H1",
@@ -261,6 +261,10 @@
           {
             "what": "Use shared observation dimension in trainer environment",
             "result": "Gym observation space and runtime vector check now use the same OBSERVATION_DIM constant as live inference and simulation."
+          },
+          {
+            "what": "Reject retired policy metadata and ONNX input shapes before loading",
+            "result": "Bundle verifier now rejects policy metadata not sentinel.policy.v2/62 and reads actual ONNX policy graph input width; changing metadata cannot conceal a 47-dimensional network. Bot and sfx check share this verifier."
           }
         ],
         "evidence": [],

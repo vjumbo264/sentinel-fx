@@ -205,3 +205,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Use shared observation dimension in trainer environment
 - Gym observation space and runtime vector check now use the same OBSERVATION_DIM constant as live inference and simulation.
 - Next: H7: verify static and runtime policy input gates with actual ONNX archives.
+
+### H7: Reject retired policy metadata and ONNX input shapes before loading
+- Bundle verifier now rejects policy metadata not sentinel.policy.v2/62 and reads actual ONNX policy graph input width; changing metadata cannot conceal a 47-dimensional network. Bot and sfx check share this verifier.
+- Next: H7: run actual sfx mismatch checks, expose compatible model index and document exact behavior.

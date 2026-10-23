@@ -16,6 +16,7 @@ import hashlib
 import io
 import json
 import zipfile
+from .policy_schema import VERSION, OBSERVATION_DIM
 
 SCHEMA_VERSION = 2
 ALLOWED_MODEL_EXT = (".onnx", ".txt", ".json")   # .txt = LightGBM text
@@ -118,6 +119,29 @@ def verify_bundle(path: str) -> tuple[bool, list[str]]:
         problems.append("missing analysis_plan.json")
     if "decision.json" not in names and "policy.json" not in names and "risk_brain.json" not in names:
         problems.append("missing decision.json or policy.json")
+    # Verify policy input compatibility BEFORE creating an inference session.
+    # Metadata and actual ONNX shapes must both agree; retired 47-d models
+    # cannot pass by declaring a new schema around old weights.
+    try:
+        plan = json.loads(zf.read('analysis_plan.json'))
+        policy = json.loads(zf.read('policy.json')) if 'policy.json' in names else json.loads(zf.read('decision.json'))
+        dim = policy.get('observation_dim')
+        if policy.get('schema_version') != VERSION or dim != OBSERVATION_DIM:
+            problems.append(f'observation size mismatch: expected {OBSERVATION_DIM} ({VERSION}), got {dim}; retired, incompatible')
+        for node in plan.get('nodes', []):
+            if node.get('type') != 'policy':
+                continue
+            name = node.get('model', '')
+            if name.endswith('.onnx') and name in names:
+                import onnx
+                model = onnx.load_model_from_string(zf.read(name))
+                inputs = model.graph.input
+                shape = inputs[0].type.tensor_type.shape.dim if len(inputs) == 1 else []
+                actual = shape[1].dim_value if len(shape) == 2 else None
+                if actual != OBSERVATION_DIM:
+                    problems.append(f'policy model input size mismatch: expected {OBSERVATION_DIM}, got {actual}; retired, incompatible')
+    except Exception as error:
+        problems.append('policy observation compatibility unavailable: ' + str(error))
     return not problems, problems
 
 
