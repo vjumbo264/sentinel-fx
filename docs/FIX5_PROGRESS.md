@@ -245,3 +245,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 - Evidence: Printed: actual sfx check 47-d exit1, expected62; four tests pass; live model index HTTP200 {}
 - Evidence: docs/FIX5_OPERATIONS.md
 - Next: H8/H9: extend existing recovery and manual training together; independently verify each before H10.
+
+## H8,H9: doing
+- Related Actions/recovery/manual-start changes are one unit, separately accepted. Preserve current bot READY lease, per-run concurrency, backup cron and training single-writer group.
+- Next: H8/H9: read current training lifecycle/retry helpers, implement durable recovery scheduling and owner-start intent without automatic fresh cycles.

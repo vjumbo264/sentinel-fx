@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H8/H9: extend existing recovery and manual training together; independently verify each before H10.",
+    "next_step": "H8/H9: read current training lifecycle/retry helpers, implement durable recovery scheduling and owner-start intent without automatic fresh cycles.",
     "items": [
       {
         "id": "H1",
@@ -310,16 +310,26 @@
       {
         "id": "H8",
         "title": "Self-healing after GitHub Actions failures",
-        "status": "todo",
-        "attempts": [],
+        "status": "doing",
+        "attempts": [
+          {
+            "what": "Verified status transition",
+            "result": "Related Actions/recovery/manual-start changes are one unit, separately accepted. Preserve current bot READY lease, per-run concurrency, backup cron and training single-writer group."
+          }
+        ],
         "evidence": [],
         "files": []
       },
       {
         "id": "H9",
         "title": "Manual training only; no automatic or weekend schedule",
-        "status": "todo",
-        "attempts": [],
+        "status": "doing",
+        "attempts": [
+          {
+            "what": "Verified status transition",
+            "result": "Related Actions/recovery/manual-start changes are one unit, separately accepted. Preserve current bot READY lease, per-run concurrency, backup cron and training single-writer group."
+          }
+        ],
         "evidence": [],
         "files": []
       },
