@@ -852,7 +852,10 @@
         "checked_utc": "2026-10-23T07:56:45.024645+00:00",
         "status": "unavailable_not_complete"
       }
-    }
+    },
+    "shard_releases": [
+      "data-gbpjpy-01"
+    ]
   },
   "frxEURJPY": {
     "bulk_unavailable": {
