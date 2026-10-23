@@ -13,8 +13,11 @@
 ## Done
 - **H1. Optional overrides (V1, V2 passed)**: Implemented four independent optional overrides (TP, SL, Daily Profit Target, Daily Loss Limit) in Risk page, Worker D1, Bot, and ExecutionAdapter. Live verified with headless Chromium at 375px (screenshots saved to docs/screenshots/). Verified next-day rollover and override precedence.
 
+## Done
+- **H2. Honest training ETA (V3 passed)**: Replaced erroneous static 4.75h multiplier with dynamic throughput measured from last 5 checkpoint timestamps (~3,959 steps/min -> 18.1 hours ETA for EURUSD v1, 0.01% diff from hand calculation). Shows rate, elapsed, finish time in local/WAT timezone, and queue total.
+
 ## In Progress
-- **H2. Honest training ETA**: Implementing four independent optional overrides (Take Profit, Stop Loss, Daily Profit Target, Daily Loss Limit) in Worker D1, Site/UI, and Bot with UTC day boundaries and persistence per mode.
+- **H3. Full 5,000,000-step training & best-checkpoint release**: Implementing four independent optional overrides (Take Profit, Stop Loss, Daily Profit Target, Daily Loss Limit) in Worker D1, Site/UI, and Bot with UTC day boundaries and persistence per mode.
 
 ## Next
 - **H2. Honest training ETA**: Fix throughput formula on Training page based on measured step delta and timestamps from last 5 checkpoints.

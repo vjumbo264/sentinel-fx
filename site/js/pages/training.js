@@ -55,9 +55,55 @@ export async function trainingPage() {
     const progressPct = Math.min(100, Math.round((stepsDone / Math.max(1, stepsTarget)) * 100));
     const isLocked = !!settings.training_locked;
 
-    // Estimate ETA (approx 50k steps per 4.75 hours)
+    // H2 Honest training ETA calculation from last N checkpoints
     const remainingSteps = Math.max(0, stepsTarget - stepsDone);
-    const etaHours = Math.round((remainingSteps / 50000) * 4.75);
+    const history = trainingState.checkpoint_history || [];
+    let etaInfo = {
+      rate: null,
+      rateStr: 'measuring...',
+      etaStr: 'measuring...',
+      etaHours: null,
+      elapsedStr: 'measuring...',
+      finishStr: 'measuring...',
+      queueStr: ''
+    };
+
+    if (history.length >= 2) {
+      const N = Math.min(5, history.length);
+      const recent = history.slice(-N);
+      const cFirst = recent[0];
+      const cLast = recent[recent.length - 1];
+      const stepDelta = cLast.step - cFirst.step;
+      const timeDeltaMin = (new Date(cLast.utc).getTime() - new Date(cFirst.utc).getTime()) / 60000;
+      if (stepDelta > 0 && timeDeltaMin > 0) {
+        const rate = stepDelta / timeDeltaMin;
+        const remMin = remainingSteps / rate;
+        const etaHours = (remMin / 60).toFixed(1);
+        const finishDate = new Date(Date.now() + remMin * 60000);
+        const finishStr = finishDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) + ' (' + finishDate.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ')';
+        const startMs = new Date(history[0].utc).getTime();
+        const elapsedHours = (Math.max(0, Date.now() - startMs) / 3600000).toFixed(1);
+
+        const queue = trainingState.queue || [];
+        const pairsDone = trainingState.pairs_done || [];
+        const waitingPairs = queue.filter(p => !pairsDone.includes(p) && p !== activePair);
+        let queueStr = '';
+        if (waitingPairs.length > 0) {
+          const queueTotalHours = ((remMin + (waitingPairs.length * stepsTarget / rate)) / 60).toFixed(1);
+          queueStr = ` · Queue: ${waitingPairs.length} pairs waiting (~${queueTotalHours}h total)`;
+        }
+
+        etaInfo = {
+          rate,
+          rateStr: `${Math.round(rate).toLocaleString()} steps/min`,
+          etaStr: `~${etaHours} hours`,
+          etaHours: parseFloat(etaHours),
+          elapsedStr: `${elapsedHours}h elapsed`,
+          finishStr: finishStr,
+          queueStr
+        };
+      }
+    }
 
     root.innerHTML = `
       <!-- TRAINING STATUS BANNER CARD -->
@@ -91,9 +137,9 @@ export async function trainingPage() {
                 <div style="background:var(--bg-card); height:8px; border-radius:4px; overflow:hidden; border:1px solid var(--border);">
                   <div style="background:var(--accent); width:${progressPct}%; height:100%; transition:width 0.4s ease;"></div>
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:11px; color:var(--text-3);">
-                  <span>Self-chaining via GitHub Actions (train.yml)</span>
-                  <span>Estimated time remaining: ~${etaHours} hours</span>
+                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:10px; font-size:11px; color:var(--text-3);">
+                  <span id="training-throughput">Throughput: <strong style="color:var(--text);">${etaInfo.rateStr}</strong> (${etaInfo.elapsedStr})</span>
+                  <span id="training-eta">ETA: <strong style="color:var(--text);">${etaInfo.etaStr}</strong> · Est. Finish: <strong style="color:var(--text);">${etaInfo.finishStr}</strong>${etaInfo.queueStr}</span>
                 </div>
               </div>
             `

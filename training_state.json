@@ -65,12 +65,12 @@
       "verdict": "no_edge",
       "val_rows": 600,
       "holdout_rows": 360,
-      "final_equity": 10000.0,
-      "total_return_pct": 0.0,
-      "max_drawdown_pct": 0.0,
-      "sharpe_annualized": 0.0,
+      "final_equity": 10000,
+      "total_return_pct": 0,
+      "max_drawdown_pct": 0,
+      "sharpe_annualized": 0,
       "trade_count": 0,
-      "win_rate_pct": 0.0,
+      "win_rate_pct": 0,
       "cost_paid": 0
     },
     "updated_utc": "2026-10-23T08:25:40.987197+00:00",
@@ -83,5 +83,67 @@
     "sha256": "6b258e0aaf986ce614ba63598baf24034fae76d876fc05a0f630765ed43df31a"
   },
   "plateau_intervals": 7,
-  "previous_mean_reward": -1751.638998090909
+  "previous_mean_reward": -1751.638998090909,
+  "checkpoint_history": [
+    {
+      "step": 50000,
+      "utc": "2026-10-23T09:24:18.000Z"
+    },
+    {
+      "step": 100000,
+      "utc": "2026-10-23T09:37:26.000Z"
+    },
+    {
+      "step": 150000,
+      "utc": "2026-10-23T09:50:53.000Z"
+    },
+    {
+      "step": 200000,
+      "utc": "2026-10-23T10:02:49.000Z"
+    },
+    {
+      "step": 250000,
+      "utc": "2026-10-23T10:14:33.000Z"
+    },
+    {
+      "step": 300000,
+      "utc": "2026-10-23T10:27:10.000Z"
+    },
+    {
+      "step": 350000,
+      "utc": "2026-10-23T10:39:22.000Z"
+    },
+    {
+      "step": 400000,
+      "utc": "2026-10-23T10:51:20.000Z"
+    },
+    {
+      "step": 450000,
+      "utc": "2026-10-23T11:03:36.000Z"
+    },
+    {
+      "step": 500000,
+      "utc": "2026-10-23T11:15:27.000Z"
+    },
+    {
+      "step": 550000,
+      "utc": "2026-10-23T11:27:34.000Z"
+    },
+    {
+      "step": 600000,
+      "utc": "2026-10-23T11:41:01.000Z"
+    },
+    {
+      "step": 650000,
+      "utc": "2026-10-23T11:53:19.000Z"
+    },
+    {
+      "step": 700000,
+      "utc": "2026-10-23T12:05:58.000Z"
+    },
+    {
+      "step": 750000,
+      "utc": "2026-10-23T12:18:24.000Z"
+    }
+  ]
 }

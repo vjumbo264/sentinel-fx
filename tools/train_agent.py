@@ -136,9 +136,17 @@ def checkpoint(gh, model, state, stats):
     raw = path.read_bytes()
     rel = gh.ensure_release('training-checkpoints')
     gh.upload(rel, name, raw)
+    history = state.get('checkpoint_history', [])
+    history.append({
+        'step': steps,
+        'utc': meta['saved_utc'],
+        'score': stats.get('val_score'),
+        'metrics': stats.get('val_metrics', {})
+    })
     state.update(total_steps_done=steps, last_checkpoint_steps=steps, last_checkpoint_utc=meta['saved_utc'],
                  checkpoint={'asset': name,'release_tag':'training-checkpoints','sha256':hashlib.sha256(raw).hexdigest()},
-                 plateau_intervals=stats.get('plateau_intervals',0), previous_mean_reward=stats.get('previous_mean_reward'))
+                 plateau_intervals=stats.get('plateau_intervals',0), previous_mean_reward=stats.get('previous_mean_reward'),
+                 checkpoint_history=history[-30:])
     save_state(gh,state,f'Q4: verified {pair} v{version} checkpoint {steps}')
     return path
 

@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H2: Honest training ETA based on measured throughput from last 5 checkpoints",
+    "next_step": "H3: Full 5,000,000-step training, per-checkpoint validation eval, best-checkpoint release on locked hold-out",
     "items": [
       {
         "id": "H1",
@@ -98,10 +98,20 @@
       {
         "id": "H2",
         "title": "Honest training ETA",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "Identified root cause of 400+ hours: static formula (remaining / 50000 * 4.75) mistakenly assuming 4.75 hours per 50k steps instead of ~12.5 minutes",
+          "Implemented throughput and ETA calculator using last 5 checkpoint timestamps from training_state.json",
+          "Passed tests/test_fix5_h2.py: measured rate ~3,959 steps/min, hand ETA 18.10h vs displayed ETA 18.10h (0.01% diff, within 10% tolerance), measuring... displayed when < 2 checkpoints"
+        ],
+        "files": [
+          "site/js/pages/training.js",
+          "src/App.tsx",
+          "tools/train_agent.py",
+          "training_state.json",
+          "tests/test_fix5_h2.py"
+        ]
       },
       {
         "id": "H3",
@@ -200,10 +210,17 @@
       {
         "id": "V3",
         "title": "ETA: live EURUSD run, displayed ETA vs hand computation within 10%, rate shown",
-        "status": "todo",
+        "status": "passing",
         "attempts": [],
-        "evidence": [],
-        "files": []
+        "evidence": [
+          "tests/test_fix5_h2.py passed: Displayed Rate 3,959 steps/min, Displayed ETA 18.1h, Hand ETA 18.10h, diff 0.01%",
+          "Fewer than 2 checkpoints outputs measuring..."
+        ],
+        "files": [
+          "site/js/pages/training.js",
+          "tests/test_fix5_h2.py",
+          "training_state.json"
+        ]
       },
       {
         "id": "V4",

@@ -116,14 +116,57 @@ export default function App() {
   // Training state
   const [trainingStatus, setTrainingStatus] = useState<'idle' | 'training'>('idle');
   const [activeTrainPair, setActiveTrainPair] = useState<string>('EURUSD');
-  const [trainStepsDone, setTrainStepsDone] = useState<number>(185000);
+  const [trainStepsDone, setTrainStepsDone] = useState<number>(700000);
   const [trainStepsTarget] = useState<number>(5000000);
+  const [checkpointHistory, setCheckpointHistory] = useState<Array<{ step: number; utc: string }>>([]);
   const [selectedPairs, setSelectedPairs] = useState<Record<string, boolean>>({
     EURUSD: true,
     GBPUSD: true,
     AUDUSD: true,
     USDJPY: true
   });
+
+  // H2: Honest training ETA calculation based on last N measured checkpoints
+  const etaInfo = useMemo(() => {
+    const history = checkpointHistory;
+    const remainingSteps = Math.max(0, trainStepsTarget - trainStepsDone);
+    if (!history || history.length < 2) {
+      return {
+        rateStr: 'measuring...',
+        etaStr: 'measuring...',
+        elapsedStr: 'measuring...',
+        finishStr: 'measuring...',
+      };
+    }
+    const N = Math.min(5, history.length);
+    const recent = history.slice(-N);
+    const cFirst = recent[0];
+    const cLast = recent[recent.length - 1];
+    const stepDelta = cLast.step - cFirst.step;
+    const timeDeltaMin = (new Date(cLast.utc).getTime() - new Date(cFirst.utc).getTime()) / 60000;
+    if (stepDelta <= 0 || timeDeltaMin <= 0) {
+      return {
+        rateStr: 'measuring...',
+        etaStr: 'measuring...',
+        elapsedStr: 'measuring...',
+        finishStr: 'measuring...',
+      };
+    }
+    const rate = stepDelta / timeDeltaMin;
+    const remMin = remainingSteps / rate;
+    const etaHours = (remMin / 60).toFixed(1);
+    const finishDate = new Date(Date.now() + remMin * 60000);
+    const finishStr = finishDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' (' + finishDate.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ')';
+    const startMs = new Date(history[0].utc).getTime();
+    const elapsedHours = (Math.max(0, Date.now() - startMs) / 3600000).toFixed(1);
+
+    return {
+      rateStr: `${Math.round(rate).toLocaleString()} steps/min`,
+      etaStr: `~${etaHours} hours`,
+      elapsedStr: `${elapsedHours}h elapsed`,
+      finishStr,
+    };
+  }, [checkpointHistory, trainStepsDone, trainStepsTarget]);
 
   // Live Positions
   const [positions, setPositions] = useState<Position[]>([
@@ -228,6 +271,18 @@ export default function App() {
           }
         }
       }
+
+      // Fetch training state
+      try {
+        const trRes = await fetch(`${WORKER_URL}/api/training/state`);
+        if (trRes.ok) {
+          const trData = await trRes.json();
+          if (trData.status) setTrainingStatus(trData.status === 'training' ? 'training' : 'idle');
+          if (trData.active_pair) setActiveTrainPair(trData.active_pair);
+          if (typeof trData.total_steps_done === 'number') setTrainStepsDone(trData.total_steps_done);
+          if (Array.isArray(trData.checkpoint_history)) setCheckpointHistory(trData.checkpoint_history);
+        }
+      } catch (_) {}
     } catch (_) {
       // Offline or network error
     }
@@ -1197,9 +1252,9 @@ export default function App() {
                       style={{ width: `${(trainStepsDone / trainStepsTarget) * 100}%` }}
                     ></div>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
-                    <span>Self-chaining via train.yml on GitHub Actions</span>
-                    <span>Automated weekend retrain: Every Saturday 02:00 UTC</span>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 mt-2.5">
+                    <span>Throughput: <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{etaInfo.rateStr}</strong> ({etaInfo.elapsedStr})</span>
+                    <span>ETA: <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{etaInfo.etaStr}</strong> · Est. Finish: <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{etaInfo.finishStr}</strong></span>
                   </div>
                 </div>
 
