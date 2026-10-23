@@ -1120,11 +1120,19 @@
         "first_epoch": 1514844000,
         "last_epoch": 1546293480,
         "sha256": "75916f013e796ff2e9ce8747a67a8ac90230e1c323ef00394413ee13feb977a5"
+      },
+      "2019": {
+        "asset": "USDJPY_2019.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 372525,
+        "first_epoch": 1546380000,
+        "last_epoch": 1577829480,
+        "sha256": "6a7bce5c8fd60ce54bdf0b378568ff2e0ace5830704d922d6d13aa8223d2736f"
       }
     },
-    "last_epoch": 1546293480,
+    "last_epoch": 1577829480,
     "first_epoch": 959727480,
-    "rows": 6129662,
+    "rows": 6502187,
     "columns": [
       "epoch",
       "bid_open",
