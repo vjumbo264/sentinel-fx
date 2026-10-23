@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H7: wire shared constant into vectorizer/training env, enforce bundle policy input shape, and test the real sfx checker.",
+    "next_step": "H7: wire training env and reject mismatched model inputs at static bundle verification.",
     "items": [
       {
         "id": "H1",
@@ -253,6 +253,10 @@
           {
             "what": "Centralize current observation dimension",
             "result": "Added OBSERVATION_DIM=62 to policy_schema. A parallel edit to train_env initially did not apply because the import text differed; no partial edit was written and it will be corrected from the actual source."
+          },
+          {
+            "what": "Fail closed on unexpected observation vectors",
+            "result": "Shared live/simulation vectorizer now requires shape (62,) using the schema constant; nonfinite values remain rejected."
           }
         ],
         "evidence": [],

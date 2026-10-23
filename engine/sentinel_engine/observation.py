@@ -9,7 +9,7 @@ try:
 except ImportError:
  np = None
  pd = None
-from .policy_schema import Observation,VERSION
+from .policy_schema import Observation,VERSION,OBSERVATION_DIM
 TIMEFRAMES={'M1':60,'M5':300,'M15':900,'H1':3600}
 
 def causal_market(df):
@@ -130,5 +130,6 @@ def vectorize(obs):
  ps=d['positions'];minutes=[e['minutes'] for e in d['news'].get('upcoming',[])];last=d.get('last_action_result') or {}
  values += [float(d['costs'].get('spread_atr',0)),float(d['costs'].get('commission_known',False)),d['drawdown'],d['equity']/max(d['pool_share'],1e-9),d['session']['hour_sin'],d['session']['hour_cos'],d['session']['weekday']/6,len(ps),sum(p['direction']*p['size_fraction'] for p in ps),sum(p['profit_risk_units'] for p in ps),max([p['time_open_minutes'] for p in ps] or [0])/1440,float(d['news'].get('coverage',False)),min(minutes or [1440])/1440,float(last.get('status')=='rejected'),sum(d.get('recent_results',[])[-10:]),float(d.get('session_dist_high',0.0)),float(d.get('session_dist_low',0.0)),float(d.get('spread_spike',0.0))]
  x=np.array(values,dtype=np.float64)
+ if x.shape!=(OBSERVATION_DIM,):raise ValueError(f'observation size mismatch: expected {OBSERVATION_DIM}, got {x.size}; retired models must not be loaded')
  if not np.isfinite(x).all():raise ValueError('nonfinite Observation vector')
  return x

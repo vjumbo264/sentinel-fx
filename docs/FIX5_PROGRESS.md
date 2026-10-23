@@ -197,3 +197,7 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H7: Centralize current observation dimension
 - Added OBSERVATION_DIM=62 to policy_schema. A parallel edit to train_env initially did not apply because the import text differed; no partial edit was written and it will be corrected from the actual source.
 - Next: H7: wire shared constant into vectorizer/training env, enforce bundle policy input shape, and test the real sfx checker.
+
+### H7: Fail closed on unexpected observation vectors
+- Shared live/simulation vectorizer now requires shape (62,) using the schema constant; nonfinite values remain rejected.
+- Next: H7: wire training env and reject mismatched model inputs at static bundle verification.
