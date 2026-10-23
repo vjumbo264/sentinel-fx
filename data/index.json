@@ -21,9 +21,9 @@
       "close"
     ],
     "asset": "R_10_60s.d5f7d4d1510208a5.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_10_60s.d5f7d4d1510208a5.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_10_60s.d5f7d4d1510208a5.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_10_60s.d5f7d4d1510208a5.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_10_60s.d5f7d4d1510208a5.csv.gz.report.json"
   },
   "R_100": {
     "symbol": "R_100",
@@ -47,9 +47,9 @@
       "close"
     ],
     "asset": "R_100_60s.aa5d19db9f6acf1d.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_100_60s.aa5d19db9f6acf1d.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_100_60s.aa5d19db9f6acf1d.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_100_60s.aa5d19db9f6acf1d.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_100_60s.aa5d19db9f6acf1d.csv.gz.report.json"
   },
   "frxEURUSD": {
     "symbol": "frxEURUSD",
@@ -95,30 +95,30 @@
       }
     ],
     "spread_profile_by_utc_hour": {
-      "0": 2.625e-05,
-      "1": 2.642e-05,
-      "2": 2.708e-05,
-      "3": 2.883e-05,
-      "4": 2.633e-05,
-      "5": 2.783e-05,
-      "6": 2.7e-05,
-      "7": 2.458e-05,
-      "8": 2.533e-05,
-      "9": 2.433e-05,
-      "10": 2.617e-05,
-      "11": 2.45e-05,
-      "12": 2.458e-05,
-      "13": 2.567e-05,
-      "14": 2.533e-05,
-      "15": 2.4e-05,
-      "16": 2.158e-05,
-      "17": 2.467e-05,
-      "18": 2.433e-05,
-      "19": 2.5e-05,
-      "20": 3.317e-05,
+      "0": 0.00002625,
+      "1": 0.00002642,
+      "2": 0.00002708,
+      "3": 0.00002883,
+      "4": 0.00002633,
+      "5": 0.00002783,
+      "6": 0.000027,
+      "7": 0.00002458,
+      "8": 0.00002533,
+      "9": 0.00002433,
+      "10": 0.00002617,
+      "11": 0.0000245,
+      "12": 0.00002458,
+      "13": 0.00002567,
+      "14": 0.00002533,
+      "15": 0.000024,
+      "16": 0.00002158,
+      "17": 0.00002467,
+      "18": 0.00002433,
+      "19": 0.000025,
+      "20": 0.00003317,
       "21": 0.00019573,
-      "22": 3.941e-05,
-      "23": 2.933e-05
+      "22": 0.00003941,
+      "23": 0.00002933
     },
     "requested_from": "2026-10-21T00:00:00+00:00",
     "requested_to_exclusive": "2026-10-23T00:00:00+00:00",
@@ -206,7 +206,7 @@
         "sha256": "0fde5ee7afdf3ac3881c9e7494da25fff9fc6495d9d47837d69679eb44d1ff40"
       }
     },
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_unavailable": {
       "2001": {
         "error": "invalid HistData OHLC row",
@@ -237,9 +237,9 @@
       "close"
     ],
     "asset": "R_25_60s.8907ea29e29510da.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_25_60s.8907ea29e29510da.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_25_60s.8907ea29e29510da.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_25_60s.8907ea29e29510da.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_25_60s.8907ea29e29510da.csv.gz.report.json"
   },
   "R_50": {
     "symbol": "R_50",
@@ -263,9 +263,9 @@
       "close"
     ],
     "asset": "R_50_60s.216a906f52f1f075.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_50_60s.216a906f52f1f075.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_50_60s.216a906f52f1f075.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_50_60s.216a906f52f1f075.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_50_60s.216a906f52f1f075.csv.gz.report.json"
   },
   "R_75": {
     "symbol": "R_75",
@@ -289,9 +289,9 @@
       "close"
     ],
     "asset": "R_75_60s.f7bd20dadb5a422c.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_75_60s.f7bd20dadb5a422c.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/R_75_60s.f7bd20dadb5a422c.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_75_60s.f7bd20dadb5a422c.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/R_75_60s.f7bd20dadb5a422c.csv.gz.report.json"
   },
   "1HZ10V": {
     "symbol": "1HZ10V",
@@ -315,9 +315,9 @@
       "close"
     ],
     "asset": "1HZ10V_60s.6bf1bf7457638eb1.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ10V_60s.6bf1bf7457638eb1.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ10V_60s.6bf1bf7457638eb1.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ10V_60s.6bf1bf7457638eb1.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ10V_60s.6bf1bf7457638eb1.csv.gz.report.json"
   },
   "1HZ25V": {
     "symbol": "1HZ25V",
@@ -341,9 +341,9 @@
       "close"
     ],
     "asset": "1HZ25V_60s.26b235eb59b78def.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ25V_60s.26b235eb59b78def.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ25V_60s.26b235eb59b78def.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ25V_60s.26b235eb59b78def.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ25V_60s.26b235eb59b78def.csv.gz.report.json"
   },
   "1HZ50V": {
     "symbol": "1HZ50V",
@@ -367,9 +367,9 @@
       "close"
     ],
     "asset": "1HZ50V_60s.108a345890d57f29.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ50V_60s.108a345890d57f29.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ50V_60s.108a345890d57f29.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ50V_60s.108a345890d57f29.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ50V_60s.108a345890d57f29.csv.gz.report.json"
   },
   "1HZ75V": {
     "symbol": "1HZ75V",
@@ -393,9 +393,9 @@
       "close"
     ],
     "asset": "1HZ75V_60s.563cf4b35162daba.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ75V_60s.563cf4b35162daba.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ75V_60s.563cf4b35162daba.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ75V_60s.563cf4b35162daba.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ75V_60s.563cf4b35162daba.csv.gz.report.json"
   },
   "1HZ100V": {
     "symbol": "1HZ100V",
@@ -419,9 +419,9 @@
       "close"
     ],
     "asset": "1HZ100V_60s.d58199820d720da7.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ100V_60s.d58199820d720da7.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ100V_60s.d58199820d720da7.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ100V_60s.d58199820d720da7.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ100V_60s.d58199820d720da7.csv.gz.report.json"
   },
   "1HZ150V": {
     "symbol": "1HZ150V",
@@ -445,9 +445,9 @@
       "close"
     ],
     "asset": "1HZ150V_60s.e3bb2639e000105a.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ150V_60s.e3bb2639e000105a.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ150V_60s.e3bb2639e000105a.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ150V_60s.e3bb2639e000105a.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ150V_60s.e3bb2639e000105a.csv.gz.report.json"
   },
   "1HZ250V": {
     "symbol": "1HZ250V",
@@ -471,9 +471,9 @@
       "close"
     ],
     "asset": "1HZ250V_60s.22218439c66f85db.csv.gz",
-    "release_tag": "data-01",
-    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ250V_60s.22218439c66f85db.csv.gz",
-    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-01/1HZ250V_60s.22218439c66f85db.csv.gz.report.json"
+    "release_tag": "data-synthetics-01",
+    "url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ250V_60s.22218439c66f85db.csv.gz",
+    "report_url": "https://github.com/vjumbo264/sentinel-fx/releases/download/data-synthetics-01/1HZ250V_60s.22218439c66f85db.csv.gz.report.json"
   },
   "frxAUDUSD": {
     "symbol": "frxAUDUSD",
@@ -483,7 +483,7 @@
     "last_epoch": 1792713540,
     "first_utc": "2023-10-23T00:00:00+00:00",
     "last_utc": "2026-10-22T23:59:00+00:00",
-    "years_back": 3.0,
+    "years_back": 3,
     "sha256": "3ed33b3ace1d27ec7f8a40f9dd3cc3f3b14a1de215e0b7f91ef02b5a89cff488",
     "gaps_flagged": [
       {
@@ -706,7 +706,7 @@
         "sha256": "5335c10b9932f37e8c30728c0f5dcd7b25bf771ac3a3797148a09417f59dedcf"
       }
     },
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread"
   },
   "frxGBPUSD": {
     "shard_releases": [
@@ -945,7 +945,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_complete": true
   },
   "frxEURGBP": {
@@ -1111,6 +1111,14 @@
         "last_epoch": 1546293480,
         "sha256": "a0d2438548ddf562b806aad9ab84dc91ead232ea41391ad4213bfa19f37dd159"
       },
+      "2019": {
+        "asset": "EURGBP_2019.csv.gz",
+        "release_tag": "data-eurgbp-01",
+        "rows": 372095,
+        "first_epoch": 1546380360,
+        "last_epoch": 1577829480,
+        "sha256": "c0ada3e6402d3214f0a181b0ae11acf87f968ee87a9750a2ae0388e6cd15649d"
+      },
       "2020": {
         "asset": "EURGBP_2020.csv.gz",
         "release_tag": "data-eurgbp-01",
@@ -1126,6 +1134,14 @@
         "first_epoch": 1609711200,
         "last_epoch": 1640987880,
         "sha256": "8a95d934f3e806b31c3e90e7b4dcde93debd680f611c63d8f396a073f3a734a8"
+      },
+      "2022": {
+        "asset": "EURGBP_2022.csv.gz",
+        "release_tag": "data-eurgbp-01",
+        "rows": 372211,
+        "first_epoch": 1641161400,
+        "last_epoch": 1672437480,
+        "sha256": "3a0939c9f73b63722573c2a066184e7835b8ac5912926b97d52a618d678c27fd"
       },
       "2023": {
         "asset": "EURGBP_2023.csv.gz",
@@ -1158,22 +1174,6 @@
         "first_epoch": 1767305040,
         "last_epoch": 1790830680,
         "sha256": "a15c475ac4710b864495b7c6d476385d9fa580e4031d14699b0dedb62840d1a6"
-      },
-      "2019": {
-        "asset": "EURGBP_2019.csv.gz",
-        "release_tag": "data-eurgbp-01",
-        "rows": 372095,
-        "first_epoch": 1546380360,
-        "last_epoch": 1577829480,
-        "sha256": "c0ada3e6402d3214f0a181b0ae11acf87f968ee87a9750a2ae0388e6cd15649d"
-      },
-      "2022": {
-        "asset": "EURGBP_2022.csv.gz",
-        "release_tag": "data-eurgbp-01",
-        "rows": 372211,
-        "first_epoch": 1641161400,
-        "last_epoch": 1672437480,
-        "sha256": "3a0939c9f73b63722573c2a066184e7835b8ac5912926b97d52a618d678c27fd"
       }
     },
     "last_epoch": 1790830680,
@@ -1191,7 +1191,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_complete": false
   },
   "frxUSDJPY": {
@@ -1216,6 +1216,14 @@
       }
     },
     "bulk_years": {
+      "2000": {
+        "asset": "USDJPY_2000.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 131241,
+        "first_epoch": 959727480,
+        "last_epoch": 978107220,
+        "sha256": "cd4d61ae93fa27e637c52dc2f7918f79bee57f370bf9698c0be41562c9e4bbcb"
+      },
       "2001": {
         "asset": "USDJPY_2001.csv.gz",
         "release_tag": "data-usdjpy-01",
@@ -1247,14 +1255,6 @@
         "first_epoch": 1073001600,
         "last_epoch": 1104528540,
         "sha256": "f0f293b4035e650a39997df5feeedd141d5d761dca56c1f012f9556e7f2c8a15"
-      },
-      "2000": {
-        "asset": "USDJPY_2000.csv.gz",
-        "release_tag": "data-usdjpy-01",
-        "rows": 131241,
-        "first_epoch": 959727480,
-        "last_epoch": 978107220,
-        "sha256": "cd4d61ae93fa27e637c52dc2f7918f79bee57f370bf9698c0be41562c9e4bbcb"
       },
       "2005": {
         "asset": "USDJPY_2005.csv.gz",
@@ -1448,7 +1448,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_complete": true
   },
   "frxUSDCAD": {
@@ -1511,6 +1511,14 @@
         "first_epoch": 1136246400,
         "last_epoch": 1167427800,
         "sha256": "0782937aa5f2e7da3793c3895b63ade10f197f1500294b32dfca8b8e5bcc142c"
+      },
+      "2007": {
+        "asset": "USDCAD_2007.csv.gz",
+        "release_tag": "data-usdcad-01",
+        "rows": 246689,
+        "first_epoch": 1167699600,
+        "last_epoch": 1199138160,
+        "sha256": "13ac220e773b4e65793536009c7ebdd13a2aefe250f2b9543b44f064fdb23082"
       },
       "2008": {
         "asset": "USDCAD_2008.csv.gz",
@@ -1663,14 +1671,6 @@
         "first_epoch": 1767304860,
         "last_epoch": 1790830680,
         "sha256": "85c15530d303e17960745955b1aac3eb887492a5b15cbda9ed65ce824bb6d652"
-      },
-      "2007": {
-        "asset": "USDCAD_2007.csv.gz",
-        "release_tag": "data-usdcad-01",
-        "rows": 246689,
-        "first_epoch": 1167699600,
-        "last_epoch": 1199138160,
-        "sha256": "13ac220e773b4e65793536009c7ebdd13a2aefe250f2b9543b44f064fdb23082"
       }
     },
     "last_epoch": 1790830680,
@@ -1688,7 +1688,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_unavailable": {
       "2007": {
         "error": "JSON CAS retries exhausted: data/index.json",
@@ -1710,6 +1710,14 @@
         "first_epoch": 959725380,
         "last_epoch": 978107220,
         "sha256": "5d357a5f338d2b8cd420aae14d2843fa776092f61bbb83d35caf7b4ef45fba28"
+      },
+      "2001": {
+        "asset": "USDCHF_2001.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 252065,
+        "first_epoch": 978426600,
+        "last_epoch": 1009822920,
+        "sha256": "f551b0b518e2dc283a7f6f7e2552265d428c58b54c49bd09995b24f4c9833883"
       },
       "2002": {
         "asset": "USDCHF_2002.csv.gz",
@@ -1774,6 +1782,14 @@
         "first_epoch": 1230854340,
         "last_epoch": 1262296560,
         "sha256": "138d919fef2a40c9b94fafeea31dd4bf5fadea5f516b89b43d7c64cbfdf57bb2"
+      },
+      "2010": {
+        "asset": "USDCHF_2010.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 345932,
+        "first_epoch": 1262556060,
+        "last_epoch": 1293825480,
+        "sha256": "5641a7738e046722b98d070aecac865ffc01c160d82c6e667547150f9e5d5a5d"
       },
       "2011": {
         "asset": "USDCHF_2011.csv.gz",
@@ -1895,22 +1911,6 @@
         "last_epoch": 1767218220,
         "sha256": "3aa00d6b9c2cdea087d5d40713613dd9874e2715e6a1ba5d4c9355f7168f5f64"
       },
-      "2001": {
-        "asset": "USDCHF_2001.csv.gz",
-        "release_tag": "data-usdchf-01",
-        "rows": 252065,
-        "first_epoch": 978426600,
-        "last_epoch": 1009822920,
-        "sha256": "f551b0b518e2dc283a7f6f7e2552265d428c58b54c49bd09995b24f4c9833883"
-      },
-      "2010": {
-        "asset": "USDCHF_2010.csv.gz",
-        "release_tag": "data-usdchf-01",
-        "rows": 345932,
-        "first_epoch": 1262556060,
-        "last_epoch": 1293825480,
-        "sha256": "5641a7738e046722b98d070aecac865ffc01c160d82c6e667547150f9e5d5a5d"
-      },
       "2026": {
         "asset": "USDCHF_2026_through_09.csv.gz",
         "release_tag": "data-usdchf-01",
@@ -1935,7 +1935,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_unavailable": {
       "2001": {
         "error": "JSON CAS retries exhausted: data/index.json",
@@ -2003,6 +2003,14 @@
         "first_epoch": 1104734880,
         "last_epoch": 1135893420,
         "sha256": "576ae9fecadbf137285825a56d4588acdb049aff46045b2f869f1c34db777150"
+      },
+      "2006": {
+        "asset": "GBPJPY_2006.csv.gz",
+        "release_tag": "data-gbpjpy-01",
+        "rows": 357368,
+        "first_epoch": 1136246400,
+        "last_epoch": 1167427740,
+        "sha256": "141b284f86f5e580978a2d065b74f6de4757728823f0d778ce2ddcf196641a1c"
       },
       "2007": {
         "asset": "GBPJPY_2007.csv.gz",
@@ -2163,14 +2171,6 @@
         "first_epoch": 1767305040,
         "last_epoch": 1790830680,
         "sha256": "b58f500b8eaf651df404fcf059e572196febc931bf25875825a16680f4629ad1"
-      },
-      "2006": {
-        "asset": "GBPJPY_2006.csv.gz",
-        "release_tag": "data-gbpjpy-01",
-        "rows": 357368,
-        "first_epoch": 1136246400,
-        "last_epoch": 1167427740,
-        "sha256": "141b284f86f5e580978a2d065b74f6de4757728823f0d778ce2ddcf196641a1c"
       }
     },
     "last_epoch": 1790830680,
@@ -2188,7 +2188,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_complete": false
   },
   "frxEURJPY": {
@@ -2424,7 +2424,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_complete": false
   },
   "frxNZDUSD": {
@@ -2624,14 +2624,6 @@
         "last_epoch": 1735682280,
         "sha256": "f7449d5860f861d48ef6c4cb6d3d2bdd9efd1d2d3c64802eaa1ea85c556292d2"
       },
-      "2026": {
-        "asset": "NZDUSD_2026_through_09.csv.gz",
-        "release_tag": "data-nzdusd-01",
-        "rows": 276755,
-        "first_epoch": 1767304800,
-        "last_epoch": 1790830680,
-        "sha256": "a06b57afe862357bc880dabb1d1a00ca32d4c94e0ab27ddb6cfa5464a9ae2147"
-      },
       "2025": {
         "asset": "NZDUSD_2025.csv.gz",
         "release_tag": "data-nzdusd-01",
@@ -2639,6 +2631,14 @@
         "first_epoch": 1735768860,
         "last_epoch": 1767218220,
         "sha256": "0f3c7b777e2f4729fd4e54c7e7b9925fbdfa59996d90da90806b80e94aeb9287"
+      },
+      "2026": {
+        "asset": "NZDUSD_2026_through_09.csv.gz",
+        "release_tag": "data-nzdusd-01",
+        "rows": 276755,
+        "first_epoch": 1767304800,
+        "last_epoch": 1790830680,
+        "sha256": "a06b57afe862357bc880dabb1d1a00ca32d4c94e0ab27ddb6cfa5464a9ae2147"
       }
     },
     "last_epoch": 1790830680,
@@ -2656,7 +2656,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_complete": false
   },
   "frxAUDJPY": {
@@ -2892,7 +2892,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_complete": false
   },
   "frxEURAUD": {
@@ -3128,7 +3128,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_complete": false
   },
   "frxGBPAUD": {
@@ -3353,7 +3353,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
     "bulk_complete": false
   }
 }
