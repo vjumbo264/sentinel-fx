@@ -591,11 +591,19 @@
         "first_epoch": 1167699600,
         "last_epoch": 1199138220,
         "sha256": "4e530f4e3bb18e386fc574871c7606db9a95381eb836a931f5f6deb8922ebdfc"
+      },
+      "2008": {
+        "asset": "GBPUSD_2008.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 332167,
+        "first_epoch": 1199232000,
+        "last_epoch": 1230757080,
+        "sha256": "37561ef8e8e79edcb6a0c280fc75ec55764b1e285bfdc47ecc0700a54a21106d"
       }
     },
-    "last_epoch": 1199138220,
+    "last_epoch": 1230757080,
     "first_epoch": 959727540,
-    "rows": 2067949,
+    "rows": 2400116,
     "columns": [
       "epoch",
       "bid_open",
