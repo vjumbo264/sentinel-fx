@@ -296,3 +296,7 @@ Next: H0: monitor Actions resume, run per-pair validation probes, collect verifi
 ## H0 — Reproduce zero ATR on immutable history with the actual checkpoint
 All13 real pair data probes completed with actual EURUSD_v1_s900000.zip: original code raises invalid volatility on EURUSD epoch1626388800 and USDCHF epoch1790548200 flat14-bar windows; current shared62-dimensional pipeline remains finite and actual model inference succeeds for every pair. Evidence docs/evidence/h0_real_pair_probes.json. Initial full-history local scan exceeded sandbox memory; memory-bounded shard scan replaced it. Actions39992955869 is actively resuming900000 with safe validation; still awaiting >900000 durable checkpoint.
 Next: H0: complete actual checkpoint validation CPU evidence and verify first >900000 Actions checkpoint before H9.
+
+## H0 — Verify nonfatal invalid-window behavior
+Two local real-SB3 regressions pass: insufficient validation never borrows holdout, and all3 poisoned validation windows are logged/skipped with eligible=false instead of killing the checkpoint chain. Real historical checkpoint CPU evaluation is running separately; Actions resume39992955869 is in Resume pair training at preserved900000. No further queue item started before H0 verification.
+Next: H0: wait for real CPU validation and Actions checkpoint950000, commit run/checkpoint evidence, then begin H9.
