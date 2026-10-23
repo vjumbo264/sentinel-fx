@@ -1301,11 +1301,19 @@
         "first_epoch": 1262556060,
         "last_epoch": 1293825360,
         "sha256": "dd9e0ff0b28a71b66f18e5e25b8628dcf1a65ed83c6bce1d4f7f0708e33d1672"
+      },
+      "2011": {
+        "asset": "NZDUSD_2011.csv.gz",
+        "release_tag": "data-nzdusd-01",
+        "rows": 325762,
+        "first_epoch": 1294005600,
+        "last_epoch": 1325282280,
+        "sha256": "e36502af39d59438df53b75c81963328f1baa0202dd4f6ff1c2eb503749d7853"
       }
     },
-    "last_epoch": 1293825360,
+    "last_epoch": 1325282280,
     "first_epoch": 1123884060,
-    "rows": 1521277,
+    "rows": 1847039,
     "columns": [
       "epoch",
       "bid_open",
