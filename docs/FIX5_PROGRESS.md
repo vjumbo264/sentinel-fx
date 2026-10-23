@@ -269,3 +269,10 @@ A separate original training run failed in evaluation with `ValueError: invalid 
 ### H8: Fail closed when staged recovery integration is invoked prematurely
 - Added explicit activation guard to staged watcher: it exits with a clear prerequisite message unless FIX5_RECOVERY_INTEGRATION_READY=true. No recovery schedule or Worker claim routes are installed; this prevents accidentally activating half-complete recovery. Existing bot chain and backup schedule remain in place.
 - Next: Acceptance audit remains incomplete: reopen inherited H1-H5 claims, preserve independently verified H6/H7, and record remaining work without claiming owner blockage.
+
+## Final checkpoint — mission incomplete
+- Done and freshly evidenced: H6/V7 real657-second green demo supervision, H7 schema enforcement and deployed model index.
+- In progress: H8 staged recovery logic, deliberately inactive.
+- Next: H1 fresh live/demo acceptance; reopen inherited H1-H5 statuses because their required integration evidence is incomplete or contradicted. Then complete H8-H10 and full fresh suite.
+- Problems: original EURUSD chain stopped on invalid volatility at900000 steps; checkpoint unchanged. Correct-password native login still failed IPC. H9/H10 not completed. No owner-side blocker established.
+- Full per-test results: docs/fix5-report.md. No claim that all acceptance tests pass.

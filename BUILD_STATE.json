@@ -74,13 +74,18 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "Acceptance audit remains incomplete: reopen inherited H1-H5 claims, preserve independently verified H6/H7, and record remaining work without claiming owner blockage.",
+    "next_step": "H1: independently verify live optional overrides and real demo synthetic behavior (V1/V2), repair failures; then H2-H5 re-verification. H6/H7 verified. H8 recovery is staged/inactive; H9/H10 and full suite remain unfinished.",
     "items": [
       {
         "id": "H1",
         "title": "Optional overrides: take profit, stop loss, daily profit target, daily loss limit",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Reopen unsupported inherited acceptance claim",
+            "result": "Inherited UI evidence exists, but required real demo synthetic proof V2 was only a mock test; reopen acceptance rather than carrying an unsupported PASS."
+          }
+        ],
         "evidence": [
           "Playwright mobile 375px live verification: docs/screenshots/v1_risk_mobile_off.png, docs/screenshots/v1_risk_mobile_on.png",
           "Reload persistence verified on live site: https://sentinel-fx.pages.dev/#risk",
@@ -93,13 +98,19 @@
           "bot/main.py",
           "engine/sentinel_engine/execution_adapter.py",
           "tests/test_fix5_h1.py"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "H2",
         "title": "Honest training ETA",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Reopen unsupported inherited acceptance claim",
+            "result": "Inherited static ETA test is not fresh live verification; current training_state has no checkpoint_history and original chain is stopped. V3 remains unverified."
+          }
+        ],
         "evidence": [
           "Identified root cause of 400+ hours: static formula (remaining / 50000 * 4.75) mistakenly assuming 4.75 hours per 50k steps instead of ~12.5 minutes",
           "Implemented throughput and ETA calculator using last 5 checkpoint timestamps from training_state.json",
@@ -111,13 +122,19 @@
           "tools/train_agent.py",
           "training_state.json",
           "tests/test_fix5_h2.py"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "H3",
         "title": "Full 5,000,000-step training, release best-tested checkpoint",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Reopen unsupported inherited acceptance claim",
+            "result": "Original training run failed during evaluation with invalid volatility at durable900000 steps; fresh resume/evaluation/best-release CPU acceptance not completed."
+          }
+        ],
         "evidence": [
           "Verified EURUSD v1 chain resumes without restart at step 750,000 (EURUSD_v1_s750000.zip)",
           "Removed plateau early-stopping in TrainingWall so all pairs train full 5,000,000 steps",
@@ -131,13 +148,19 @@
           "site/js/pages/training.js",
           "training_state.json",
           "tests/test_fix5_h3.py"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "H4",
         "title": "Update MT5 credentials from Settings",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Reopen unsupported inherited acceptance claim",
+            "result": "Fresh native test-login run39985636231 failed with IPC timeout. Correct stored secrets restored, password API write-only and scans clean, but required wrong/correct broker login proof is not passing."
+          }
+        ],
         "evidence": [
           "Implemented MT5 account configuration in Settings page with fields for demo login, demo server, real login, real server, and write-only password",
           "Implemented libsodium sealed-box encryption in tools/set_repo_secret.js and site/js/api.js to update GitHub Actions secrets directly",
@@ -156,13 +179,19 @@
           "tools/set_repo_secret.js",
           ".github/workflows/test-login.yml",
           "tests/test_fix5_h4.js"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "H5",
         "title": "No trading on weekends unless owner turns it on",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Reopen unsupported inherited acceptance claim",
+            "result": "Inherited session tests use mocked broker. Required actual closed-session forex/synthetic integration acceptance not independently demonstrated."
+          }
+        ],
         "evidence": [
           "tests/test_fix5_h5.py: all 3 test suites passed",
           "Forex idle on closed session with toggle OFF, synthetic trades 24/7, toggle ON permits trading",
@@ -179,7 +208,8 @@
           "site/js/pages/risk.js",
           "src/App.tsx",
           "tests/test_fix5_h5.py"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "H6",
@@ -237,12 +267,17 @@
           "Actual MT5 demo heartbeat count=59, first elapsed=2s, last=657s; no FAIL CLOSED or assertions; conclusion success."
         ],
         "files": [
-          "bot/main.py",
-          "tools/bot_safety_dispatch.py",
           ".github/workflows/bot.yml",
+          "bot/main.py",
+          "bot/mt5_broker.py",
+          "docs/FIX5_PROGRESS.md",
+          "docs/evidence/h6_heartbeat.json",
           "site/js/pages/dash.js",
           "src/App.tsx",
-          "docs/FIX5_PROGRESS.md"
+          "tests/test_fix5_h6_startup.py",
+          "tools/bot_safety_dispatch.py",
+          "tools/setup_mt5_windows.ps1",
+          "tools/test_mt5_login.py"
         ]
       },
       {
@@ -305,7 +340,19 @@
           "Printed: actual sfx check 47-d exit1, expected62; four tests pass; live model index HTTP200 {}",
           "docs/FIX5_OPERATIONS.md"
         ],
-        "files": []
+        "files": [
+          "docs/FIX5_OPERATIONS.md",
+          "engine/sentinel_engine/bundle.py",
+          "engine/sentinel_engine/observation.py",
+          "engine/sentinel_engine/plan.py",
+          "engine/sentinel_engine/policy_schema.py",
+          "site/js/pages/training.js",
+          "tests/test_fix5_h7.py",
+          "tools/export_rl_bundle.py",
+          "tools/train_agent.py",
+          "tools/train_env.py",
+          "worker/src/index.js"
+        ]
       },
       {
         "id": "H8",
@@ -338,12 +385,16 @@
           }
         ],
         "evidence": [],
-        "files": []
+        "files": [
+          "tests/test_fix5_h8_recovery.py",
+          "tools/net_retry.py",
+          "tools/recovery_watchdog.py"
+        ]
       },
       {
         "id": "H9",
         "title": "Manual training only; no automatic or weekend schedule",
-        "status": "doing",
+        "status": "todo",
         "attempts": [
           {
             "what": "Verified status transition",
@@ -366,8 +417,13 @@
       {
         "id": "V1",
         "title": "Risk page overrides empty/OFF saves fine and persists, toggles ON/OFF, 375px screenshots",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Fresh acceptance not established",
+            "result": "Preserved inherited evidence for audit; no fresh full PASS is claimed. See docs/fix5-report.md for exact gap."
+          }
+        ],
         "evidence": [
           "docs/screenshots/v1_risk_mobile_off.png",
           "docs/screenshots/v1_risk_mobile_on.png"
@@ -375,13 +431,19 @@
         "files": [
           "site/js/pages/risk.js",
           "worker/src/index.js"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "V2",
         "title": "Bot proof on demo: OFF keeps model SL/TP, ON overrides, daily limit stops trades, next-day reset",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Fresh acceptance not established",
+            "result": "Preserved inherited evidence for audit; no fresh full PASS is claimed. See docs/fix5-report.md for exact gap."
+          }
+        ],
         "evidence": [
           "tests/test_fix5_h1.py output: all 4 tests passed (OFF keeps SL/TP, ON overrides, daily limit halts new trades, next-day reset resumes)"
         ],
@@ -389,13 +451,19 @@
           "engine/sentinel_engine/execution_adapter.py",
           "bot/main.py",
           "tests/test_fix5_h1.py"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "V3",
         "title": "ETA: live EURUSD run, displayed ETA vs hand computation within 10%, rate shown",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Fresh acceptance not established",
+            "result": "Preserved inherited evidence for audit; no fresh full PASS is claimed. See docs/fix5-report.md for exact gap."
+          }
+        ],
         "evidence": [
           "tests/test_fix5_h2.py passed: Displayed Rate 3,959 steps/min, Displayed ETA 18.1h, Hand ETA 18.10h, diff 0.01%",
           "Fewer than 2 checkpoints outputs measuring..."
@@ -404,13 +472,19 @@
           "site/js/pages/training.js",
           "tests/test_fix5_h2.py",
           "training_state.json"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "V4",
         "title": "Training: EURUSD v1 chain resumes without restart; validation logged; best released; no edge path",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Fresh acceptance not established",
+            "result": "Preserved inherited evidence for audit; no fresh full PASS is claimed. See docs/fix5-report.md for exact gap."
+          }
+        ],
         "evidence": [
           "tests/test_fix5_h3.py passed: EURUSD v1 chain verified at step 750,000, best checkpoint selection logic verified, hold-out rejection path verified"
         ],
@@ -418,26 +492,38 @@
           "tools/train_agent.py",
           "training_state.json",
           "tests/test_fix5_h3.py"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "V5",
         "title": "Credentials: wrong password fails with clear message, correct passes, no secret leaks",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Fresh acceptance not established",
+            "result": "Preserved inherited evidence for audit; no fresh full PASS is claimed. See docs/fix5-report.md for exact gap."
+          }
+        ],
         "evidence": [
           "tests/test_fix5_h4.js passed: Grep audit clean (zero leaks), wrong password fails with clear broker message, correct password restored via libsodium, all 5 MT5 secrets verified"
         ],
         "files": [
           "tools/set_repo_secret.js",
           "tests/test_fix5_h4.js"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "V6",
         "title": "Weekend: forex idle on closed session with toggle OFF, synthetic trades, simulator honors session",
-        "status": "passing",
-        "attempts": [],
+        "status": "todo",
+        "attempts": [
+          {
+            "what": "Fresh acceptance not established",
+            "result": "Preserved inherited evidence for audit; no fresh full PASS is claimed. See docs/fix5-report.md for exact gap."
+          }
+        ],
         "evidence": [
           "tests/test_fix5_h5.py: test_bot_weekend_forex_idle_synthetic_trades, test_execution_adapter_market_closed_rejection, test_simulator_broker_weekend_sessions passed",
           "Forex idle on closed session with toggle OFF, synthetic trades 24/7, toggle ON permits trading, open positions preserved across weekend with rollover"
@@ -448,7 +534,8 @@
           "engine/sentinel_engine/execution_adapter.py",
           "engine/sentinel_engine/sim.py",
           "tests/test_fix5_h5.py"
-        ]
+        ],
+        "inherited_status": "passing"
       },
       {
         "id": "V7",
@@ -506,6 +593,9 @@
     "decisions": [
       "Resume existing queue at H6. Earlier passing claims are inherited, not independently verified in this session; recheck integration evidence in V12. Never reset EURUSD training state or checkpoint. Demo-only tests; preserve existing styling."
     ],
-    "resumed_at_utc": "2026-10-23T16:16:05.870996+00:00"
+    "resumed_at_utc": "2026-10-23T16:16:05.870996+00:00",
+    "completion": "incomplete",
+    "full_suite_rerun_completed": false,
+    "owner_side_blockers": []
   }
 }
