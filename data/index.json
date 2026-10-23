@@ -957,11 +957,19 @@
         "first_epoch": 1704146640,
         "last_epoch": 1735682280,
         "sha256": "e0303f2f4969ba46a32fd707a7032ce985f63709995a410ecd06459f3a1dbe8c"
+      },
+      "2025": {
+        "asset": "EURGBP_2025.csv.gz",
+        "release_tag": "data-eurgbp-01",
+        "rows": 371225,
+        "first_epoch": 1735769040,
+        "last_epoch": 1767218220,
+        "sha256": "a254cc69e432308f6a3f330efac328b81307ad3f04086872548668cb5cd5d049"
       }
     },
-    "last_epoch": 1735682280,
+    "last_epoch": 1767218220,
     "first_epoch": 1015200240,
-    "rows": 6884569,
+    "rows": 7255794,
     "columns": [
       "epoch",
       "bid_open",
