@@ -95,30 +95,30 @@
       }
     ],
     "spread_profile_by_utc_hour": {
-      "0": 0.00002625,
-      "1": 0.00002642,
-      "2": 0.00002708,
-      "3": 0.00002883,
-      "4": 0.00002633,
-      "5": 0.00002783,
-      "6": 0.000027,
-      "7": 0.00002458,
-      "8": 0.00002533,
-      "9": 0.00002433,
-      "10": 0.00002617,
-      "11": 0.0000245,
-      "12": 0.00002458,
-      "13": 0.00002567,
-      "14": 0.00002533,
-      "15": 0.000024,
-      "16": 0.00002158,
-      "17": 0.00002467,
-      "18": 0.00002433,
-      "19": 0.000025,
-      "20": 0.00003317,
+      "0": 2.625e-05,
+      "1": 2.642e-05,
+      "2": 2.708e-05,
+      "3": 2.883e-05,
+      "4": 2.633e-05,
+      "5": 2.783e-05,
+      "6": 2.7e-05,
+      "7": 2.458e-05,
+      "8": 2.533e-05,
+      "9": 2.433e-05,
+      "10": 2.617e-05,
+      "11": 2.45e-05,
+      "12": 2.458e-05,
+      "13": 2.567e-05,
+      "14": 2.533e-05,
+      "15": 2.4e-05,
+      "16": 2.158e-05,
+      "17": 2.467e-05,
+      "18": 2.433e-05,
+      "19": 2.5e-05,
+      "20": 3.317e-05,
       "21": 0.00019573,
-      "22": 0.00003941,
-      "23": 0.00002933
+      "22": 3.941e-05,
+      "23": 2.933e-05
     },
     "requested_from": "2026-10-21T00:00:00+00:00",
     "requested_to_exclusive": "2026-10-23T00:00:00+00:00",
@@ -206,7 +206,7 @@
         "sha256": "0fde5ee7afdf3ac3881c9e7494da25fff9fc6495d9d47837d69679eb44d1ff40"
       }
     },
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_unavailable": {
       "2001": {
         "error": "invalid HistData OHLC row",
@@ -706,7 +706,7 @@
         "sha256": "5335c10b9932f37e8c30728c0f5dcd7b25bf771ac3a3797148a09417f59dedcf"
       }
     },
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread"
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   },
   "frxGBPUSD": {
     "shard_releases": [
@@ -945,7 +945,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_complete": true
   },
   "frxEURGBP": {
@@ -1191,7 +1191,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_complete": false
   },
   "frxUSDJPY": {
@@ -1448,7 +1448,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_complete": true
   },
   "frxUSDCAD": {
@@ -1688,7 +1688,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_unavailable": {
       "2007": {
         "error": "JSON CAS retries exhausted: data/index.json",
@@ -1935,7 +1935,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_unavailable": {
       "2001": {
         "error": "JSON CAS retries exhausted: data/index.json",
@@ -2188,7 +2188,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_complete": false
   },
   "frxEURJPY": {
@@ -2424,7 +2424,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_complete": false
   },
   "frxNZDUSD": {
@@ -2656,7 +2656,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_complete": false
   },
   "frxAUDJPY": {
@@ -2892,7 +2892,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_complete": false
   },
   "frxEURAUD": {
@@ -3128,7 +3128,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_complete": false
   },
   "frxGBPAUD": {
@@ -3353,7 +3353,7 @@
       "ask_close"
     ],
     "source": "histdata-bid-only-synthetic-ask",
-    "ask_assumption": "spread registry points × point, else 1.5 × point; NOT measured spread",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_complete": false
   }
 }
