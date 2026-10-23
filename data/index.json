@@ -1344,11 +1344,19 @@
         "first_epoch": 1104734880,
         "last_epoch": 1135893480,
         "sha256": "15231c33e7bc52e260492f65aa77852ab96c541f920a7a53a59753a5c7ebd585"
+      },
+      "2006": {
+        "asset": "AUDJPY_2006.csv.gz",
+        "release_tag": "data-audjpy-01",
+        "rows": 338506,
+        "first_epoch": 1136246400,
+        "last_epoch": 1167427740,
+        "sha256": "c7122e623cebe68c25a7f81178143ada76a12080eecca25bd4e4272a6440b58f"
       }
     },
-    "last_epoch": 1135893480,
+    "last_epoch": 1167427740,
     "first_epoch": 1029796320,
-    "rows": 1104413,
+    "rows": 1442919,
     "columns": [
       "epoch",
       "bid_open",
