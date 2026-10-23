@@ -856,11 +856,19 @@
         "first_epoch": 978426600,
         "last_epoch": 1009823220,
         "sha256": "c8210ecd074b52bedd85edbc564404541dbaa842813c80f92904d88951da1891"
+      },
+      "2002": {
+        "asset": "USDJPY_2002.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 238609,
+        "first_epoch": 1009952760,
+        "last_epoch": 1041357540,
+        "sha256": "926bb1e18862e6f5d4ecab005bdf238902203ccada2f324a6720622011e6e484"
       }
     },
-    "last_epoch": 1009823220,
+    "last_epoch": 1041357540,
     "first_epoch": 978426600,
-    "rows": 244200,
+    "rows": 482809,
     "columns": [
       "epoch",
       "bid_open",
