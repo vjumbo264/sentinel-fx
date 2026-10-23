@@ -74,7 +74,7 @@
   "last_updated": "2026-10-23T09:10:50.000000+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
-    "next_step": "H6: pin Windows terminal path and portable launch, then dispatch demo verification.",
+    "next_step": "H6: make bounded demo acceptance runs terminate normally without chaining.",
     "items": [
       {
         "id": "H1",
@@ -197,6 +197,10 @@
           {
             "what": "Authenticate during first terminal initialization",
             "result": "Latest bot run 39983309547 logs: initialize attempt 3 returned False (last_err: (-10005, IPC timeout)); AssertionError: demo login failed. Previously fixed resource import and inline indentation were not the remaining root cause. Broker now passes credentials on its first initialize, allows 60 seconds, and uses the launched executable when available."
+          },
+          {
+            "what": "Pin native MT5 portable terminal path",
+            "result": "Windows setup now launches a private writable portable terminal and exports the exact executable as MT5_TERMINAL_PATH. No password is written to the terminal configuration. Pending real Windows runner verification."
           }
         ],
         "evidence": [],

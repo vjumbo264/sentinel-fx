@@ -67,3 +67,7 @@
 ### H6: Authenticate during first terminal initialization
 - Latest bot run 39983309547 logs: initialize attempt 3 returned False (last_err: (-10005, IPC timeout)); AssertionError: demo login failed. Previously fixed resource import and inline indentation were not the remaining root cause. Broker now passes credentials on its first initialize, allows 60 seconds, and uses the launched executable when available.
 - Next: H6: pin Windows terminal path and portable launch, then dispatch demo verification.
+
+### H6: Pin native MT5 portable terminal path
+- Windows setup now launches a private writable portable terminal and exports the exact executable as MT5_TERMINAL_PATH. No password is written to the terminal configuration. Pending real Windows runner verification.
+- Next: H6: make bounded demo acceptance runs terminate normally without chaining.
