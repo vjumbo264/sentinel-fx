@@ -663,11 +663,19 @@
         "first_epoch": 1451858400,
         "last_epoch": 1483135020,
         "sha256": "1bdbe48e3dfbd760716f290f771c4508a39f069a1c47b0bc1183160db0f8d172"
+      },
+      "2017": {
+        "asset": "GBPUSD_2017.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 371204,
+        "first_epoch": 1483340400,
+        "last_epoch": 1514584620,
+        "sha256": "905b00d61830017bf9ef1ef338021ec78581cb50fae508ce4454e5b1974492c2"
       }
     },
-    "last_epoch": 1483135020,
+    "last_epoch": 1514584620,
     "first_epoch": 959727540,
-    "rows": 5308465,
+    "rows": 5679669,
     "columns": [
       "epoch",
       "bid_open",
