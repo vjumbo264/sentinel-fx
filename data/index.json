@@ -54,13 +54,13 @@
   "frxEURUSD": {
     "symbol": "frxEURUSD",
     "granularity": 60,
-    "rows": 1550300,
-    "first_epoch": 1609711200,
+    "rows": 143167,
+    "first_epoch": 959725620,
     "last_epoch": 1792713540,
     "first_utc": "2021-01-03T22:00:00+00:00",
     "last_utc": "2026-10-22T23:59:00+00:00",
     "sha256": "3b7b72c03b18ac057a8da021b355f554de32f0dc3974b71382806a832ab66750",
-    "source": "dukascopy-bi5-bid-ask-ticks",
+    "source": "histdata-bid-only-synthetic-ask",
     "columns": [
       "epoch",
       "bid_open",
@@ -70,8 +70,7 @@
       "ask_open",
       "ask_high",
       "ask_low",
-      "ask_close",
-      "tick_volume"
+      "ask_close"
     ],
     "duplicates": 0,
     "crossed_bid_ask": 0,
@@ -132,7 +131,18 @@
     "shard_releases": [
       "data-01",
       "data-eurusd-01"
-    ]
+    ],
+    "bulk_years": {
+      "2000": {
+        "asset": "EURUSD_2000.csv.gz",
+        "release_tag": "data-eurusd-01",
+        "rows": 143167,
+        "first_epoch": 959725620,
+        "last_epoch": 978107100,
+        "sha256": "774937eafceeb952a8581d42e31a335aef573aeae740595f7e8e3ebcb215ecba"
+      }
+    },
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread"
   },
   "R_25": {
     "symbol": "R_25",
