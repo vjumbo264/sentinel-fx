@@ -884,11 +884,19 @@
         "first_epoch": 959725380,
         "last_epoch": 978107220,
         "sha256": "5d357a5f338d2b8cd420aae14d2843fa776092f61bbb83d35caf7b4ef45fba28"
+      },
+      "2002": {
+        "asset": "USDCHF_2002.csv.gz",
+        "release_tag": "data-usdchf-01",
+        "rows": 234797,
+        "first_epoch": 1009952760,
+        "last_epoch": 1041357540,
+        "sha256": "2853ead021ba69c0389abb17f4c355231f8433e5856afed5ddbc1a716b6ab9c3"
       }
     },
-    "last_epoch": 978107220,
+    "last_epoch": 1041357540,
     "first_epoch": 959725380,
-    "rows": 151350,
+    "rows": 386147,
     "columns": [
       "epoch",
       "bid_open",
