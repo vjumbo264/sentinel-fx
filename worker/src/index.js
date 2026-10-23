@@ -431,48 +431,141 @@ export default {
         const pair = String(body.pair || "").replaceAll("frx", "");
         if (!["start", "update"].includes(mode) || !/^(all|(?:[A-Z]{6}|R_\d+|1HZ\d+V)(?:,(?:[A-Z]{6}|R_\d+|1HZ\d+V))*)$/.test(pair)) return err("Invalid pair or training mode");
         const headers = { Authorization: `Bearer ${site.token}`, Accept: "application/vnd.github+json", "User-Agent": "sentinel-fx-worker", "Content-Type": "application/json" };
+        let requested = pair === "all" ? [] : pair.split(",");
+        let dataEndUtc = null;
+        if (mode === "update") {
+          _dataCache.delete("models/index.json");
+          const modelFile = await fetchRepoFile("models/index.json", site.token);
+          if (!modelFile.body) return err("Model registry unavailable", 503);
+          const models = JSON.parse(modelFile.body);
+          const canUpdate = p => (models["frx" + p] || models[p])?.versions?.some(v => v.observation_dim === 62 && v.policy_schema === "sentinel.policy.v2" && v.checkpoint_asset);
+          requested = pair === "all" ? Object.keys(models).map(p => p.replace(/^frx/, "")).filter(canUpdate) : pair.split(",");
+          if (!requested.length || requested.some(p => !canUpdate(p))) return err("Update needs an existing 62-input model with native training weights. Train this pair first.", 409);
+        }
+        const dataFile = await fetchRepoFile("data/index.json", site.token);
+        if (dataFile.body) {
+          const dIdx = JSON.parse(dataFile.body);
+          const ends = requested.map(p => (dIdx["frx" + p] || dIdx[p])?.last_utc).filter(Boolean).sort();
+          dataEndUtc = ends.at(-1) || null;
+        }
         const runsResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/train.yml/runs?per_page=100`, { headers });
         if (!runsResponse.ok) return err(`Cannot check training writer: HTTP ${runsResponse.status}`, 502);
         const runs = (await runsResponse.json()).workflow_runs || [];
         if (runs.some(r => r.status !== "completed")) return err("Training cycle is already active. Its checkpoint is preserved; retry after the current owner cycle completes.", 409);
+        _dataCache.delete("training_state.json");
         const currentFile = await fetchRepoFile("training_state.json", site.token);
         if (!currentFile.body) return err("Cannot read training state", 503);
         const current = JSON.parse(currentFile.body);
         if (current.pairs_pending?.length && !["idle", "complete", "cancelled"].includes(current.status)) return err("Existing owner cycle must finish before starting an update", 409);
-        if (mode === "update") {
-          const modelFile = await fetchRepoFile("models/index.json", site.token);
-          if (!modelFile.body) return err("Model registry unavailable", 503);
-          const models = JSON.parse(modelFile.body);
-          const canUpdate = p => (models['frx'+p] || models[p])?.versions?.some(v => v.observation_dim === 62 && v.checkpoint_asset);
-          const requested = pair === "all" ? Object.keys(models).map(p => p.replace(/^frx/, '')).filter(canUpdate) : pair.split(',');
-          if (!requested.length || requested.some(p => !canUpdate(p))) return err("Update needs an existing 62-input model with native training weights. Train this pair first.", 409);
-        }
         const dispatched = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/train.yml/dispatches`, {
           method: "POST", headers, body: JSON.stringify({ ref: "main", inputs: { pair, mode } })
         });
         if (dispatched.status !== 204) return err(`Training dispatch failed: HTTP ${dispatched.status}`, 502);
-        return json({ ok: true, pair, mode });
+        return json({ ok: true, pair, mode, pairs: requested, data_end_utc: dataEndUtc });
       }
 
       // Schema-compatible model registry, consumed by the Training page.
       // Unknown/old schemas stay visible but can never be advertised tradable.
       if (path === "/api/models/index" && method === "GET") {
-        const upstream = await fetch(`${RAW_BASE}/models/index.json`, {
-          cf: { cacheTtl: 30 }, headers: { "User-Agent": "sentinel-fx-worker" }
-        });
-        if (!upstream.ok) return err("model registry unavailable", 503);
-        const index = await upstream.json();
+        if (url.searchParams.get("fresh")) _dataCache.delete("models/index.json");
+        const modelFile = await fetchRepoFile("models/index.json", site.token);
+        if (!modelFile.body) return err("model registry unavailable", 503);
+        const index = JSON.parse(modelFile.body);
+        const pairRows = await env.DB.prepare("SELECT symbol, enabled, pack_version FROM pairs").all().catch(() => ({ results: [] }));
+        const pairMap = Object.fromEntries((pairRows.results || []).map(r => [r.symbol, r]));
         const result = {};
         for (const [symbol, entry] of Object.entries(index)) {
-          const version = (entry.versions || []).find(v => v.N === (entry.candidate_version ?? entry.active_version)) || entry;
+          const versions = entry.versions || [];
+          const activeVerObj = versions.find(v => v.N === entry.active_version) || null;
+          const candVerObj = versions.find(v => v.N === entry.candidate_version) || null;
+          const version = candVerObj || activeVerObj || versions.at(-1) || entry;
           const dimension = version.observation_dim ?? entry.observation_dim;
           const schema = version.policy_schema ?? entry.policy_schema;
           const compatible = dimension === 62 && schema === "sentinel.policy.v2";
-          result[symbol] = { ...entry, ...version, compatible, observation_dim: dimension ?? null,
+          const dbPair = pairMap[symbol] || null;
+          const isEnabled = Boolean(dbPair && dbPair.enabled && dbPair.pack_version > 0 && entry.active_version);
+          result[symbol] = {
+            ...entry,
+            ...version,
+            active_version: entry.active_version ?? null,
+            candidate_version: entry.candidate_version ?? null,
+            active_data_end_utc: activeVerObj?.data_end_utc || null,
+            enabled: isEnabled,
+            compatible,
+            observation_dim: dimension ?? null,
             verdict: compatible ? (version.verdict || entry.verdict || "untested") : "retired",
-            release_decision: compatible ? (version.release_decision || entry.release_decision) : "Retired, incompatible: expected 62-dimensional sentinel.policy.v2" };
+            release_decision: compatible ? (version.release_decision || entry.release_decision) : "Retired, incompatible: expected 62-dimensional sentinel.policy.v2"
+          };
         }
         return json(result);
+      }
+
+      if (path === "/api/models/enable" && method === "POST") {
+        const rawSym = String(body.symbol || "").trim();
+        if (!/^(?:frx[A-Z]{6}|[A-Z]{6}|R_\d+|1HZ\d+V)$/.test(rawSym)) return err("Invalid symbol");
+        const symbol = /^(?:R_\d+|1HZ\d+V|frx)/.test(rawSym) ? rawSym : `frx${rawSym}`;
+        const enable = body.enabled !== false;
+        const ghHeaders = {
+          Authorization: `Bearer ${site.token}`,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "sentinel-fx-worker",
+          "Content-Type": "application/json"
+        };
+        const metaRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/models/index.json?ref=main`, { headers: ghHeaders });
+        if (!metaRes.ok) return err(`Cannot read models/index.json: HTTP ${metaRes.status}`, 502);
+        const meta = await metaRes.json();
+        const decoded = atob(String(meta.content || "").replace(/\s+/g, ""));
+        const index = JSON.parse(decoded);
+        const entry = index[symbol];
+        if (!entry || !Array.isArray(entry.versions) || !entry.versions.length) return err(`No published model found for ${symbol}`, 404);
+        const targetVer = Number(body.version || entry.candidate_version || entry.active_version || entry.versions.at(-1).N);
+        const verObj = entry.versions.find(v => Number(v.N) === targetVer);
+        if (!verObj) return err(`Version v${targetVer} not found for ${symbol}`, 404);
+        if (verObj.observation_dim !== 62 || verObj.policy_schema !== "sentinel.policy.v2") {
+          return err("Model version is incompatible (requires 62-dim sentinel.policy.v2)", 409);
+        }
+        const ts = nowUTC();
+        if (enable) {
+          if (entry.active_version !== targetVer) {
+            entry.active_version = targetVer;
+            const updatedText = JSON.stringify(index, null, 2) + "\n";
+            const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/models/index.json`, {
+              method: "PUT",
+              headers: ghHeaders,
+              body: JSON.stringify({
+                message: `models: enable ${symbol} v${targetVer} [skip ci]`,
+                content: btoa(updatedText),
+                sha: meta.sha,
+                branch: "main"
+              })
+            });
+            if (!putRes.ok) return err(`Failed to update active_version in repo: HTTP ${putRes.status}`, 502);
+            _dataCache.delete("models/index.json");
+          }
+          await env.DB.prepare(
+            `INSERT INTO pairs (symbol, enabled, shadow_mode, status, min_stake, max_stake, stake_pct, max_consec_losses, pack_version, verdict, has_custom_code, updated_utc)
+             VALUES (?, 1, 0, 'trading', 0.35, 10.0, 0.01, 3, ?, ?, 0, ?)
+             ON CONFLICT(symbol) DO UPDATE SET enabled=1, pack_version=excluded.pack_version, status='trading', verdict=excluded.verdict, updated_utc=excluded.updated_utc`
+          ).bind(symbol, targetVer, verObj.verdict || "pass", ts).run();
+
+          const sessRow = await env.DB.prepare("SELECT starting_balance FROM session ORDER BY id DESC LIMIT 1").first();
+          const hbRow = await env.DB.prepare("SELECT balance FROM heartbeat WHERE id=1").first();
+          const basePool = Number(sessRow?.starting_balance || hbRow?.balance || 1000);
+          const existingLed = await env.DB.prepare("SELECT allocated, balance FROM model_ledger WHERE symbol=?").bind(symbol).first();
+          const alloc = existingLed && Number(existingLed.allocated) > 0 ? Number(existingLed.allocated) : Math.max(100, Math.floor(basePool * 100) / 100);
+          const bal = existingLed && Number(existingLed.balance) > 0 ? Number(existingLed.balance) : alloc;
+          await env.DB.prepare(
+            `INSERT INTO model_ledger (symbol, allocated, balance, active, updated_utc)
+             VALUES (?,?,?,1,?)
+             ON CONFLICT(symbol) DO UPDATE SET allocated=excluded.allocated, balance=excluded.balance, active=1, updated_utc=excluded.updated_utc`
+          ).bind(symbol, alloc, bal, ts).run();
+          await env.DB.prepare("DELETE FROM overrides WHERE symbol=? AND action='pause'").bind(symbol).run().catch(() => {});
+          return json({ ok: true, symbol, active_version: targetVer, enabled: true, allocated: alloc });
+        } else {
+          await env.DB.prepare("UPDATE pairs SET enabled=0, status='ready', updated_utc=? WHERE symbol=?").bind(ts, symbol).run();
+          await env.DB.prepare("UPDATE model_ledger SET active=0, updated_utc=? WHERE symbol=?").bind(ts, symbol).run();
+          return json({ ok: true, symbol, active_version: entry.active_version ?? null, enabled: false });
+        }
       }
 
       // FIX-D: candle proxy so the site chart always renders through the Worker.

@@ -8,17 +8,18 @@ def cmd_guide(a):
  print(p.read_text())
 def cmd_init(a):
  target=Path(a.dir or ('train_'+a.symbol));target.mkdir(parents=True,exist_ok=True)
- (target/'manifest.json').write_text(json.dumps({'schema_version':2,'policy_schema_version':'sentinel.policy.v1','symbol':a.symbol,'version':1,'entry_timeframe':'M1','files':[]},indent=2))
+ (target/'manifest.json').write_text(json.dumps({'schema_version':2,'policy_schema':'sentinel.policy.v2','observation_dim':62,'symbol':a.symbol,'version':1,'entry_seconds':60,'files':[]},indent=2))
  print('Workspace created; export trained models and embedded parity vectors here. Keep trainer source scripts OUTSIDE bundle directory.')
 def cmd_build(a):
  from .bundle import BANNED_EXT,verify_bundle
+ from .policy_schema import VERSION,OBSERVATION_DIM
  source=Path(a.dir);files=[];manifest=json.loads((source/'manifest.json').read_text());output=Path(a.out).resolve()
  for p in sorted(source.rglob('*')):
   if not p.is_file() or p.name=='manifest.json' or p.resolve()==output:continue
   rel=p.relative_to(source).as_posix()
   if rel.lower().endswith(BANNED_EXT):raise ValueError('Code/executable prohibited in model bundle: '+rel)
   raw=p.read_bytes();files.append({'path':rel,'sha256':hashlib.sha256(raw).hexdigest(),'size':len(raw)})
- manifest.update(schema_version=2,policy_schema_version='sentinel.policy.v1',files=files)
+ manifest.update(schema_version=2,policy_schema=VERSION,observation_dim=OBSERVATION_DIM,files=files)
  with zipfile.ZipFile(a.out,'w',zipfile.ZIP_DEFLATED) as z:
   z.writestr('manifest.json',json.dumps(manifest,indent=2))
   for f in files:z.write(source/f['path'],f['path'])
@@ -34,7 +35,7 @@ def cmd_sim(a):
  if a.out:Path(a.out).write_text(text);print('Report:',a.out)
  else:print(text)
 def cmd_publish(a):
- token=os.environ.get('GITHUB_TOKEN','')
+ token=os.environ.get('GITHUB_TOKEN') or os.environ.get('GH_CHAIN_PAT') or ''
  if not token:raise ValueError('GITHUB_TOKEN environment required; do not pass tokens on command line')
  # Upload staged bundle then trigger public secret-free checker. No trading.
  from urllib.parse import quote

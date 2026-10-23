@@ -91,12 +91,14 @@ def export_bundle(model, env, pair, version, output, training_report):
     }
     raw = {name: json.dumps(data, sort_keys=True, allow_nan=False).encode() for name,data in payload.items()}
     raw['models/policy.onnx'] = onnx_path.read_bytes()
-    manifest = {'schema_version': 2, 'symbol': 'frx'+pair, 'mt5_symbol': pair, 'version': version,
+    sym_key = pair if pair.startswith(('R_', '1HZ')) else f'frx{pair}'
+    mt5_sym = env.specs.get('mt5_symbol', pair)
+    manifest = {'schema_version': 2, 'symbol': sym_key, 'mt5_symbol': mt5_sym, 'version': version,
                 'entry_seconds': 60, 'policy_schema': VERSION, 'observation_dim': OBSERVATION_DIM,
                 'trained_through': training_report.get('trained_through'),
                 'files': {name: {'path': name, 'sha256': hashlib.sha256(data).hexdigest(), 'size': len(data)}
                           for name,data in raw.items()}}
-    bundle = output / f'frx{pair}_v{version}.sfxmodel.zip'
+    bundle = output / f'{sym_key}_v{version}.sfxmodel.zip'
     with zipfile.ZipFile(bundle, 'w', zipfile.ZIP_DEFLATED) as archive:
         archive.writestr('manifest.json', json.dumps(manifest))
         for name,data in raw.items():

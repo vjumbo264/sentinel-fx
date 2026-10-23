@@ -143,7 +143,7 @@ export async function trainingPage() {
                   <div style="background:var(--accent); width:${progressPct}%; height:100%; transition:width 0.4s ease;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:10px; font-size:11px; color:var(--text-3);">
-                  <span id="training-throughput">Throughput: <strong style="color:var(--text);">${etaInfo.rateStr}</strong> (${etaInfo.elapsedStr})</span>
+                  <span id="training-throughput">Throughput: <strong style="color:var(--text);">${etaInfo.rateStr}</strong> (${etaInfo.elapsedStr}) · data up to <strong style="color:var(--text);">${(trainingState.data_end_utc || trainingState.data_snapshot?.last_utc || dataIndex['frx'+activePair]?.last_utc || dataIndex[activePair]?.last_utc || 'latest').slice(0, 16).replace('T', ' ')}</strong></span>
                   <span id="training-eta">Remaining at checkpoint: <strong style="color:var(--text);">${etaInfo.etaStr}</strong> · Est. Finish: <strong style="color:var(--text);">${etaInfo.finishStr}</strong>${etaInfo.queueStr}</span>
                 </div>
               </div>
@@ -227,8 +227,10 @@ export async function trainingPage() {
 
     // Check models index for model verdict
     const model = modelsIndex[pair] || modelsIndex[symbolKey] || {};
-    const hasModel = !!model.checkpoint_asset || (model.versions || []).some(v => v.checkpoint_asset);
-    const verdict = model.verdict || (hasModel ? 'pass' : 'untrained');
+    const hasNativeWeights = !!model.checkpoint_asset || (model.versions || []).some(v => v.observation_dim === 62 && v.checkpoint_asset);
+    const hasBundle = !!model.compatible && (!!model.asset || (model.versions || []).some(v => v.observation_dim === 62 && v.asset));
+    const pairRes = (trainingState.pair_results || {})[pair] || {};
+    const verdict = model.verdict || pairRes.verdict || (hasBundle ? 'pass' : 'untrained');
     const isCurrentlyActive = (trainingState.active_pair === pair);
 
     let trainChip = 'badge-muted';
@@ -240,24 +242,29 @@ export async function trainingPage() {
     } else if (isCurrentlyActive && trainingState.status === 'training') {
       trainChip = 'badge-warning';
       trainText = 'Training...';
-    } else if (verdict === 'pass') {
+    } else if (model.enabled && model.active_version) {
       trainChip = 'badge-profit';
-      trainText = 'Trained (Pass)';
+      trainText = `Trading v${model.active_version}`;
+    } else if (verdict === 'pass' || verdict === 'test_only') {
+      trainChip = 'badge-profit';
+      trainText = verdict === 'test_only' ? `Bundle v${model.N || 1} Ready` : `Trained v${model.N || 1} (Pass)`;
     } else if (verdict === 'no_edge') {
       trainChip = 'badge-warning';
       trainText = 'No Edge';
-    } else if (trainingState.queue && trainingState.queue.includes(pair)) {
+    } else if (trainingState.queue && trainingState.queue.includes(pair) && !(trainingState.pairs_done || []).includes(pair) && trainingState.status !== 'idle') {
       trainChip = 'badge-muted';
       trainText = 'Queued';
     }
 
     // H3 metrics for pair
-    const isThisActive = (trainingState.active_pair === pair);
-    const stepsDone = isThisActive ? (trainingState.total_steps_done || 0) : (model.steps || (verdict === 'pass' ? 5000000 : 0));
+    const isThisActive = (trainingState.active_pair === pair && trainingState.status === 'training');
+    const stepsDone = isThisActive ? (trainingState.total_steps_done || 0) : (model.steps || pairRes.steps || (verdict === 'pass' ? 5000000 : 0));
     const bestCp = (isThisActive && trainingState.best_checkpoint) ? trainingState.best_checkpoint : null;
-    const holdoutLooks = (isThisActive && trainingState.holdout_looks !== undefined) ? trainingState.holdout_looks : (model.holdout_looks || 0);
-    const releaseDecision = (isThisActive && trainingState.release_decision) ? trainingState.release_decision : (model.release_decision || (verdict === 'pass' ? 'Released' : verdict === 'no_edge' ? 'No proven edge, not released' : 'Pending 5M steps'));
-    const lastDataDate = (isThisActive && (trainingState.data_end_utc || trainingState.data_snapshot?.last_utc)) || model.data_end_utc || pairData.last_utc || pairData.last_date || pairData.end_date || 'not indexed';
+    const holdoutLooks = (isThisActive && trainingState.holdout_looks !== undefined) ? trainingState.holdout_looks : (model.holdout_looks || (pairRes.holdout ? 1 : 0));
+    const releaseDecision = (isThisActive && trainingState.release_decision) ? trainingState.release_decision : (model.release_decision || pairRes.note || (verdict === 'pass' ? 'Released' : verdict === 'no_edge' ? 'No proven edge, not released' : 'Pending 5M steps'));
+    const lastDataDate = (isThisActive && (trainingState.data_end_utc || trainingState.data_snapshot?.last_utc)) || model.data_end_utc || pairRes.data_end_utc || pairData.last_utc || pairData.last_date || pairData.end_date || 'not indexed';
+    const targetEnableVer = model.candidate_version || model.active_version || model.N || 1;
+    const hasNewCandidate = model.enabled && model.candidate_version && model.active_version && model.candidate_version !== model.active_version;
 
     return `
       <div style="background:var(--bg-card-sub); border:1px solid var(--border); border-radius:var(--radius); padding:14px; display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
@@ -329,20 +336,33 @@ export async function trainingPage() {
             </span>
           </div>
           <div style="display:flex; justify-content:space-between; margin-top:2px; font-size:10px; color:var(--text-3);">
-            <span>Data Pool:</span>
-            <span>Up to ${lastDataDate}</span>
+            <span>Data Used / Pool:</span>
+            <span>data up to ${String(lastDataDate).slice(0, 16).replace('T', ' ')}</span>
           </div>
         </div>
 
-        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--text-3); pt-1;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; color:var(--text-3); pt-1;">
           <span>${isSynthetic ? 'Synthetic CFD' : 'Forex Major/Cross'}</span>
-          <button
-            class="btn btn-ghost btn-sm single-train-btn"
-            data-pair="${pair}" data-mode="${hasModel ? 'update' : 'start'}"
-            style="padding:2px 8px; font-size:11px; height:26px;"
-          >
-            ${hasModel ? 'Update Training' : 'Train'} (${pair})
-          </button>
+          <div style="display:flex; gap:6px; align-items:center;">
+            ${hasBundle ? `
+              <button
+                class="btn ${hasNewCandidate || !model.enabled ? 'btn-primary' : 'btn-ghost'} btn-sm enable-model-btn"
+                data-symbol="${symbolKey}"
+                data-version="${targetEnableVer}"
+                data-enable="${hasNewCandidate || !model.enabled ? 'true' : 'false'}"
+                style="padding:2px 8px; font-size:11px; height:26px;"
+              >
+                ${hasNewCandidate ? `Enable v${targetEnableVer}` : model.enabled ? `Disable v${model.active_version}` : `Enable v${targetEnableVer}`}
+              </button>
+            ` : ''}
+            <button
+              class="btn btn-ghost btn-sm single-train-btn"
+              data-pair="${pair}" data-mode="${hasNativeWeights ? 'update' : 'start'}"
+              style="padding:2px 8px; font-size:11px; height:26px;"
+            >
+              ${hasNativeWeights ? 'Update Training' : 'Train'} (${pair})
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -377,14 +397,34 @@ export async function trainingPage() {
       });
     }
 
+    // Enable / Disable model buttons
+    document.querySelectorAll('.enable-model-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const symbol = btn.dataset.symbol;
+        const version = Number(btn.dataset.version || 1);
+        const enabled = btn.dataset.enable === 'true';
+        try {
+          btn.disabled = true;
+          await api.post('/api/models/enable', { symbol, version, enabled });
+          toast(enabled ? `Enabled ${symbol} v${version} for trading` : `Disabled ${symbol}`, 'success');
+          const m = await api.get('/api/models/index?fresh=1').catch(() => ({}));
+          modelsIndex = m || {};
+          render();
+        } catch (err) {
+          toast(err.message || 'Error updating model trading state', 'error');
+          btn.disabled = false;
+        }
+      });
+    });
+
     // Single train buttons
     document.querySelectorAll('.single-train-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const pair = btn.dataset.pair;
         try {
           btn.disabled = true;
-          await api.post('/api/training/dispatch', { mode: btn.dataset.mode, pair });
-          toast(`Training dispatched for ${pair}!`, 'success');
+          const res = await api.post('/api/training/dispatch', { mode: btn.dataset.mode, pair });
+          toast(`Dispatched ${btn.dataset.mode} for ${pair} (data up to ${(res.data_end_utc || 'latest').slice(0, 16)})`, 'success');
           loadData();
         } catch(err) {
           toast(err.message || 'Error dispatching training', 'error');
@@ -396,8 +436,8 @@ export async function trainingPage() {
       const button = event.currentTarget;
       button.disabled = true;
       try {
-        await api.post('/api/training/dispatch', { mode: 'update', pair: 'all' });
-        toast('Update all dispatched; released models keep trading until you enable a passing candidate.', 'success');
+        const res = await api.post('/api/training/dispatch', { mode: 'update', pair: 'all' });
+        toast(`Update all dispatched (data up to ${(res.data_end_utc || 'latest').slice(0, 16)}); released models keep trading until you enable a passing candidate.`, 'success');
       } catch (err) { toast(err.message, 'error'); }
       button.disabled = false;
     });

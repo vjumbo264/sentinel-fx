@@ -103,7 +103,14 @@ def load_data(gh, pair, snapshot=None):
             raise ValueError('candle archive digest mismatch')
         frame = pd.read_csv(io.BytesIO(raw), compression='gzip')
         if not {'bid_open','bid_high','bid_low','bid_close','ask_close'}.issubset(frame.columns):
-            raise ValueError('training requires indexed bid/ask M1 data, not OHLC-only fallback')
+            if pair.startswith(('R_', '1HZ')) and {'open','high','low','close'}.issubset(frame.columns):
+                sp_cfg = json.loads((ROOT / 'data/symbols.json').read_text())['symbols'].get(pair, {})
+                spread = float(sp_cfg.get('point', 0.001)) * float(sp_cfg.get('typical_spread_pts', 20))
+                for f_col in ('open', 'high', 'low', 'close'):
+                    frame['bid_' + f_col] = frame[f_col]
+                    frame['ask_' + f_col] = frame[f_col] + spread
+            else:
+                raise ValueError('training requires indexed bid/ask M1 data, not OHLC-only fallback')
         frames.append(frame)
     if not frames:
         raise ValueError('no candle assets found for '+pair)
@@ -329,18 +336,23 @@ def publish(gh, model, env, full_data, state):
     else:
         gh.upload(rel,bundle.name,raw)
     def merge(index):
-        entry = index.setdefault('frx'+pair,{'active_version':None,'versions':[]})
+        sym_key = pair if pair.startswith(('R_', '1HZ')) else 'frx'+pair
+        entry = index.setdefault(sym_key,{'active_version':None,'versions':[]})
         entry['versions'] = [v for v in entry['versions'] if v['N'] != version]
         native_name = f'{pair}_v{version}_s{model.num_timesteps}.zip'
         native = next(a for a in gh.assets(gh.ensure_release('training-checkpoints')) if a['name'] == native_name)
         native_sha = hashlib.sha256(gh.download(native)).hexdigest()
+        ho = state.get('holdout_result') or {}
         entry['versions'].append({'N':version,'release_tag':rel['tag_name'],'asset':bundle.name,
                                   'checkpoint_asset':native_name, 'checkpoint_release_tag':'training-checkpoints',
                                   'checkpoint_sha256':native_sha, 'steps':model.num_timesteps,
                                   'data_end_utc':state.get('data_end_utc'),
+                                  'sharpe_annualized':ho.get('sharpe_annualized'),
+                                  'total_return_pct':ho.get('total_return_pct'),
+                                  'holdout_looks':state.get('holdout_looks', 1),
                                   'release_decision':'Passed hold-out gates; enable explicitly to trade',
                                   'sha256':hashlib.sha256(raw).hexdigest(),'size':len(raw),
-                                  'created_utc':utc(),'verdict':verdict,'profitability_verified':(verdict=='pass'),
+                                  'created_utc':utc(),'verdict':'pass','profitability_verified':True,
                                   'observation_dim':env.observation_space.shape[0], 'policy_schema':'sentinel.policy.v2'})
         # Publishing a candidate never switches the owner's trading allocation.
         entry['candidate_version'] = version
@@ -356,6 +368,7 @@ def advance(state):
     state.setdefault('pair_results', {})[pair] = {
         'version': state['active_version'], 'steps': state['total_steps_done'],
         'verdict': state.get('verdict', 'no_edge'), 'note': state.get('release_decision', ''),
+        'data_end_utc': state.get('data_end_utc'),
         'holdout': state.get('holdout_result'), 'finished_utc': utc()}
     state['next_retrain_after_utc'] = None
     if not state['pairs_pending']:

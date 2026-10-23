@@ -39,7 +39,7 @@ jobs:
         with: { python-version: "3.11" }
       - name: Install engine
         run: |
-          pip install --quiet numpy pandas
+          pip install --quiet numpy pandas onnx onnxruntime lightgbm
           pip install --quiet ./engine
       - name: Download staged bundle (NO secrets beyond GITHUB_TOKEN)
         run: |
@@ -66,40 +66,57 @@ jobs:
       - name: Update models/index.json
         if: success()
         run: |
-          python3 - <<'EOF'
-          import hashlib, json, os
+          git config user.name "sentinel-publish"
+          git config user.email "publish@sentinel-fx.local"
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git checkout -B main origin/main
+            python3 - <<'EOF'
+          import hashlib, json, os, zipfile
           from datetime import datetime, timezone
           sym, ver = os.environ["SYMBOL"], int(os.environ["VERSION"])
-          fn = f"{sym}_v{ver}.sfxmodel.zip"
+          clean_sym = sym.replace(" ", "_").replace("(", "").replace(")", "")
+          fn = f"{clean_sym}_v{ver}.sfxmodel.zip"
+          with zipfile.ZipFile(fn) as zf:
+              manifest = json.loads(zf.read("manifest.json"))
+              tr_rep = json.loads(zf.read("training_report.json")) if "training_report.json" in zf.namelist() else {}
           idx = {}
           if os.path.exists("models/index.json"):
               idx = json.load(open("models/index.json"))
           os.makedirs("models", exist_ok=True)
           ent = idx.setdefault(sym, {"active_version": None, "versions": []})
+          prev = next((v for v in ent["versions"] if v.get("N") == ver), {})
           ent["versions"] = [v for v in ent["versions"] if v["N"] != ver]
-          ent["versions"].append({
-              "N": ver, "release_tag": "models-01", "asset": fn,
+          rec = {
+              **prev,
+              "N": ver,
+              "release_tag": "models-01",
+              "asset": fn,
               "sha256": hashlib.sha256(open(fn, "rb").read()).hexdigest(),
               "size": os.path.getsize(fn),
               "created_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-              "verdict": None})
-          ent["active_version"] = ver
-          json.dump(idx, open("models/index.json", "w"), indent=1, sort_keys=True)
+              "observation_dim": manifest.get("observation_dim", 62),
+              "policy_schema": manifest.get("policy_schema", "sentinel.policy.v2"),
+              "mt5_symbol": manifest.get("mt5_symbol", sym.removeprefix("frx")),
+              "steps": tr_rep.get("steps", prev.get("steps", 0)),
+              "data_end_utc": tr_rep.get("data_end_utc") or prev.get("data_end_utc"),
+              "verdict": tr_rep.get("verdict") or prev.get("verdict") or "test_only",
+              "release_decision": tr_rep.get("release_decision") or prev.get("release_decision") or "Validated 62-dim bundle; enable explicitly to trade",
+          }
+          if tr_rep.get("checkpoint_asset"):
+              rec["checkpoint_asset"] = tr_rep["checkpoint_asset"]
+              rec["checkpoint_release_tag"] = tr_rep.get("checkpoint_release_tag", "training-checkpoints")
+              rec["checkpoint_sha256"] = tr_rep.get("checkpoint_sha256")
+          ent["versions"].append(rec)
+          # Never switch active_version automatically; owner enables explicitly.
+          ent["candidate_version"] = ver
+          json.dump(idx, open("models/index.json", "w"), indent=2, sort_keys=True)
           EOF
-          git config user.name "sentinel-publish"
-          git config user.email "publish@sentinel-fx.local"
-          git add models/index.json validator.report.txt
-          git commit -m "models: publish ${SYMBOL} v${VERSION} (validated) [skip ci]" || true
-          git push || true
-      - name: Register in D1 as SHADOW (secret used only here, after validation)
-        if: success()
-        env:
-          BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
-          WORKER_URL: ${{ secrets.WORKER_URL }}
-        run: |
-          curl -sS -X POST "$WORKER_URL/api/packs/register" \
-            -H "X-Bot-Secret: $BOT_SHARED_SECRET" -H "Content-Type: application/json" \
-            -d "{\"symbol\":\"$SYMBOL\",\"version\":$VERSION,\"status\":\"validated\",\"verdict\":\"shadow\"}"
+            git add models/index.json validator.report.txt
+            git commit -m "models: publish ${SYMBOL} v${VERSION} (validated) [skip ci]" || true
+            git push origin main && break
+            sleep 3
+          done
       - name: On failure leave staging file for inspection
         if: failure()
         run: |
