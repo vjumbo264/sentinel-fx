@@ -76,7 +76,7 @@
   "observation_dimension": 62,
   "old_47dim_models": "incompatible \u2014 do not load",
   "last_updated": "2026-10-23T18:34:36.365474+00:00",
-  "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
+  "last_session_note": "Lean partial delivery: L1/L2/L4/L6 live smokes completed as noted; L3/L5 implemented partially and unverified; L7-L9 incomplete. Preserve active EURUSD writer. Resume at lean.next_step; do not claim end-to-end bot works.",
   "fix5": {
     "next_step": "H9 INCOMPLETE, do this next before H10: wire staged tools/training_requests.py into trainer plus authenticated Worker/UI durable request queue; remove invalid pair/queue workflow inputs; add Update all; native best-checkpoint provenance; per-pair new versions and frozen per-cycle data bounds; preserve released active_version on candidates; stop automatic new cycles; verify actual owner update and lock safety. Current EURUSD v1 run39997388327 is active from verified950000 (sha256 b52f8d5a5bf88870706168aae264b0702d4109ababf59e9ea652083a7d9e1c29), target5000000: do NOT cancel/reset or start a duplicate. Then H10, H8, H1-H5, final V1-V12 suite. Read docs/fix5-report.md.",
     "items": [
@@ -752,19 +752,21 @@
       {
         "id": "L7",
         "status": "todo",
-        "note": ""
+        "note": "Not completed in this session; inherited broker session helper is not accepted as live verification."
       },
       {
         "id": "L8",
         "status": "todo",
-        "note": ""
+        "note": "Not completed in this session; existing retry/circuit code not changed or accepted."
       },
       {
         "id": "L9",
         "status": "todo",
-        "note": ""
+        "note": "Not completed in this session; no tiny synthetic model published and no demo orders placed."
       }
     ],
-    "next_step": "L3"
+    "next_step": "L3",
+    "next_command": "git pull --rebase && gh run view 39997388327 --json status,conclusion && cat models/index.json",
+    "remaining": "L3 actual native-weight update smoke; L5 actual synthetic override/daily-stop smoke; L7 broker-session weekends; L8 cooldown breaker; L9 ten-minute model/trade/site round trip."
   }
 }
