@@ -1380,11 +1380,19 @@
         "first_epoch": 1704146640,
         "last_epoch": 1735682280,
         "sha256": "c9bf779103ce819d79ceac5a0ca7d63d8f94b1f97f1fd9e0ae185788b50669c9"
+      },
+      "2025": {
+        "asset": "USDCAD_2025.csv.gz",
+        "release_tag": "data-usdcad-01",
+        "rows": 371992,
+        "first_epoch": 1735769040,
+        "last_epoch": 1767218220,
+        "sha256": "86caba417ffaa0b92cce052d0e1b5a0781fae9b074898ea5b821ed5c7361bdc3"
       }
     },
-    "last_epoch": 1735682280,
+    "last_epoch": 1767218220,
     "first_epoch": 960834300,
-    "rows": 7173603,
+    "rows": 7545595,
     "columns": [
       "epoch",
       "bid_open",
