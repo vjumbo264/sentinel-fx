@@ -75,7 +75,7 @@
   "observation_schema": "sentinel.policy.v2",
   "observation_dimension": 62,
   "old_47dim_models": "incompatible \u2014 do not load",
-  "last_updated": "2026-10-23T18:34:34.832167+00:00",
+  "last_updated": "2026-10-23T18:34:36.365474+00:00",
   "last_session_note": "Rebuilt site with fresh automatic dark/light UI and dispatched EURUSD initial training run 39929904179.",
   "fix5": {
     "next_step": "H9 INCOMPLETE, do this next before H10: wire staged tools/training_requests.py into trainer plus authenticated Worker/UI durable request queue; remove invalid pair/queue workflow inputs; add Update all; native best-checkpoint provenance; per-pair new versions and frozen per-cycle data bounds; preserve released active_version on candidates; stop automatic new cycles; verify actual owner update and lock safety. Current EURUSD v1 run39997388327 is active from verified950000 (sha256 b52f8d5a5bf88870706168aae264b0702d4109ababf59e9ea652083a7d9e1c29), target5000000: do NOT cancel/reset or start a duplicate. Then H10, H8, H1-H5, final V1-V12 suite. Read docs/fix5-report.md.",
@@ -732,7 +732,7 @@
       {
         "id": "L3",
         "status": "doing",
-        "note": "Worker live smoke correctly returns409 preserving active writer. Direct pair/mode controls deployed; native source update still unverified because registry is empty. Group with L4 latest-data plumbing and later tiny demo model prerequisite; do not label full retraining done."
+        "note": "Direct Worker pair/mode dispatch and Update all deployed; staged request queue deleted; native warm-start, per-version checkpoint provenance and pinned data added. Live busy-path smoke returned409 without duplicating EURUSD. Real warm-start update still unverified: registry empty and active single writer must be preserved. Resume here, then L5/L7/L8/L9."
       },
       {
         "id": "L4",
