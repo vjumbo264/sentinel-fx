@@ -1054,11 +1054,19 @@
         "first_epoch": 1357077600,
         "last_epoch": 1388523540,
         "sha256": "c43e2ccc573d7b4e89f1918952657496df75c2ce7b690f402683d68bd946a998"
+      },
+      "2014": {
+        "asset": "USDJPY_2014.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 366741,
+        "first_epoch": 1388613600,
+        "last_epoch": 1420063140,
+        "sha256": "fa60652c5513647a994f1df7a3715aadfd407dcf7e2dc1f795ac561057e40641"
       }
     },
-    "last_epoch": 1388523540,
+    "last_epoch": 1420063140,
     "first_epoch": 959727480,
-    "rows": 4275515,
+    "rows": 4642256,
     "columns": [
       "epoch",
       "bid_open",
