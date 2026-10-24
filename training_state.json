@@ -39,7 +39,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-24T23:10:28.756259+00:00",
+  "updated_utc": "2026-10-24T23:11:29.195759+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -103,5 +103,246 @@
       },
       "finished_utc": "2026-10-24T23:10:28.756133+00:00"
     }
-  }
+  },
+  "data_snapshot": {
+    "shard_releases": [
+      "data-gbpusd-01"
+    ],
+    "bulk_years": {
+      "2000": {
+        "asset": "GBPUSD_2000.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 132267,
+        "first_epoch": 959727540,
+        "last_epoch": 978107160,
+        "sha256": "52b92bd81faa6712d931fbc96370f847883a904d936945d7bb49fc3d974551e4"
+      },
+      "2001": {
+        "asset": "GBPUSD_2001.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 203038,
+        "first_epoch": 978427020,
+        "last_epoch": 1009823220,
+        "sha256": "14ed976bb15222c24e8097528a565b4303f65cab692d07ff2dfb3922c205560a"
+      },
+      "2002": {
+        "asset": "GBPUSD_2002.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 194701,
+        "first_epoch": 1009952820,
+        "last_epoch": 1041357480,
+        "sha256": "01801bca022d0900f4038079527c18b32985ee3f6ea51138d984cf908e74f590"
+      },
+      "2003": {
+        "asset": "GBPUSD_2003.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 296418,
+        "first_epoch": 1041465720,
+        "last_epoch": 1072900500,
+        "sha256": "45e34a08c43b6b2494a882a5e6b9945bacca2a8147a515649f224d5e0eec5404"
+      },
+      "2004": {
+        "asset": "GBPUSD_2004.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 314580,
+        "first_epoch": 1073001720,
+        "last_epoch": 1104528540,
+        "sha256": "d42b885c47b50ea90d0e67d3a6770fbd7aec82534ab04cc2cc4e45024878298c"
+      },
+      "2005": {
+        "asset": "GBPUSD_2005.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 311286,
+        "first_epoch": 1104734880,
+        "last_epoch": 1135893420,
+        "sha256": "4e5453fa8479cbd4a59e1431edf58a0efdcdfcd8cee302caa6d5210e13b987d4"
+      },
+      "2006": {
+        "asset": "GBPUSD_2006.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 308909,
+        "first_epoch": 1136246400,
+        "last_epoch": 1167427800,
+        "sha256": "c0a1d3afe7b2574adf4b0e08378fb67d5346f8879ee16876d813a273ec41bf2a"
+      },
+      "2007": {
+        "asset": "GBPUSD_2007.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 306750,
+        "first_epoch": 1167699600,
+        "last_epoch": 1199138220,
+        "sha256": "4e530f4e3bb18e386fc574871c7606db9a95381eb836a931f5f6deb8922ebdfc"
+      },
+      "2008": {
+        "asset": "GBPUSD_2008.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 332167,
+        "first_epoch": 1199232000,
+        "last_epoch": 1230757080,
+        "sha256": "37561ef8e8e79edcb6a0c280fc75ec55764b1e285bfdc47ecc0700a54a21106d"
+      },
+      "2009": {
+        "asset": "GBPUSD_2009.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 354178,
+        "first_epoch": 1230854340,
+        "last_epoch": 1262296740,
+        "sha256": "8556298940f50e1071853a6cb79a7c048e229be4999fdbcc0bc849d032ce8f49"
+      },
+      "2010": {
+        "asset": "GBPUSD_2010.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 348663,
+        "first_epoch": 1262556000,
+        "last_epoch": 1293825540,
+        "sha256": "6b5b08fdf5fd01dd318a675e3d7f7646b958bafd65ebab9ccb4bf7d04cdc1ed6"
+      },
+      "2011": {
+        "asset": "GBPUSD_2011.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 349323,
+        "first_epoch": 1294005600,
+        "last_epoch": 1325282280,
+        "sha256": "d04af4af12a86a378780934e71b9e1d62ecb5a398d401faa05cb829fa359a770"
+      },
+      "2012": {
+        "asset": "GBPUSD_2012.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 371796,
+        "first_epoch": 1325487600,
+        "last_epoch": 1356991080,
+        "sha256": "e5dc63a98374013a563085e99f77068c049edbed5d6af2f7f9059e31a51c9d9b"
+      },
+      "2013": {
+        "asset": "GBPUSD_2013.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 370762,
+        "first_epoch": 1357077600,
+        "last_epoch": 1388523540,
+        "sha256": "b6f306079166a5603c5c2d0986e41800a722c474a9c2596de839fc85dc166a4f"
+      },
+      "2014": {
+        "asset": "GBPUSD_2014.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 368916,
+        "first_epoch": 1388613600,
+        "last_epoch": 1420063080,
+        "sha256": "b85c149f338eb40c9991cffa4b7913cf3addb727434f8d6353a5ff04a07c3c1d"
+      },
+      "2015": {
+        "asset": "GBPUSD_2015.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 372231,
+        "first_epoch": 1420135260,
+        "last_epoch": 1451599080,
+        "sha256": "551a5d8e57c0c02e677dadfc2d219389bff1a5942f2526c951782f89c28851b8"
+      },
+      "2016": {
+        "asset": "GBPUSD_2016.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 372480,
+        "first_epoch": 1451858400,
+        "last_epoch": 1483135020,
+        "sha256": "1bdbe48e3dfbd760716f290f771c4508a39f069a1c47b0bc1183160db0f8d172"
+      },
+      "2017": {
+        "asset": "GBPUSD_2017.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 371204,
+        "first_epoch": 1483340400,
+        "last_epoch": 1514584620,
+        "sha256": "905b00d61830017bf9ef1ef338021ec78581cb50fae508ce4454e5b1974492c2"
+      },
+      "2018": {
+        "asset": "GBPUSD_2018.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 372261,
+        "first_epoch": 1514844000,
+        "last_epoch": 1546293480,
+        "sha256": "30fa9fa2a16425b3590139227396b9d64b0bf34bb3d1a90d5181b3868078b4a1"
+      },
+      "2019": {
+        "asset": "GBPUSD_2019.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 372336,
+        "first_epoch": 1546380360,
+        "last_epoch": 1577829480,
+        "sha256": "7159eae044b09eeb75709b895f518073720c199c707f5020d8de9cca411f3deb"
+      },
+      "2020": {
+        "asset": "GBPUSD_2020.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 372997,
+        "first_epoch": 1577916120,
+        "last_epoch": 1609451880,
+        "sha256": "15c3435c3849f10ab6f191d7074a4ee78ae9e403aa3fe6c974423ed8f325f4aa"
+      },
+      "2021": {
+        "asset": "GBPUSD_2021.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 370338,
+        "first_epoch": 1609711200,
+        "last_epoch": 1640987880,
+        "sha256": "660b6b583a605cb7636b6ff0617e0f8ad79367113d88e053b12eef4c892fdc8a"
+      },
+      "2022": {
+        "asset": "GBPUSD_2022.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 372434,
+        "first_epoch": 1641160860,
+        "last_epoch": 1672437480,
+        "sha256": "8e39ccc6457e896d5328278ac37e385f0b0bb31b7a063d6e25e6dc8ffc06a88f"
+      },
+      "2023": {
+        "asset": "GBPUSD_2023.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 322407,
+        "first_epoch": 1672614240,
+        "last_epoch": 1703887080,
+        "sha256": "75d40076a5f18432cfd6450ac58a02c37dd83f0b57d4ceedbcfe979749667f61"
+      },
+      "2024": {
+        "asset": "GBPUSD_2024.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 372047,
+        "first_epoch": 1704146400,
+        "last_epoch": 1735682280,
+        "sha256": "d7877a6a62caf98a30b72c50c218a6c6aae41b09b0d4748fb3a1fda3065b8d61"
+      },
+      "2025": {
+        "asset": "GBPUSD_2025.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 371031,
+        "first_epoch": 1735768860,
+        "last_epoch": 1767218220,
+        "sha256": "113aaa3d6a5c374eae1da97ac497eacc30ab2a7098c8a0d7e1b2998d44bab85d"
+      },
+      "2026": {
+        "asset": "GBPUSD_2026_through_09.csv.gz",
+        "release_tag": "data-gbpusd-01",
+        "rows": 276426,
+        "first_epoch": 1767304800,
+        "last_epoch": 1790830680,
+        "sha256": "0e5ee7d1c8f7b2be10e964051366e7e4704cfb80a5c5791dd5b18b5b4b2af4fc"
+      }
+    },
+    "last_epoch": 1790830680,
+    "first_epoch": 959727540,
+    "rows": 8881946,
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "source": "histdata-bid-only-synthetic-ask",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "bulk_complete": true
+  },
+  "cycle_started_utc": "2026-10-24T23:11:29.195710+00:00"
 }
