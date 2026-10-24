@@ -38,7 +38,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-24T22:35:56.782557+00:00",
+  "updated_utc": "2026-10-24T22:36:31.289780+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -76,7 +76,7 @@
     "updated_utc": "2026-10-23T08:25:40.987197+00:00",
     "duration_seconds": 71.68
   },
-  "status": "checkpointed",
+  "status": "training",
   "checkpoint": {
     "asset": "EURUSD_v1_s4946232.zip",
     "release_tag": "training-checkpoints",
