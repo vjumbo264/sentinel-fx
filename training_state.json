@@ -16,10 +16,10 @@
   ],
   "active_pair": "EURUSD",
   "active_version": 1,
-  "total_steps_done": 3778021,
+  "total_steps_done": 3828021,
   "total_steps_target": 5000000,
-  "last_checkpoint_utc": "2026-10-24T14:25:56.112882+00:00",
-  "last_checkpoint_steps": 3778021,
+  "last_checkpoint_utc": "2026-10-24T14:56:01.349475+00:00",
+  "last_checkpoint_steps": 3828021,
   "pairs_done": [],
   "pairs_pending": [
     "EURUSD",
@@ -38,7 +38,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-24T14:28:59.341873+00:00",
+  "updated_utc": "2026-10-24T14:59:04.275694+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -78,12 +78,12 @@
   },
   "status": "training",
   "checkpoint": {
-    "asset": "EURUSD_v1_s3778021.zip",
+    "asset": "EURUSD_v1_s3828021.zip",
     "release_tag": "training-checkpoints",
-    "sha256": "04aa3ec3e23daa0dc8548da4fbe21c7d98bf1ea4d315d729bb4ef25a3e79dc6b"
+    "sha256": "82f865c9ac528307b9f421973a62a53497a96386324945115cace7dd3a65528c"
   },
-  "plateau_intervals": 0,
-  "previous_mean_reward": -1368.40773871,
+  "plateau_intervals": 1,
+  "previous_mean_reward": -1373.27952904,
   "best_checkpoint": {
     "step": 950000,
     "score": -50.414696,
@@ -3127,6 +3127,56 @@
             "status": "evaluated",
             "final_equity": 4857.394999998591,
             "trades": 307
+          }
+        ],
+        "skipped_windows": [],
+        "sampling": "three fixed 1024-bar purged validation windows; not full validation coverage"
+      }
+    },
+    {
+      "pair": "EURUSD",
+      "version": 1,
+      "step": 3828021,
+      "utc": "2026-10-24T14:56:01.349475+00:00",
+      "score": -60.5075,
+      "metrics": {
+        "verdict": "no_edge",
+        "eligible": true,
+        "val_rows": 3069,
+        "purge_bars": 2400,
+        "holdout_rows": 1318884,
+        "holdout_accessed": false,
+        "total_return_pct": -76.365251,
+        "max_drawdown_pct": 60.5075,
+        "sharpe_annualized": -51.731219,
+        "trade_count": 1056,
+        "activity_days": 7,
+        "evaluated_days": 8,
+        "cost_paid": 10711.713000013206,
+        "windows": [
+          {
+            "start_epoch": 1565213700,
+            "end_epoch": 1565275080,
+            "rows": 1024,
+            "status": "evaluated",
+            "final_equity": 11320.447999991926,
+            "trades": 381
+          },
+          {
+            "start_epoch": 1621026420,
+            "end_epoch": 1621261260,
+            "rows": 1024,
+            "status": "evaluated",
+            "final_equity": 5286.554999998802,
+            "trades": 294
+          },
+          {
+            "start_epoch": 1676657460,
+            "end_epoch": 1676902800,
+            "rows": 1024,
+            "status": "evaluated",
+            "final_equity": 3949.249999998834,
+            "trades": 381
           }
         ],
         "skipped_windows": [],
