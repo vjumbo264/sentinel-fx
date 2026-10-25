@@ -3654,5 +3654,8 @@
     "source": "histdata-bid-only-synthetic-ask",
     "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
     "bulk_complete": false
+  },
+  "frxEURCAD": {
+    "last_checked_utc": "2026-10-25T05:09:59.723452+00:00"
   }
 }
