@@ -16,10 +16,10 @@
   ],
   "active_pair": "GBPUSD",
   "active_version": 1,
-  "total_steps_done": 300000,
+  "total_steps_done": 350000,
   "total_steps_target": 5000000,
-  "last_checkpoint_utc": "2026-10-25T00:57:18.273968+00:00",
-  "last_checkpoint_steps": 300000,
+  "last_checkpoint_utc": "2026-10-25T01:13:39.665068+00:00",
+  "last_checkpoint_steps": 350000,
   "pairs_done": [
     "EURUSD"
   ],
@@ -39,7 +39,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-25T00:57:20.023956+00:00",
+  "updated_utc": "2026-10-25T01:13:41.442838+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -395,9 +395,9 @@
     }
   },
   "checkpoint": {
-    "asset": "GBPUSD_v1_s300000.zip",
+    "asset": "GBPUSD_v1_s350000.zip",
     "release_tag": "training-checkpoints",
-    "sha256": "5a2ecacc1d8f1f09cfcc06f87ef7afb5ce3139897c712d57b86f9b22cc3e1ef6"
+    "sha256": "6a7e60fc7010de81e5806bf893283a22c61c0109b15dcb0875d82e8e626f2ad7"
   },
   "checkpoint_history": [
     {
@@ -694,6 +694,56 @@
             "status": "evaluated",
             "final_equity": 9552.419999992951,
             "trades": 458
+          }
+        ],
+        "skipped_windows": [],
+        "sampling": "three fixed 1024-bar purged validation windows; not full validation coverage"
+      }
+    },
+    {
+      "pair": "GBPUSD",
+      "version": 1,
+      "step": 350000,
+      "utc": "2026-10-25T01:13:39.665068+00:00",
+      "score": -33.377306,
+      "metrics": {
+        "verdict": "no_edge",
+        "eligible": true,
+        "val_rows": 3069,
+        "purge_bars": 2400,
+        "holdout_rows": 1332292,
+        "holdout_accessed": false,
+        "total_return_pct": -29.971384,
+        "max_drawdown_pct": 33.377306,
+        "sharpe_annualized": -15.615069,
+        "trade_count": 1202,
+        "activity_days": 6,
+        "evaluated_days": 6,
+        "cost_paid": 3119.623000020254,
+        "windows": [
+          {
+            "start_epoch": 1560796320,
+            "end_epoch": 1560857700,
+            "rows": 1024,
+            "status": "evaluated",
+            "final_equity": 9163.92199999296,
+            "trades": 329
+          },
+          {
+            "start_epoch": 1617089940,
+            "end_epoch": 1617151500,
+            "rows": 1024,
+            "status": "evaluated",
+            "final_equity": 10015.889999993713,
+            "trades": 411
+          },
+          {
+            "start_epoch": 1673307540,
+            "end_epoch": 1673368920,
+            "rows": 1024,
+            "status": "evaluated",
+            "final_equity": 7629.649999994366,
+            "trades": 462
           }
         ],
         "skipped_windows": [],
