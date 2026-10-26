@@ -39,7 +39,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-26T11:17:56.067059+00:00",
+  "updated_utc": "2026-10-26T11:19:06.224655+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -125,5 +125,263 @@
       },
       "finished_utc": "2026-10-26T11:17:56.066879+00:00"
     }
-  }
+  },
+  "data_snapshot": {
+    "shard_releases": [
+      "data-usdjpy-01"
+    ],
+    "bulk_unavailable": {
+      "2000": {
+        "error": "JSON CAS retries exhausted: data/index.json",
+        "checked_utc": "2026-10-23T07:56:28.200836+00:00",
+        "status": "unavailable_not_complete"
+      },
+      "2005": {
+        "error": "JSON CAS retries exhausted: data/index.json",
+        "checked_utc": "2026-10-23T07:56:28.200836+00:00",
+        "status": "unavailable_not_complete"
+      },
+      "2016": {
+        "error": "404 Client Error: Not Found for url: https://api.github.com/repos/vjumbo264/sentinel-fx/releases/assets/668426942",
+        "checked_utc": "2026-10-23T07:49:57.583765+00:00",
+        "status": "unavailable_not_complete"
+      }
+    },
+    "bulk_years": {
+      "2000": {
+        "asset": "USDJPY_2000.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 131241,
+        "first_epoch": 959727480,
+        "last_epoch": 978107220,
+        "sha256": "cd4d61ae93fa27e637c52dc2f7918f79bee57f370bf9698c0be41562c9e4bbcb"
+      },
+      "2001": {
+        "asset": "USDJPY_2001.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 244200,
+        "first_epoch": 978426600,
+        "last_epoch": 1009823220,
+        "sha256": "c8210ecd074b52bedd85edbc564404541dbaa842813c80f92904d88951da1891"
+      },
+      "2002": {
+        "asset": "USDJPY_2002.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 238609,
+        "first_epoch": 1009952760,
+        "last_epoch": 1041357540,
+        "sha256": "926bb1e18862e6f5d4ecab005bdf238902203ccada2f324a6720622011e6e484"
+      },
+      "2003": {
+        "asset": "USDJPY_2003.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 330526,
+        "first_epoch": 1041465540,
+        "last_epoch": 1072900740,
+        "sha256": "b2ad3e93b26cb3d9b1fbf1956b1b9df60afc272523e2680fd85b06b16bc228f5"
+      },
+      "2004": {
+        "asset": "USDJPY_2004.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 321941,
+        "first_epoch": 1073001600,
+        "last_epoch": 1104528540,
+        "sha256": "f0f293b4035e650a39997df5feeedd141d5d761dca56c1f012f9556e7f2c8a15"
+      },
+      "2005": {
+        "asset": "USDJPY_2005.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 312962,
+        "first_epoch": 1104734880,
+        "last_epoch": 1135893420,
+        "sha256": "3d0fd4d242276e930c3ded7015bf7be6ad54265ad876b8bdbe9278fd9e40e779"
+      },
+      "2006": {
+        "asset": "USDJPY_2006.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 315950,
+        "first_epoch": 1136246400,
+        "last_epoch": 1167427740,
+        "sha256": "cca83455a511252592f6cc60c0b0413b643c6502c131a3a2bf46575ccf0f18bf"
+      },
+      "2007": {
+        "asset": "USDJPY_2007.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 322788,
+        "first_epoch": 1167699600,
+        "last_epoch": 1199138220,
+        "sha256": "b81e5cf04a3fe29bf2757a2c5185fb6b21aee7ec8c35478f6ec5eb1b6949e476"
+      },
+      "2008": {
+        "asset": "USDJPY_2008.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 348226,
+        "first_epoch": 1199232000,
+        "last_epoch": 1230757080,
+        "sha256": "b2302c1d9c4e433d6aca9717bde8a6f69ff0917df8ca8e1c325d2b6f161659b3"
+      },
+      "2009": {
+        "asset": "USDJPY_2009.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 343456,
+        "first_epoch": 1230854340,
+        "last_epoch": 1262296740,
+        "sha256": "1a7ff5e96fa10db087b07a81db6a2be62e15714560fa93756f55b836b0ee75bd"
+      },
+      "2010": {
+        "asset": "USDJPY_2010.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 328836,
+        "first_epoch": 1262556000,
+        "last_epoch": 1293825420,
+        "sha256": "6edb4dd9dc06c3f46ea06032d193267242ee04f0cc24f32fb8b5decfc6a9e988"
+      },
+      "2011": {
+        "asset": "USDJPY_2011.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 300286,
+        "first_epoch": 1294005600,
+        "last_epoch": 1325282280,
+        "sha256": "62398603d48dfdd5825fb4c40387db4caba9fbc5b529bca5febaf6fb0e8ead6c"
+      },
+      "2012": {
+        "asset": "USDJPY_2012.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 365686,
+        "first_epoch": 1325487600,
+        "last_epoch": 1356991080,
+        "sha256": "7310c5f476fcc08a4eed242f1431e933ebaf2206c42cefb2ac3411a05a784974"
+      },
+      "2013": {
+        "asset": "USDJPY_2013.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 370808,
+        "first_epoch": 1357077600,
+        "last_epoch": 1388523540,
+        "sha256": "c43e2ccc573d7b4e89f1918952657496df75c2ce7b690f402683d68bd946a998"
+      },
+      "2014": {
+        "asset": "USDJPY_2014.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 366741,
+        "first_epoch": 1388613600,
+        "last_epoch": 1420063140,
+        "sha256": "fa60652c5513647a994f1df7a3715aadfd407dcf7e2dc1f795ac561057e40641"
+      },
+      "2015": {
+        "asset": "USDJPY_2015.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 371891,
+        "first_epoch": 1420135260,
+        "last_epoch": 1451599020,
+        "sha256": "5d9ed05b4c47923d33d78620f9b80ed16309252fd92a6ccf8b91cced3d96d0eb"
+      },
+      "2016": {
+        "asset": "USDJPY_2016.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 372417,
+        "first_epoch": 1451858400,
+        "last_epoch": 1483135020,
+        "sha256": "7819a6a38a5f61630a147f06cdd97a716066337a9238cad4a67282fe7aefaad6"
+      },
+      "2017": {
+        "asset": "USDJPY_2017.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 371298,
+        "first_epoch": 1483340400,
+        "last_epoch": 1514584680,
+        "sha256": "5ae4b3fe4d980072d58bd787d79acc74cfb4e8e76cea2ec231ba13909982b0c9"
+      },
+      "2018": {
+        "asset": "USDJPY_2018.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 371800,
+        "first_epoch": 1514844000,
+        "last_epoch": 1546293480,
+        "sha256": "75916f013e796ff2e9ce8747a67a8ac90230e1c323ef00394413ee13feb977a5"
+      },
+      "2019": {
+        "asset": "USDJPY_2019.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 372525,
+        "first_epoch": 1546380000,
+        "last_epoch": 1577829480,
+        "sha256": "6a7bce5c8fd60ce54bdf0b378568ff2e0ace5830704d922d6d13aa8223d2736f"
+      },
+      "2020": {
+        "asset": "USDJPY_2020.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 372140,
+        "first_epoch": 1577916000,
+        "last_epoch": 1609451880,
+        "sha256": "16d9bb826b7e83cb3047217a8dc16d7c3fe8e9b60bacdb0664a1f5605ef61957"
+      },
+      "2021": {
+        "asset": "USDJPY_2021.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 369333,
+        "first_epoch": 1609711200,
+        "last_epoch": 1640987880,
+        "sha256": "704a0656a74ab44b6282404b06c70fc626f77f1fd8196d009807a804d762148f"
+      },
+      "2022": {
+        "asset": "USDJPY_2022.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 372536,
+        "first_epoch": 1641160800,
+        "last_epoch": 1672437480,
+        "sha256": "4583d6777166957605d3a7bf8a225f3ef475520d58da4315483caa8d6c27bb91"
+      },
+      "2023": {
+        "asset": "USDJPY_2023.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 322896,
+        "first_epoch": 1672610400,
+        "last_epoch": 1703887080,
+        "sha256": "2b2178f7dbd35e20787350d37c222be6f544afe5edb0f943b321e540a96faae5"
+      },
+      "2024": {
+        "asset": "USDJPY_2024.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 372023,
+        "first_epoch": 1704146400,
+        "last_epoch": 1735682280,
+        "sha256": "75f6340e6fc65afaa420d1f1e95fde2d71458e637515affd76c76a08f27de3c5"
+      },
+      "2025": {
+        "asset": "USDJPY_2025.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 371643,
+        "first_epoch": 1735769040,
+        "last_epoch": 1767218220,
+        "sha256": "8be85aed40fade63955dd34205d1559b427d85e9e40bc5ac93b584acb7132119"
+      },
+      "2026": {
+        "asset": "USDJPY_2026_through_09.csv.gz",
+        "release_tag": "data-usdjpy-01",
+        "rows": 277037,
+        "first_epoch": 1767305040,
+        "last_epoch": 1790830680,
+        "sha256": "193d46ed8f374fd1146dc55302f553a6fe0ce939df5d3070b6d59403c6583c98"
+      }
+    },
+    "last_epoch": 1790830680,
+    "first_epoch": 959727480,
+    "rows": 8959795,
+    "columns": [
+      "epoch",
+      "bid_open",
+      "bid_high",
+      "bid_low",
+      "bid_close",
+      "ask_open",
+      "ask_high",
+      "ask_low",
+      "ask_close"
+    ],
+    "source": "histdata-bid-only-synthetic-ask",
+    "ask_assumption": "spread registry points \u00d7 point, else 1.5 \u00d7 point; NOT measured spread",
+    "bulk_complete": true
+  },
+  "cycle_started_utc": "2026-10-26T11:19:06.224592+00:00"
 }
