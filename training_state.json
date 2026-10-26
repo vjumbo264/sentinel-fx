@@ -39,7 +39,7 @@
   ],
   "retrain_cycle": 1,
   "next_retrain_after_utc": null,
-  "updated_utc": "2026-10-26T03:57:47.851217+00:00",
+  "updated_utc": "2026-10-26T03:57:49.008548+00:00",
   "smoke_test": {
     "status": "passing",
     "steps": 1000,
@@ -77,7 +77,7 @@
     "updated_utc": "2026-10-23T08:25:40.987197+00:00",
     "duration_seconds": 71.68
   },
-  "status": "training",
+  "status": "checkpointed",
   "plateau_intervals": 3,
   "previous_mean_reward": -2916.722140756757,
   "pair_results": {
