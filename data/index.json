@@ -858,16 +858,16 @@
   "1HZ150V": {
     "symbol": "1HZ150V",
     "granularity": 60,
-    "rows": 545664,
+    "rows": 555837,
     "first_epoch": 1760165243,
-    "last_epoch": 1792905000,
+    "last_epoch": 1793515380,
     "first_utc": "2025-10-11T06:47:23+00:00",
-    "last_utc": "2026-10-25T05:10:00+00:00",
+    "last_utc": "2026-11-01T06:43:00+00:00",
     "years_back": 1.03,
     "sha256": "d120210e441038135984c9751aa3fcc3eddd883cf1376c781b9ca38e49ba3467",
     "gaps_flagged": [],
     "source": "auth-otp",
-    "last_checked_utc": "2026-10-25T05:11:57.191733+00:00",
+    "last_checked_utc": "2026-11-01T06:44:12.266696+00:00",
     "file": "1HZ150V_60s.csv.gz",
     "columns": [
       "epoch",
@@ -890,11 +890,21 @@
         "last_epoch": 1792905000,
         "source": "Deriv UTC",
         "last_update_utc": "2026-10-25T05:11:57.040832+00:00"
+      },
+      {
+        "asset": "1HZ150V_1792905060_1793515380.e90251c91248a81b.csv.gz",
+        "release_tag": "data-deriv-appends-01",
+        "sha256": "e90251c91248a81b8b94bc2d0a0ab9f49f3ee413f493816eddb5435c2ce1b528",
+        "rows": 10173,
+        "first_epoch": 1792905060,
+        "last_epoch": 1793515380,
+        "source": "Deriv UTC",
+        "last_update_utc": "2026-11-01T06:44:11.959303+00:00"
       }
     ],
-    "last_update_utc": "2026-10-25T05:11:57.191727+00:00",
+    "last_update_utc": "2026-11-01T06:44:12.266693+00:00",
     "join_median_difference": 0.0,
-    "join_overlap_rows": 6000,
+    "join_overlap_rows": 2391,
     "timezone": "UTC"
   },
   "1HZ250V": {
