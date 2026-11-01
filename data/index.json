@@ -910,16 +910,16 @@
   "1HZ250V": {
     "symbol": "1HZ250V",
     "granularity": 60,
-    "rows": 545664,
+    "rows": 555836,
     "first_epoch": 1760165286,
-    "last_epoch": 1792905060,
+    "last_epoch": 1793515380,
     "first_utc": "2025-10-11T06:48:06+00:00",
-    "last_utc": "2026-10-25T05:11:00+00:00",
+    "last_utc": "2026-11-01T06:43:00+00:00",
     "years_back": 1.03,
     "sha256": "b904de0f676e817705497deaa4e2648a99bb3db289192d5b0f70a3130d0ef6e0",
     "gaps_flagged": [],
     "source": "auth-otp",
-    "last_checked_utc": "2026-10-25T05:12:06.717484+00:00",
+    "last_checked_utc": "2026-11-01T06:44:19.676768+00:00",
     "file": "1HZ250V_60s.csv.gz",
     "columns": [
       "epoch",
@@ -942,11 +942,21 @@
         "last_epoch": 1792905060,
         "source": "Deriv UTC",
         "last_update_utc": "2026-10-25T05:12:06.577332+00:00"
+      },
+      {
+        "asset": "1HZ250V_1792905120_1793515380.a5e5a351018c6547.csv.gz",
+        "release_tag": "data-deriv-appends-01",
+        "sha256": "a5e5a351018c6547250b22ab1029edcce77e96d8897b654fccfccb28d023363d",
+        "rows": 10172,
+        "first_epoch": 1792905120,
+        "last_epoch": 1793515380,
+        "source": "Deriv UTC",
+        "last_update_utc": "2026-11-01T06:44:19.474912+00:00"
       }
     ],
-    "last_update_utc": "2026-10-25T05:12:06.717481+00:00",
+    "last_update_utc": "2026-11-01T06:44:19.676765+00:00",
     "join_median_difference": 0.0,
-    "join_overlap_rows": 6000,
+    "join_overlap_rows": 2390,
     "timezone": "UTC"
   },
   "frxAUDUSD": {
