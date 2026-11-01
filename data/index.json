@@ -73,16 +73,16 @@
   "R_100": {
     "symbol": "R_100",
     "granularity": 60,
-    "rows": 545446,
+    "rows": 555619,
     "first_epoch": 1760178212,
-    "last_epoch": 1792904940,
+    "last_epoch": 1793515320,
     "first_utc": "2025-10-11T10:23:32+00:00",
-    "last_utc": "2026-10-25T05:09:00+00:00",
+    "last_utc": "2026-11-01T06:42:00+00:00",
     "years_back": 1.03,
     "sha256": "877778ad64056cba31335b402205786c13d74808597c1aa03996bc556636c73b",
     "gaps_flagged": [],
     "source": "auth-otp",
-    "last_checked_utc": "2026-10-25T05:10:57.540572+00:00",
+    "last_checked_utc": "2026-11-01T06:43:10.980079+00:00",
     "file": "R_100_60s.csv.gz",
     "columns": [
       "epoch",
@@ -105,11 +105,21 @@
         "last_epoch": 1792904940,
         "source": "Deriv UTC",
         "last_update_utc": "2026-10-25T05:10:57.352886+00:00"
+      },
+      {
+        "asset": "R_100_1792905000_1793515320.31c24f417f8618cd.csv.gz",
+        "release_tag": "data-deriv-appends-01",
+        "sha256": "31c24f417f8618cd6cf8b36268fe10032e1302e940d139736463b5d8d80172b0",
+        "rows": 10173,
+        "first_epoch": 1792905000,
+        "last_epoch": 1793515320,
+        "source": "Deriv UTC",
+        "last_update_utc": "2026-11-01T06:43:10.878647+00:00"
       }
     ],
-    "last_update_utc": "2026-10-25T05:10:57.540570+00:00",
+    "last_update_utc": "2026-11-01T06:43:10.980077+00:00",
     "join_median_difference": 0.0,
-    "join_overlap_rows": 6000,
+    "join_overlap_rows": 2396,
     "timezone": "UTC"
   },
   "frxEURUSD": {
